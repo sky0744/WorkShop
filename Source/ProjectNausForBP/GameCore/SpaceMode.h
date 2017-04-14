@@ -1,3 +1,31 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5071ed2098d920845b6ee4a91a8f935488de2c285f104a7672ee19ac0613d101
-size 643
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "GameFramework/GameMode.h"
+#include "ProjectNausForBP.h"
+#include "SpaceMode.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class PROJECTNAUSFORBP_API ASpaceMode : public AGameMode
+{
+	GENERATED_BODY()
+public:
+	ASpaceMode();
+
+#pragma region Base GameMode
+protected:
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+#pragma endregion
+
+private:
+	//ASpaceState* sectorState;
+	//FSectorData* currentSectorInfo;
+
+	//TArray<AShip*> ObjectInSector_Ship;
+	//TArray<AResource*> ObjectInSector_Resource;
+};

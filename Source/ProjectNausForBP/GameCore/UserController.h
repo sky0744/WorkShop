@@ -1,3 +1,116 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:498972f2c0d70f6f04d4d82c61601a6239c3bb1d080149851854054c9ef41f33
-size 4211
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "GameFramework/PlayerController.h"
+#include "ProjectNausForBP.h"
+#include "../GameCoreSub/Enums.h"
+#include "../GameCoreSub/UI3DMove.h"
+#include "../GameCoreSub/UI3DTarget.h"
+#include "../GameObject/PlayerShip.h"
+#include "UserController.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class PROJECTNAUSFORBP_API AUserController : public APlayerController
+{
+	GENERATED_BODY()
+public:
+	AUserController();
+#pragma region Event Calls
+protected:
+	virtual void BeginPlay() override;	
+	virtual void PlayerTick(float DeltaSeconds) override;
+	virtual void SetupInputComponent() override;
+#pragma endregion
+
+#pragma region Input Binding
+public:
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlCamX(float value);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlCamY(float value);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlCamReset();
+
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void ControlTargetSpeed(float value);
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void ControlAcceleration(float value);
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void ControlRotateSpeed(float value);
+
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void OpenInfoProfile();
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void OpenInfoShip();
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void OpenInfoItem();
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void OpenInfoMap();
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void OpenInfoQuest();
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void OpenInfoMenu();
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void KeyUndock();
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlMouseX(float value);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlMouseY(float value);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlMouseWheel(float value);
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ClickPressMouseLeft(FKey key);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ClickReleaseMouseLeft(FKey key);
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ClickPressMouseWheel(FKey key);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ClickReleaseMouseWheel(FKey key);
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ClickPressMouseRight(FKey key);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ClickReleaseMouseRight(FKey key);
+#pragma endregion
+
+#pragma region player flow control
+public:
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void PlayerInterAction(InteractionType interaction);
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		bool SetWarpLocation(FVector location);
+
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		bool ToggleTargetModule(int slotIndex);
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		bool ToggleActiveModule(int slotIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		ASpaceObject* GetTargetInfo();
+#pragma endregion
+
+#pragma region Components & Variables
+protected:
+	APlayerShip* ControlledPawn;
+
+	FVector mousePositionInWorld;
+	FVector mouseDirectionInWorld;
+	FVector mouseEndPositionInWorld;
+	FVector mouseXYPlane;
+	bool mouseRightClicked;
+	bool mouseLeftClicked;
+
+	FCollisionObjectQueryParams traceObjectParams;
+	FCollisionQueryParams traceParams;
+	FHitResult hitResult;
+	ASpaceObject* tObj;
+	FVector warpLocation;
+#pragma endregion
+};

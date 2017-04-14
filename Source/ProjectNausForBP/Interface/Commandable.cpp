@@ -1,3 +1,77 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8611fa1e937274445b7e686540c25807d2ddd0c6dba935927ebb0331f41f528b
-size 1656
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "ProjectNausForBP.h"
+#include "Commandable.h"
+
+
+// This function does not need to be modified.
+UCommandable::UCommandable(const class FObjectInitializer& ObjectInitializer)
+: Super(ObjectInitializer)
+{
+}
+
+UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
+void ICommandable::CommandStop() {
+	unimplemented();
+	return;
+}
+
+bool ICommandable::CommandMoveToPosition(FVector position) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandMoveToTarget(ASpaceObject* target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandAttack(ASpaceObject* target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandMining(TScriptInterface<ICollectable> target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandRepair(ASpaceObject* target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandJump(TScriptInterface<IStructureable> target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandWarp(FVector location) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandDock(TScriptInterface<IStructureable> target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandUndock() {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandLaunch(TArray<int> baySlot) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
+	unimplemented();
+	return false;
+}
+
+bool ICommandable::CommandToggleActiveModule(int slotIndex) {
+	unimplemented();
+	return false;
+}
