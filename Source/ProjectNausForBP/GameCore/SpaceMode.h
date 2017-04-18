@@ -10,8 +10,7 @@
  * 
  */
 UCLASS()
-class PROJECTNAUSFORBP_API ASpaceMode : public AGameMode
-{
+class PROJECTNAUSFORBP_API ASpaceMode : public AGameMode {
 	GENERATED_BODY()
 public:
 	ASpaceMode();
@@ -21,11 +20,4 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 #pragma endregion
-
-private:
-	//ASpaceState* sectorState;
-	//FSectorData* currentSectorInfo;
-
-	//TArray<AShip*> ObjectInSector_Ship;
-	//TArray<AResource*> ObjectInSector_Resource;
 };

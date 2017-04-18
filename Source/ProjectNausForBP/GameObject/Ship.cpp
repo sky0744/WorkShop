@@ -38,6 +38,8 @@ void AShip::BeginPlay()
 	traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
 
 	checkTime = 0.0f;
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()))
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(false);
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Begin] Spawn Finish!"));
 }
 
@@ -68,15 +70,12 @@ void AShip::Tick(float DeltaTime)
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
-			targetObject = nullptr;
 			bIsStraightMove = true;
 			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
 		}
-		break;
-	case BehaviorState::Battle:
 		break;
 	case BehaviorState::Warping:
 		break;
@@ -180,6 +179,9 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 }
 
 void AShip::BeginDestroy() {
+	if(GetWorld() && UGameplayStatics::GetGameState(GetWorld()))
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
@@ -216,6 +218,38 @@ bool AShip::InitObject(int npcID) {
 
 	FNPCData _tempNpcShipData = _tempInstance->GetNPCData(npcID);
 	FShipData _tempShipData = _tempInstance->GetShipData(_tempNpcShipData.ShipID);
+	FItemData _tempModuleData;
+
+	npcShipID = _tempNpcShipData.NPCID;
+	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
+	objectMesh->SetStaticMesh(newMesh);
+
+	shipClass = _tempShipData.Shipclass;
+	faction = _tempNpcShipData.faction;
+	behaviorType = _tempNpcShipData.behaviorType;
+	lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f); ;
+
+	int tempModuleSlotNumber = FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num());
+	slotTargetModule.Empty();
+	for (int index = 0; index < tempModuleSlotNumber; index++) {
+		_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
+		if (_tempModuleData.Type == ItemType::TargetModule) {
+			slotTargetModule[index].moduleID = _tempModuleData.ItemID;
+			slotTargetModule[index].moduleType = _tempModuleData.ModuleType;
+			slotTargetModule[index].maxCooltime = _tempModuleData.MaxCooltime;
+			slotTargetModule[index].maxUsagePower = _tempModuleData.MaxUsagePower;
+			slotTargetModule[index].incrementUsagePower = _tempModuleData.IncrementUsagePower;
+			slotTargetModule[index].decrementUsagePower = _tempModuleData.DecrementUsagePower;
+
+			slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
+			slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
+			slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
+			slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
+
+			slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
+			slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
+		}
+	}
 
 	if (&_tempNpcShipData == nullptr || &_tempShipData == nullptr)
 		return false;
@@ -224,114 +258,154 @@ bool AShip::InitObject(int npcID) {
 	strategyPoint = _tempNpcShipData.strategyPoint;
 	bounty = _tempNpcShipData.npcBounty;
 
-	maxShield = FMath::Clamp(_tempShipData.Shield * (1.0f + FMath::Clamp(_tempShipData.BonusShield + _tempNpcShipData.BonusShield, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield * (1.0f + FMath::Clamp(_tempShipData.BonusShieldRecharge + _tempNpcShipData.BonusShieldRecharge, 0.0f, 5.0f)), 0.0f, 500.0f);
-	defShield = FMath::Clamp(_tempShipData.DefShield * (1.0f + FMath::Clamp(_tempShipData.BonusShieldDef + _tempNpcShipData.BonusShieldDef, 0.0f, 5.0f)), 0.0f, 1000.0f);
+	maxShield = FMath::Clamp(_tempShipData.Shield, 10.0f, 1000000.0f);
+	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield, 0.0f, 500.0f);
+	defShield = FMath::Clamp(_tempShipData.DefShield, 0.0f, 1000.0f);
 	currentShield = maxShield;
 
-	maxArmor = FMath::Clamp(_tempShipData.Armor * (1.0f + FMath::Clamp(_tempShipData.BonusArmor + _tempNpcShipData.BonusArmor, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	repairArmor = FMath::Clamp(_tempShipData.RepairArmor * (1.0f + FMath::Clamp(_tempShipData.BonusArmor + _tempNpcShipData.BonusArmor, 0.0f, 5.0f)), 0.0f, 500.0f);
-	defArmor = FMath::Clamp(_tempShipData.DefArmor * (1.0f + FMath::Clamp(_tempShipData.BonusArmorDef + _tempNpcShipData.BonusArmorDef, 0.0f, 5.0f)), 0.0f, 1000.0f);
+	maxArmor = FMath::Clamp(_tempShipData.Armor, 10.0f, 1000000.0f);
+	repairArmor = FMath::Clamp(_tempShipData.RepairArmor, 0.0f, 500.0f);
+	defArmor = FMath::Clamp(_tempShipData.DefArmor, 0.0f, 1000.0f);
 	currentArmor = maxArmor;
 
-	maxHull = FMath::Clamp(_tempShipData.Hull * (1.0f + FMath::Clamp(_tempShipData.BonusHull + _tempNpcShipData.BonusHull, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	repairHull = FMath::Clamp(_tempShipData.RepairHull * (1.0f + FMath::Clamp(_tempShipData.BonusHull + _tempNpcShipData.BonusHull, 0.0f, 5.0f)), 0.0f, 500.0f);
-	defHull = FMath::Clamp(_tempShipData.DefHull * (1.0f + FMath::Clamp(_tempShipData.BonusHullDef + _tempNpcShipData.BonusHullDef, 0.0f, 5.0f)), 0.0f, 1000.0f);
+	maxHull = FMath::Clamp(_tempShipData.Hull, 10.0f, 1000000.0f);
+	repairHull = FMath::Clamp(_tempShipData.RepairHull, 0.0f, 500.0f);
+	defHull = FMath::Clamp(_tempShipData.DefHull, 0.0f, 1000.0f);
 	currentHull = maxHull;
 
-	maxPower = FMath::Clamp(_tempShipData.Power * (1.0f + FMath::Clamp(_tempShipData.BonusPower + _tempNpcShipData.BonusPower, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	rechargePower = FMath::Clamp(_tempShipData.RechargePower * (1.0f + FMath::Clamp(_tempShipData.BonusPowerRecharge + _tempNpcShipData.BonusPowerRecharge, 0.0f, 5.0f)), 0.0f, 5000.0f);
+	maxPower = FMath::Clamp(_tempShipData.Power, 10.0f, 1000000.0f);
+	rechargePower = FMath::Clamp(_tempShipData.RechargePower, 0.0f, 5000.0f);
 	currentPower = maxPower;
 
-	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed * (1.0f + FMath::Clamp(_tempShipData.BonusMobilitySpeed + _tempNpcShipData.BonusMobilitySpeed, 0.0f, 5.0f)), 0.0f, 10000.0f);
-	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityAcceleration + _tempNpcShipData.BonusMobilityAcceleration, 0.0f, 5.0f)), 0.0f, 10000.0f);
-	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityAcceleration + _tempNpcShipData.BonusMobilityAcceleration, 0.0f, 5.0f)), 0.0f, 10000.0f);
+	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, 0.0f, 10000.0f);
+	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, 0.0f, 10000.0f);
+	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 10000.0f);
 	startAccelAngle = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 180.0f);
 
-	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityRotation + _tempNpcShipData.BonusMobilityRotation, 0.0f, 5.0f)), 0.0f, 90.0f);
-	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityRotation + _tempNpcShipData.BonusMobilityRotation, 0.0f, 5.0f)), 0.0f, 90.0f);
-	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityRotation + _tempNpcShipData.BonusMobilityRotation, 0.0f, 5.0f)), 0.0f, 90.0f);
+	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
+	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
+	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 
-	int temp = FMath::Min3(_tempNpcShipData.cargoItems.Num(), _tempNpcShipData.havingChance.Num(), _tempNpcShipData.havingRandomAmount.Num());
-	cargo.Reserve(temp);
-	for (int index = 0; index < temp; index++) {
-		if (_tempNpcShipData.havingChance[index] < FMath::RandRange(0.0f, 100.0f))
-			continue;
-		cargo.Emplace(FItem(_tempNpcShipData.cargoItems[index].itemID, FMath::Max(0, _tempNpcShipData.cargoItems[index].itemAmount - FMath::RandRange(_tempNpcShipData.havingRandomAmount[index], _tempNpcShipData.havingRandomAmount[index]))));
-	}
-	cargo.Shrink();
+	for (FBonusStat& bonusStat : _tempShipData.bonusStats) {
 
-	FItemData _tempModuleData;
-	bonusCannonLifeTime = FMath::Clamp(_tempNpcShipData.BonusCannonLifeTime + _tempShipData.BonusCannonLifeTime, 0.0f, 5.0f);
-	bonusRailGunLifeTime = FMath::Clamp(_tempNpcShipData.BonusRailGunLifeTime + _tempShipData.BonusRailGunLifeTime, 0.0f, 5.0f);
-	bonusMissileLifeTime = FMath::Clamp(_tempNpcShipData.BonusMissileLifeTime + _tempShipData.BonusMissileLifeTime, 0.0f, 5.0f);
-
-	if (!isInited) {
-		npcShipID = _tempNpcShipData.ShipID;
-		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-		objectMesh->SetStaticMesh(newMesh);
-
-		shipClass = _tempShipData.Shipclass;
-		faction = _tempNpcShipData.faction;
-		behaviorType = _tempNpcShipData.behaviorType;
-		lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f); ;
-
-		int tempModuleSlotNumber = FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num());
-		slotTargetModule.Empty();
-		for (int index = 0; index < tempModuleSlotNumber; index++) {
-			_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
-			if (_tempModuleData.Type == ItemType::TargetModule) {
-				slotTargetModule[index].moduleID = _tempModuleData.ItemID;
-				slotTargetModule[index].moduleType = _tempModuleData.ModuleType;
-				slotTargetModule[index].maxCooltime = _tempModuleData.MaxCooltime;
-				slotTargetModule[index].maxUsagePower = _tempModuleData.MaxUsagePower;
-				slotTargetModule[index].incrementUsagePower = _tempModuleData.IncrementUsagePower;
-				slotTargetModule[index].decrementUsagePower = _tempModuleData.DecrementUsagePower;
-
-				slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
-				slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
-				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
-
-				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
-				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
-
-				switch (_tempModuleData.ModuleType) {
-				case ModuleType::Beam:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusBeamDamage + _tempShipData.BonusBeamDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - _tempNpcShipData.BonusBeamPower + _tempShipData.BonusBeamPower, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusBeamCoolTime + _tempShipData.BonusBeamCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusBeamAccaucy + _tempShipData.BonusBeamAccaucy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusBeamRange + _tempShipData.BonusBeamRange, 0.0f, 5.0f);
-					break;
-				case ModuleType::Cannon:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusCannonDamage + _tempShipData.BonusCannonDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusCannonCoolTime + _tempShipData.BonusCannonCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusCannonAccaucy + _tempShipData.BonusCannonAccaucy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusCannonLaunchVelocity + _tempShipData.BonusCannonLaunchVelocity, 0.0f, 5.0f);
-					break;
-				case ModuleType::Railgun:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusRailGunDamage + _tempShipData.BonusRailGunDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - _tempNpcShipData.BonusRailGunPower + _tempShipData.BonusRailGunPower, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusRailGunCoolTime + _tempShipData.BonusRailGunCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusRailGunAccuracy + _tempShipData.BonusRailGunAccuracy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusRailGunLaunchVelocity + _tempShipData.BonusRailGunLaunchVelocity, 0.0f, 5.0f);
-					break;
-				case ModuleType::MissileLauncher:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusMissileDamage + _tempShipData.BonusMissileDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusMissileCoolTime + _tempShipData.BonusMissileCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusMissileAccuracy + _tempShipData.BonusMissileAccuracy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusMissileLaunchVelocity + _tempShipData.BonusMissileLaunchVelocity, 0.0f, 5.0f);
-					break;
-				case ModuleType::MinerLaser:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.MiningBonusAmount + _tempShipData.MiningBonusAmount, 0.0f, 5.0f);
-					slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - _tempNpcShipData.MiningBonusPower + _tempShipData.MiningBonusPower, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.MiningBonusRof + _tempShipData.MiningBonusRof, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.MiningBonusRange + _tempShipData.MiningBonusRange, 0.0f, 5.0f);
-					break;
-				default:
-					break;
+		switch (bonusStat.bonusStatType) {
+		case BonusStatType::BonusMaxShield:
+			maxShield = FMath::Clamp(maxShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRechargeShield:
+			rechargeShield = FMath::Clamp(rechargeShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusDefShield:
+			defShield = FMath::Clamp(defShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMaxArmor:
+			maxArmor = FMath::Clamp(maxArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRepaireArmor:
+			repairArmor = FMath::Clamp(repairArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusDefArmor:
+			defArmor = FMath::Clamp(defArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMaxHull:
+			maxHull = FMath::Clamp(maxHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRepaireHull:
+			repairHull = FMath::Clamp(repairHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusDefHull:
+			defHull = FMath::Clamp(defHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMaxPower:
+			maxPower = FMath::Clamp(maxPower * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRechargePower:
+			rechargePower = FMath::Clamp(rechargePower * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusMobilitySpeed:
+			maxSpeed = FMath::Clamp(maxSpeed * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 10000.0f);
+			break;
+		case BonusStatType::BonusMobilityAcceleration:
+			maxAcceleration = FMath::Clamp(maxAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			minAcceleration = FMath::Clamp(minAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMobilityRotation:
+			maxRotateRate = FMath::Clamp(maxRotateRate * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			break;
+		case BonusStatType::BonusMobilityRotateAcceleration:
+			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			break;
+		default:
+			for (int index = 0; index < slotTargetModule.Num(); index++) {
+				if (slotTargetModule[index].moduleID > 0) {
+					switch (slotTargetModule[index].moduleType) {
+					case ModuleType::Beam:
+						if (bonusStat.bonusStatType == BonusStatType::BonusBeamDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamPower)
+							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::Cannon:
+						if (bonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::Railgun:
+						if (bonusStat.bonusStatType == BonusStatType::BonusRailGunDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunPower)
+							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::MissileLauncher:
+						if (bonusStat.bonusStatType == BonusStatType::BonusMissileDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::MinerLaser:
+						if (bonusStat.bonusStatType == BonusStatType::BonusMiningAmount)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningPower)
+							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					default:
+						break;
+					}
 				}
 			}
+			break;
 		}
 	}
 	AddActorWorldOffset(FVector(0.0f, 0.0f, 0.0f));
@@ -468,8 +542,6 @@ bool AShip::CommandMoveToPosition(FVector position) {
 		bIsStraightMove = true;
 		RequestPathUpdate();
 		behaviorState = BehaviorState::Move;
-
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, lengthToLongAsix);
 		return true;
 	}
 	else return false;
@@ -539,29 +611,23 @@ bool AShip::CommandWarp(FVector location) {
 
 bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Request : %s"), *target.GetObjectRef()->GetName());
 		if (target->RequestedDock(Faction::Player)) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
 			bIsStraightMove = true;
 			RequestPathUpdate();
 			behaviorState = BehaviorState::Docking;
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
 			return true;
 		}
-		else {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Rejected. Order Cancel."));
-			return false;
-		}
+		else return false;
 	}
 	else return false;
 }
 
 bool AShip::CommandUndock() {
 	if (behaviorState == BehaviorState::Docked) {
-		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(nullptr);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIStationButton();
 		bIsStraightMove = true;
+		targetObject = nullptr;
 		behaviorState = BehaviorState::Idle;
 		return true;
 	}
@@ -569,10 +635,7 @@ bool AShip::CommandUndock() {
 }
 
 bool AShip::CommandLaunch(TArray<int> baySlot) {
-	if (CheckCanBehavior() == true) {
-		return true;
-	}
-	else return false;
+	return false;
 }
 
 /*
@@ -647,11 +710,6 @@ bool AShip::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
 	return false;
 }
 
-/*
-* 액티브 모듈의 동작을 제어.
-* @param slotIndex - 타게팅 모듈 슬롯 번호.
-* @return 처리 후의 모듈 동작 상태.
-*/
 bool AShip::CommandToggleActiveModule(int slotIndex) {
 
 	return false;
@@ -666,6 +724,10 @@ BehaviorType AShip::GetBehaviorType() {
 
 ShipClass AShip::GetShipClass() {
 	return shipClass;
+}
+
+void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) {
+	getStructure = targetStructure;
 }
 
 bool AShip::MoveDistanceCheck() {

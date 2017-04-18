@@ -86,6 +86,9 @@ public:
 		BehaviorType GetBehaviorType();
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called in Ship")
 		ShipClass GetShipClass();
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called in Ship")
+		void GetDockedStructure(TScriptInterface<IStructureable>& getStructure);
+	
 private:
 	bool MoveDistanceCheck();
 	void RotateCheck();
@@ -152,10 +155,7 @@ private:
 	float lengthRader;
 	float strategyPoint;
 	float bounty;
-public:
-	UPROPERTY()
-		TArray<FItem> cargo;
-private:
+
 	UPROPERTY()
 		ASpaceObject* targetObject;
 	UPROPERTY()

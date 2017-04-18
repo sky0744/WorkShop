@@ -35,35 +35,9 @@ void AGate::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	currentShield = FMath::Clamp(currentShield + rechargeShield * 5.0f, 0.0f, maxShield);
-	currentArmor = FMath::Clamp(currentArmor + repairArmor * 5.0f, 0.0f, maxArmor);
-	currentHull = FMath::Clamp(currentHull + repairHull * 5.0f, 0.0f, maxHull);
-
-	if (structureInfo->remainItemListRefreshTime >= 0.0f)
-		structureInfo->remainItemListRefreshTime = FMath::Clamp(structureInfo->remainItemListRefreshTime - DeltaTime, 0.0f, structureInfo->maxItemListRefreshTime);
-	if (structureInfo->remainItemListRefreshTime <= 0.0f && structureInfo->structureType != StructureType::ProductionFacility) {
-		int findIndex = -1;
-		int addAmount = 0;
-		FItem item = FItem();
-
-		structureInfo->itemList.Reset(structureInfo->itemSellListId.Num());
-
-		for (int index = 0; index < structureInfo->itemSellListId.Num(); index++) {
-			if(FMath::RandRange(0.0, 100.0f) >= structureInfo->itemSellListId[index].sellingChance) {
-				item = FItem(structureInfo->itemSellListId[index].sellingItemID, 1);
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, item);
-				addAmount = FMath::RandRange(structureInfo->itemSellListId[index].sellingItemMinAmount, structureInfo->itemSellListId[index].sellingItemMaxAmount);
-
-				if (findIndex > -1)
-					structureInfo->itemList[findIndex].itemAmount += addAmount;
-				else if (addAmount > 0)
-					structureInfo->itemList.Emplace(FItem(structureInfo->itemSellListId[index].sellingItemID, addAmount));
-			}
-		}
-		structureInfo->remainItemListRefreshTime = structureInfo->maxItemListRefreshTime;
-	}
-
-	//UE_LOG(LogClass, Log, TEXT("[Info][Gate][Set] Gate - %d, %p"), structureInfo->structureID, structureInfo);
+	currentShield = FMath::Clamp(currentShield + rechargeShield * DeltaTime, 0.0f, maxShield);
+	currentArmor = FMath::Clamp(currentArmor + repairArmor * DeltaTime, 0.0f, maxArmor);
+	currentHull = FMath::Clamp(currentHull + repairHull * DeltaTime, 0.0f, maxHull);
 }
 
 float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -131,6 +105,11 @@ float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 }
 
 void AGate::BeginDestroy() {
+	if (structureInfo) {
+		structureInfo->isDestroyed = true;
+		structureInfo->remainRespawnTime = structureInfo->maxRespawnTime;
+	}
+
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
@@ -261,30 +240,30 @@ bool AGate::SetStructureData(FStructureInfo& structureData) {
 	if (isInited)
 		return false;
 
-	USafeENGINE* tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FGateData tempData;
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	FStationData _tempData;
 	
 	structureInfo = &structureData;
-	tempData = tempInstance->GetGateData((structureInfo->structureID));
+	_tempData = _tempInstance->GetStationData(structureInfo->structureID);
 
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempData.MeshPath.ToString()));
+	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
-	lengthToLongAsix = tempData.lengthToLongAsix;
+	lengthToLongAsix = _tempData.lengthToLongAsix;
 
-	maxShield = tempData.Shield;
+	maxShield = _tempData.Shield;
 	currentShield = structureInfo->structureShieldRate * maxShield;
-	rechargeShield = tempData.RechargeShield;
-	defShield = tempData.DefShield;
+	rechargeShield = _tempData.RechargeShield;
+	defShield = _tempData.DefShield;
 
-	maxArmor = tempData.Armor;
+	maxArmor = _tempData.Armor;
 	currentArmor = structureInfo->structureArmorRate * maxArmor;
-	repairArmor = tempData.RepairArmor;
-	defArmor = tempData.DefArmor;
+	repairArmor = _tempData.RepairArmor;
+	defArmor = _tempData.DefArmor;
 
-	maxHull = tempData.Hull;
+	maxHull = _tempData.Hull;
 	currentHull = structureInfo->structureHullRate * maxHull;
-	repairHull = tempData.RepairHull;
-	defHull = tempData.DefHull;
+	repairHull = _tempData.RepairHull;
+	defHull = _tempData.DefHull;
 
 	isInited = true;
 	return true;
