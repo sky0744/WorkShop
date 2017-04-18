@@ -416,7 +416,11 @@ bool APlayerShip::TotalStatsUpdate() {
 	FItemData _tempModuleData;
 	TArray<FSkill> _skillList;
 	FSkillData _tempSkillData;
-	TArray<float> _bonusStatsF;
+	TArray<FBonusStat> _tempbonusStats;
+	bool isFindSameAttribute = false;
+
+	UEnum* EnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("BonusStatType"), true);
+	_tempbonusStats.Reserve(EnumPtr->NumEnums());
 
 	sMaxShield = _tempShipData.Shield;
 	sRechargeShield = _tempShipData.RechargeShield;
@@ -445,423 +449,213 @@ bool APlayerShip::TotalStatsUpdate() {
 		if (slotPassiveModule[index] > 0) {
 			_tempModuleData = _tempInstance->GetItemData(slotPassiveModule[index]);
 
-			switch (_tempModuleData.StatType) {
-			case BonusStatType::BonusMaxShield:				sMaxShield = sMaxShield + _tempModuleData.BonusStatValue;			break;
-			case BonusStatType::BonusRechargeShield:		sRechargeShield = sRechargeShield + _tempModuleData.BonusStatValue;	break;
-			case BonusStatType::BonusDefShield:				sDefShield = sDefShield + _tempModuleData.BonusStatValue;			break;
-
-			case BonusStatType::BonusMaxArmor:				sMaxArmor = sMaxArmor + _tempModuleData.BonusStatValue;				break;
-			case BonusStatType::BonusRepaireArmor:			sRepairArmor = sRepairArmor + _tempModuleData.BonusStatValue;		break;
-			case BonusStatType::BonusDefArmor:				sDefArmor = sDefArmor + _tempModuleData.BonusStatValue;				break;
-
-			case BonusStatType::BonusMaxHull:				sMaxHull = sMaxHull + _tempModuleData.BonusStatValue;				break;
-			case BonusStatType::BonusRepaireHull:			sRepairHull = sRepairHull + _tempModuleData.BonusStatValue;			break;
-			case BonusStatType::BonusDefHull:				sDefHull = sDefHull + _tempModuleData.BonusStatValue;				break;
-
-			case BonusStatType::BonusMaxPower:				sMaxPower = sMaxPower + _tempModuleData.BonusStatValue;				break;
-			case BonusStatType::BonusRechargePower:			sRechargePower = sRechargePower + _tempModuleData.BonusStatValue;	break;
-
-			case BonusStatType::BonusMobilitySpeed:			sMaxSpeed = sMaxSpeed * (1.0f + _tempModuleData.BonusStatValue);	break;
-			case BonusStatType::BonusMobilityAcceleration:
-				sMinAcceleration = sMinAcceleration * (1.0f + _tempModuleData.BonusStatValue);
-				sMaxAcceleration = sMaxAcceleration * (1.0f + _tempModuleData.BonusStatValue);
-				break;
-			case BonusStatType::BonusMobilityRotation:		sMaxRotateRate = sMaxRotateRate * (1.0f + _tempModuleData.BonusStatValue);	break;
-			case BonusStatType::BonusMobilityRotateAcceleration:
-				sRotateAcceleration = sRotateAcceleration * (1.0f + _tempModuleData.BonusStatValue);
-				sRotateDeceleration = sRotateDeceleration * (1.0f + _tempModuleData.BonusStatValue);
-				break;
-			default:
-				break;
-			}
+			CheckPassiveTypeModule(_tempModuleData.StatType, _tempModuleData.BonusStatValue);
 		}
-		else continue;
 	}
 	for (int index = 0; index < slotSystemModule.Num(); index++) {
 		if (slotSystemModule[index] > 0) {
 			_tempModuleData = _tempInstance->GetItemData(slotSystemModule[index]);
-
-			switch (_tempModuleData.StatType) {
-			case BonusStatType::BonusMaxShield:				sMaxShield = sMaxShield + _tempModuleData.BonusStatValue;				break;
-			case BonusStatType::BonusRechargeShield:		sRechargeShield = sRechargeShield + _tempModuleData.BonusStatValue;		break;
-			case BonusStatType::BonusDefShield:				sDefShield = sDefShield + _tempModuleData.BonusStatValue;				break;
-
-			case BonusStatType::BonusMaxArmor:				sMaxArmor = sMaxArmor + _tempModuleData.BonusStatValue;					break;
-			case BonusStatType::BonusRepaireArmor:			sRepairArmor = sRepairArmor + _tempModuleData.BonusStatValue;			break;
-			case BonusStatType::BonusDefArmor:				sDefArmor = sDefArmor + _tempModuleData.BonusStatValue;					break;
-
-			case BonusStatType::BonusMaxHull:				sMaxHull = sMaxHull + _tempModuleData.BonusStatValue;					break;
-			case BonusStatType::BonusRepaireHull:			sRepairHull = sRepairHull + _tempModuleData.BonusStatValue;				break;
-			case BonusStatType::BonusDefHull:				sDefHull = sDefHull + _tempModuleData.BonusStatValue;					break;
-
-			case BonusStatType::BonusMaxPower:				sMaxPower = sMaxPower + _tempModuleData.BonusStatValue;					break;
-			case BonusStatType::BonusRechargePower:			sRechargePower = sRechargePower + _tempModuleData.BonusStatValue;		break;
-
-			case BonusStatType::BonusMobilitySpeed:			sMaxSpeed = sMaxSpeed * (1.0f + _tempModuleData.BonusStatValue);		break;
-			case BonusStatType::BonusMobilityAcceleration:
-				sMinAcceleration = sMinAcceleration * (1.0f + _tempModuleData.BonusStatValue);
-				sMaxAcceleration = sMaxAcceleration * (1.0f + _tempModuleData.BonusStatValue);
-				break;
-			case BonusStatType::BonusMobilityRotation:		sMaxRotateRate = sMaxRotateRate * (1.0f + _tempModuleData.BonusStatValue);	break;
-			case BonusStatType::BonusMobilityRotateAcceleration:
-				sRotateAcceleration = sRotateAcceleration * (1.0f + _tempModuleData.BonusStatValue);
-				sRotateDeceleration = sRotateDeceleration * (1.0f + _tempModuleData.BonusStatValue);
-				break;
-			default:
-				break;
-			}
+			CheckPassiveTypeModule(_tempModuleData.StatType, _tempModuleData.BonusStatValue);
 		}
-		else continue;
 	}
 
-	bonusShield = _tempShipData.BonusShield;
-	bonusShieldRecharge = _tempShipData.BonusShieldRecharge;
-	bonusShieldDef = _tempShipData.BonusShieldDef;
-
-	bonusArmor = _tempShipData.BonusArmor;
-	bonusArmorRepair = _tempShipData.BonusArmorRepair;
-	bonusArmorDef = _tempShipData.BonusArmorDef;
-
-	bonusHull = _tempShipData.BonusHull;
-	bonusHullRepair = _tempShipData.BonusHullRepair;
-	bonusHullDef = _tempShipData.BonusHullDef;
-
-	bonusPower = _tempShipData.BonusPower;
-	bonusPowerRecharge = _tempShipData.BonusPowerRecharge;
-
-	bonusMobilitySpeed = _tempShipData.BonusMobilitySpeed;
-	bonusMobilityAcceleration = _tempShipData.BonusMobilityAcceleration;
-	bonusMobilityRotation = _tempShipData.BonusMobilityRotation;
-	bonusMobilityRotateAcceleration = _tempShipData.BonusMobilityRotateAcceleration;
-
-	bonusActiveRechargeShield = _tempShipData.BonusActiveRechargeShield;
-	bonusActiveDefShield = _tempShipData.BonusActiveDefShield;
-	bonusActiveRepaireArmor = _tempShipData.BonusActiveRepaireArmor;
-	bonusActiveDefArmor = _tempShipData.BonusActiveDefArmor;
-	bonusActiveRepaireHull = _tempShipData.BonusActiveRepaireHull;
-	bonusActiveDefHull = _tempShipData.BonusActiveDefHull;
-
-	bonusActiveSpeed = _tempShipData.BonusActiveSpeed;
-	bonusActiveAcceleration = _tempShipData.BonusActiveAcceleration;
-	bonusActiveRotation = _tempShipData.BonusActiveRotation;
-	bonusActiveUsagePower = _tempShipData.BonusActiveUsagePower;
-
-	bonusBeamDamage = _tempShipData.BonusBeamDamage;
-	bonusBeamPower = _tempShipData.BonusBeamPower;
-	bonusBeamCoolTime = _tempShipData.BonusBeamCoolTime;
-	bonusBeamAccuracy = _tempShipData.BonusBeamAccaucy;
-	bonusBeamRange = _tempShipData.BonusBeamRange;
-
-	bonusCannonDamage = _tempShipData.BonusCannonDamage;
-	bonusCannonCoolTime = _tempShipData.BonusCannonCoolTime;
-	bonusCannonAccuracy = _tempShipData.BonusCannonAccaucy;
-	bonusCannonLifeTime = _tempShipData.BonusCannonLifeTime;
-	bonusCannonLaunchVelocity = _tempShipData.BonusCannonLaunchVelocity;
-
-	bonusRailGunDamage = _tempShipData.BonusRailGunDamage;
-	bonusRailGunPower = _tempShipData.BonusRailGunPower;
-	bonusRailGunCoolTime = _tempShipData.BonusRailGunCoolTime;
-	bonusRailGunAccuracy = _tempShipData.BonusRailGunAccuracy;
-	bonusRailGunLifeTime = _tempShipData.BonusRailGunLifeTime;
-	bonusRailGunLaunchVelocity = _tempShipData.BonusRailGunLaunchVelocity;
-
-	bonusMissileDamage = _tempShipData.BonusMissileDamage;
-	bonusMissileCoolTime = _tempShipData.BonusMissileCoolTime;
-	bonusMissileAccuracy = _tempShipData.BonusMissileAccuracy;
-	bonusMissileLifeTime = _tempShipData.BonusMissileLifeTime;
-	bonusMissileLaunchVelocity = _tempShipData.BonusMissileLaunchVelocity;
-
-	bonusDroneBaseStats = _tempShipData.DroneBonusBaseStats;
-	bonusDroneControl = _tempShipData.DroneBonusControl;
-	bonusDroneDamage = _tempShipData.DroneBonusDamage;
-	bonusDroneControlRange = _tempShipData.DroneBonusControlRange;
-	bonusDroneAccuarcy = _tempShipData.DroneBonusAccuarcy;
-	bonusDroneRange = _tempShipData.DroneBonusRange;
-	bonusDroneSpeed = _tempShipData.DroneBonusSpeed;
-
-	bonusMiningAmount = _tempShipData.MiningBonusAmount;
-	bonusMiningPower = _tempShipData.MiningBonusPower;
-	bonusMiningCoolTime = _tempShipData.MiningBonusRof;
-	bonusMiningRange = _tempShipData.MiningBonusRange;
-
-	_tempUserState->GetUserDataSkill(_skillList);
-
+	_tempbonusStats = _tempShipData.bonusStats;
 	for (int index = 0; index < _skillList.Num(); index++) {
 		_tempSkillData = _tempInstance->GetSkillData(_skillList[index].skillID);
 		_skillList[index].skillLevel = FMath::Clamp(_skillList[index].skillLevel, 0, 5);
 
-		switch (_tempSkillData.BonusType) {
-		case BonusStatType::BonusMaxShield:
-			bonusShield = bonusShield +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRechargeShield:
-			bonusShieldRecharge = bonusShieldRecharge +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDefShield:
-			bonusShieldDef = bonusShieldDef +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
 
-		case BonusStatType::BonusMaxArmor:
-			bonusArmor = bonusArmor +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRepaireArmor:
-			bonusArmorRepair = bonusArmorRepair +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDefArmor:
-			bonusArmorDef = bonusArmorDef +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusMaxHull:
-			bonusHull = bonusHull +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRepaireHull:
-			bonusHullRepair = bonusHullRepair +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDefHull:
-			bonusHullDef = bonusHullDef +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusMaxPower:
-			bonusPower = bonusPower +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRechargePower:
-			bonusPowerRecharge = bonusPowerRecharge +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusMobilitySpeed:
-			bonusMobilitySpeed = bonusMobilitySpeed +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMobilityAcceleration:
-			bonusMobilityAcceleration = bonusMobilityAcceleration +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMobilityRotation:
-			bonusMobilityRotation = bonusMobilityRotation +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMobilityRotateAcceleration:
-			bonusMobilityRotateAcceleration = bonusMobilityRotateAcceleration + _skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveRechargeShield:
-			bonusActiveRechargeShield = bonusActiveRechargeShield +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveDefShield:
-			bonusActiveDefShield = bonusActiveDefShield +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveRepaireArmor:
-			bonusActiveRepaireArmor = bonusActiveRepaireArmor +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveDefArmor:
-			bonusActiveDefArmor = bonusActiveDefArmor +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveRepaireHull:
-			bonusActiveRepaireHull = bonusActiveRepaireHull +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveDefHull:
-			bonusActiveDefHull = bonusActiveDefHull +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveSpeed:
-			bonusActiveSpeed = bonusActiveSpeed +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveAcceleration:
-			bonusActiveAcceleration = bonusActiveAcceleration +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveRotation:
-			bonusActiveRotation = bonusActiveRotation +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusActiveUsagePower:
-			bonusActiveUsagePower = bonusActiveUsagePower +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusBeamDamage:
-			bonusBeamDamage = bonusBeamDamage +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusBeamCoolTime:
-			bonusBeamCoolTime = bonusBeamCoolTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusBeamAccuracy:
-			bonusBeamAccuracy = bonusBeamAccuracy +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusBeamRange:
-			bonusBeamRange = bonusBeamRange +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusCannonDamage:
-			bonusCannonDamage = bonusCannonDamage +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusCannonCoolTime:
-			bonusCannonCoolTime = bonusCannonCoolTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusCannonAccuracy:
-			bonusCannonAccuracy = bonusCannonAccuracy +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusCannonLifeTime:
-			bonusCannonLifeTime = bonusCannonLifeTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusCannonLaunchVelocity:
-			bonusCannonLaunchVelocity = bonusCannonLaunchVelocity +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusRailGunDamage:
-			bonusRailGunDamage = bonusRailGunDamage +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRailGunCoolTime:
-			bonusRailGunCoolTime = bonusRailGunCoolTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRailGunAccuracy:
-			bonusRailGunAccuracy = bonusRailGunAccuracy +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRailGunLifeTime:
-			bonusRailGunLifeTime = bonusRailGunLifeTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusRailGunLaunchVelocity:
-			bonusRailGunLaunchVelocity = bonusRailGunLaunchVelocity +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusMissileDamage:
-			bonusMissileDamage = bonusMissileDamage +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMissileCoolTime:
-			bonusMissileCoolTime = bonusMissileCoolTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMissileAccuracy:
-			bonusMissileAccuracy = bonusMissileAccuracy +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMissileLifeTime:
-			bonusMissileLifeTime = bonusMissileLifeTime +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMissileLaunchVelocity:
-			bonusMissileLaunchVelocity = bonusMissileLaunchVelocity +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusDroneBaseStats:
-			bonusDroneBaseStats = bonusDroneBaseStats +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDroneControl:
-			bonusDroneControl = bonusDroneControl +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDroneDamage:
-			bonusDroneDamage = bonusDroneDamage +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDroneControlRange:
-			bonusDroneControlRange = bonusDroneControlRange +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDroneAccuarcy:
-			bonusDroneAccuarcy = bonusDroneAccuarcy +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDroneRange:
-			bonusDroneRange = bonusDroneRange +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusDroneSpeed:
-			bonusDroneSpeed = bonusDroneSpeed +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-
-		case BonusStatType::BonusMiningAmount:
-			bonusMiningAmount = bonusMiningAmount +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMiningCoolTime:
-			bonusMiningCoolTime = bonusMiningCoolTime + _skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		case BonusStatType::BonusMiningRange:
-			bonusMiningRange = bonusMiningRange +_skillList[index].skillLevel * _tempSkillData.BonusAmountPerLevel;
-			break;
-		default:
-			break;
-		}
-	}
-
-	sMaxShield = FMath::Clamp(sMaxShield * (1.0f + bonusShield), 10.0f, 1000000.0f);
-	sRechargeShield = FMath::Clamp(sRechargeShield * (1.0f + bonusShieldRecharge), 0.0f, 500.0f);
-	sDefShield = FMath::Clamp(sDefShield * (1.0f + bonusShieldDef), 0.0f, 1000.0f);
-
-	sMaxArmor = FMath::Clamp(sMaxArmor * (1.0f + bonusArmor), 10.0f, 1000000.0f);
-	sRepairArmor = FMath::Clamp(sRepairArmor * (1.0f + bonusArmorRepair), 0.0f, 500.0f);
-	sDefArmor = FMath::Clamp(sDefArmor * (1.0f + bonusArmorDef), 0.0f, 1000.0f);
-
-	sMaxHull = FMath::Clamp(sMaxHull * (1.0f + bonusHull), 10.0f, 1000000.0f);
-	sRepairHull = FMath::Clamp(sRepairHull * (1.0f + bonusHullRepair), 0.0f, 500.0f);
-	sDefHull = FMath::Clamp(sDefHull * (1.0f + bonusHullDef), 0.0f, 1000.0f);
-
-	sMaxPower = FMath::Clamp(sMaxPower * (1.0f + bonusPower), 10.0f, 1000000.0f);
-	sRechargePower = FMath::Clamp(sRechargePower * (1.0f + bonusPowerRecharge), 0.0f, 500.0f);
-
-	sMaxSpeed = FMath::Clamp(sMaxSpeed * (1.0f + bonusMobilitySpeed), 0.0f, 10000.0f);
-	sMaxAcceleration = FMath::Clamp(sMaxAcceleration * (1.0f + bonusMobilityAcceleration), 0.0f, 1000.0f);
-	sMinAcceleration = FMath::Clamp(sMinAcceleration * (1.0f + bonusMobilityAcceleration), 0.0f, 1000.0f);
-
-	sMaxRotateRate = FMath::Clamp(sMaxRotateRate * (1.0f + bonusMobilityRotation), 0.0f, 90.0f);
-	sRotateAcceleration = FMath::Clamp(sRotateAcceleration * (1.0f + bonusMobilityRotateAcceleration), 0.0f, 90.0f);
-	sRotateDeceleration = FMath::Clamp(sRotateDeceleration * (1.0f + bonusMobilityRotateAcceleration), 0.0f, 90.0f);
-
-	for (int index = 0; index < slotTargetModule.Num(); index++) {
-		if (slotTargetModule[index].moduleID > 0) {
-			switch (slotTargetModule[index].moduleType) {
-			case ModuleType::Beam:
-				slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusBeamDamage, 0.0f, 5.0f);
-				slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusBeamPower, 0.0f, 5.0f);
-				slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusBeamCoolTime, 0.0f, 5.0f);
-				slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusBeamAccuracy, 0.0f, 5.0f);
-				slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusBeamRange, 0.0f, 5.0f);
-				break;
-			case ModuleType::Cannon:
-				slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusCannonDamage, 0.0f, 5.0f);
-				slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusCannonCoolTime, 0.0f, 5.0f);
-				slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusCannonAccuracy, 0.0f, 5.0f);
-				slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusCannonLaunchVelocity, 0.0f, 5.0f);
-				break;
-			case ModuleType::Railgun:
-				slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusRailGunDamage, 0.0f, 5.0f);
-				slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusRailGunPower, 0.0f, 5.0f);
-				slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusRailGunCoolTime, 0.0f, 5.0f);
-				slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusRailGunAccuracy, 0.0f, 5.0f);
-				slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusRailGunLaunchVelocity, 0.0f, 5.0f);
-				break;
-			case ModuleType::MissileLauncher:
-				slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusMissileDamage, 0.0f, 5.0f);
-				slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusMissileCoolTime, 0.0f, 5.0f);
-				slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusMissileAccuracy, 0.0f, 5.0f);
-				slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusMissileLaunchVelocity, 0.0f, 5.0f);
-				break;
-			case ModuleType::MinerLaser:
-				slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusMiningAmount, 0.0f, 5.0f);
-				slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusMiningPower, 0.0f, 5.0f);
-				slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusMiningCoolTime, 0.0f, 5.0f);
-				slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusMiningRange, 0.0f, 5.0f);
-				break;
-			default:
+		for (FBonusStat& stats : _tempbonusStats) {
+			if (stats.bonusStatType == _tempSkillData.BonusType) {
+				stats.bonusStat += _tempSkillData.BonusAmountPerLevel * _skillList[index].skillLevel;
+				isFindSameAttribute = true;
 				break;
 			}
 		}
+		if (isFindSameAttribute == false)
+			_tempbonusStats.Emplace(_tempSkillData.BonusType, _tempSkillData.BonusAmountPerLevel * _skillList[index].skillLevel);
 	}
-	for (int index = 0; index < slotActiveModule.Num(); index++) {
-		if (slotActiveModule[index].moduleID > 0) {
-			switch (slotActiveModule[index].moduleType) {
-			case ModuleType::ShieldGenerator:		slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveRechargeShield, 0.0f, 1000.0f);	break;
-			case ModuleType::ShieldEnhancer:		slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveDefShield, 0.0f, 500.0f);		break;
-			case ModuleType::ArmorRepairer:			slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveRepaireArmor, 0.0f, 1000.0f);	break;
-			case ModuleType::ArmorEnhancer:			slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveDefArmor, 0.0f, 500.0f);			break;
-			case ModuleType::HullRepairer:			slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveRepaireHull, 0.0f, 1000.0f);		break;
-			case ModuleType::HullEnhancer:			slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveDefHull, 0.0f, 500.0f);			break;
-			case ModuleType::EngineController:		slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveSpeed, 0.01f, 5.0f);				break;
-			case ModuleType::Accelerator:			slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveAcceleration, 0.01f, 5.0f);		break;
-			case ModuleType::SteeringController:	slotActiveModule[index].maxActiveModuleFactor *= FMath::Clamp(1.0f + bonusActiveRotation, 0.01f, 5.0f);			break;
-			default:	break;
-			}
-			slotActiveModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusActiveUsagePower, 0.01f, 5.0f);
-		}
-	}
+
+	for (FBonusStat& stats : _tempbonusStats) 
+		CheckBonusStat(stats.bonusStatType, stats.bonusStat);
 
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIShip();
 	UE_LOG(LogClass, Log, TEXT("Ship Totaly Init complete!"));
 	return true;
+}
+
+void APlayerShip::CheckPassiveTypeModule(BonusStatType type, float value) {
+	switch (type) {
+	case BonusStatType::BonusMaxShield:				sMaxShield = sMaxShield + value;			break;
+	case BonusStatType::BonusRechargeShield:		sRechargeShield = sRechargeShield + value;	break;
+	case BonusStatType::BonusDefShield:				sDefShield = sDefShield + value;			break;
+
+	case BonusStatType::BonusMaxArmor:				sMaxArmor = sMaxArmor + value;				break;
+	case BonusStatType::BonusRepaireArmor:			sRepairArmor = sRepairArmor + value;		break;
+	case BonusStatType::BonusDefArmor:				sDefArmor = sDefArmor + value;				break;
+
+	case BonusStatType::BonusMaxHull:				sMaxHull = sMaxHull + value;				break;
+	case BonusStatType::BonusRepaireHull:			sRepairHull = sRepairHull + value;			break;
+	case BonusStatType::BonusDefHull:				sDefHull = sDefHull + value;				break;
+
+	case BonusStatType::BonusMaxPower:				sMaxPower = sMaxPower + value;				break;
+	case BonusStatType::BonusRechargePower:			sRechargePower = sRechargePower + value;	break;
+
+	case BonusStatType::BonusMobilitySpeed:			sMaxSpeed = sMaxSpeed * (1.0f + value);	break;
+	case BonusStatType::BonusMobilityAcceleration:
+		sMinAcceleration = sMinAcceleration * (1.0f + value);
+		sMaxAcceleration = sMaxAcceleration * (1.0f + value);
+		break;
+	case BonusStatType::BonusMobilityRotation:		sMaxRotateRate = sMaxRotateRate * (1.0f + value);	break;
+	case BonusStatType::BonusMobilityRotateAcceleration:
+		sRotateAcceleration = sRotateAcceleration * (1.0f + value);
+		sRotateDeceleration = sRotateDeceleration * (1.0f + value);
+		break;
+	default:
+		break;
+	}
+}
+
+void APlayerShip::CheckBonusStat(BonusStatType type, float value) {
+	switch (type) {
+	case BonusStatType::BonusMaxShield:
+		sMaxShield = FMath::Clamp(sMaxShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+		break;
+	case BonusStatType::BonusRechargeShield:
+		sRechargeShield = FMath::Clamp(sRechargeShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
+		break;
+	case BonusStatType::BonusDefShield:
+		sDefShield = FMath::Clamp(sDefShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
+		break;
+	case BonusStatType::BonusMaxArmor:
+		sMaxArmor = FMath::Clamp(sMaxArmor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+		break;
+	case BonusStatType::BonusRepaireArmor:
+		sRepairArmor = FMath::Clamp(sRepairArmor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
+		break;
+	case BonusStatType::BonusDefArmor:
+		sDefArmor = FMath::Clamp(sDefArmor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
+		break;
+	case BonusStatType::BonusMaxHull:
+		sMaxHull = FMath::Clamp(sMaxHull * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+		break;
+	case BonusStatType::BonusRepaireHull:
+		sRepairHull = FMath::Clamp(sRepairHull * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
+		break;
+	case BonusStatType::BonusDefHull:
+		sDefHull = FMath::Clamp(sDefHull * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
+		break;
+	case BonusStatType::BonusMaxPower:
+		sMaxPower = FMath::Clamp(sMaxPower * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+		break;
+	case BonusStatType::BonusRechargePower:
+		sRechargePower = FMath::Clamp(sRechargePower * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
+		break;
+	case BonusStatType::BonusMobilitySpeed:
+		sMaxSpeed = FMath::Clamp(sMaxSpeed * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 10000.0f);
+		break;
+	case BonusStatType::BonusMobilityAcceleration:
+		sMaxAcceleration = FMath::Clamp(sMaxAcceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
+		sMinAcceleration = FMath::Clamp(sMinAcceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
+		break;
+	case BonusStatType::BonusMobilityRotation:
+		sMaxRotateRate = FMath::Clamp(sMaxRotateRate * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 90.0f);
+		break;
+	case BonusStatType::BonusMobilityRotateAcceleration:
+		sRotateAcceleration = FMath::Clamp(sRotateAcceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 90.0f);
+		sRotateDeceleration = FMath::Clamp(sRotateDeceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 90.0f);
+		break;
+
+	case BonusStatType::BonusDroneBaseStats:
+		bonusDroneBaseStats = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
+		break;
+	case BonusStatType::BonusDroneControl:
+		bonusDroneDamage = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
+		break;
+	case BonusStatType::BonusDroneDamage:
+		bonusDroneRange = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
+		break;
+	case BonusStatType::BonusDroneRange:
+		bonusDroneSpeed = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
+		break;
+	case BonusStatType::BonusDroneSpeed:
+		bonusDroneControl = FMath::Clamp(value, 0.0f, 20.0f);
+		break;
+
+	default:
+		for (int index = 0; index < slotActiveModule.Num(); index++)
+			if (slotActiveModule[index].moduleID > 0 && slotActiveModule[index].moduleType == ModuleType::ShieldGenerator)
+				slotActiveModule[index].maxActiveModuleFactor = FMath::Clamp(slotActiveModule[index].maxActiveModuleFactor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
+		for (int index = 0; index < slotTargetModule.Num(); index++) {
+			if (slotTargetModule[index].moduleID > 0) {
+				switch (slotTargetModule[index].moduleType) {
+				case ModuleType::Beam:
+					if (type == BonusStatType::BonusBeamDamage)
+						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusBeamPower)
+						slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusBeamCoolTime)
+						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusBeamAccuracy)
+						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusBeamRange)
+						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					break;
+				case ModuleType::Cannon:
+					if (type == BonusStatType::BonusCannonDamage)
+						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusCannonCoolTime)
+						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusCannonAccuracy)
+						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusCannonLifeTime)
+						slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusCannonLaunchVelocity)
+						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					break;
+				case ModuleType::Railgun:
+					if (type == BonusStatType::BonusRailGunDamage)
+						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusRailGunPower)
+						slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusRailGunCoolTime)
+						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusRailGunAccuracy)
+						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusRailGunLifeTime)
+						slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusRailGunLaunchVelocity)
+						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					break;
+				case ModuleType::MissileLauncher:
+					if (type == BonusStatType::BonusMissileDamage)
+						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusMissileCoolTime)
+						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusMissileAccuracy)
+						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusMissileLifeTime)
+						slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusMissileLaunchVelocity)
+						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					break;
+				case ModuleType::MinerLaser:
+					if (type == BonusStatType::BonusMiningAmount)
+						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					else if (type == BonusStatType::BonusMiningPower)
+						slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusMiningCoolTime)
+						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
+					else if (type == BonusStatType::BonusMiningRange)
+						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		break;
+	}
 }
 
 bool APlayerShip::LoadFromSave(USaveLoader* loader) {
@@ -985,6 +779,7 @@ bool APlayerShip::EquipModule(int moduleID) {
 				slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
 				slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
 				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
+				slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
 
 				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
 				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
@@ -1656,15 +1451,15 @@ void APlayerShip::ModuleCheck() {
 								switch (slotTargetModule[index].moduleType) {
 								case ModuleType::Cannon:
 									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, selfObject,
-										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, bonusCannonLifeTime);
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
 									break;
 								case ModuleType::Railgun:
 									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, selfObject,
-										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, bonusRailGunLifeTime);
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
 									break;
 								case ModuleType::MissileLauncher:
 									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, selfObject,
-										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, bonusMissileLifeTime, targetingObject[index]);
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus, targetingObject[index]);
 									break;
 								}
 							}
