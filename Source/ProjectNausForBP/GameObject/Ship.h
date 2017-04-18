@@ -119,6 +119,7 @@ private:
 	FVector targetVector;
 	FVector realMoveFactor;
 	FRotator targetRotate;
+	float resultOuter;
 
 	int currentClosedPathIndex;
 	float remainDistance;
@@ -191,7 +192,6 @@ private:
 
 	float maxSpeed;
 	float targetSpeed;
-	float setedTargetSpeed;
 	float currentSpeed;
 
 	float maxAcceleration;
@@ -202,7 +202,6 @@ private:
 	float maxRotateRate;
 	float rotateAcceleration;
 	float rotateDeceleration;
-	float rotateRateFactor;
 	float targetRotateRateFactor;
 	float realRotateRateFactor;
 

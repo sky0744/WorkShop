@@ -60,6 +60,10 @@ void AShip::Tick(float DeltaTime)
 		ModuleCheck();
 	}
 
+	GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxSpeed : " + FString::SanitizeFloat(maxSpeed) + ", TargetSpeed : " + FString::SanitizeFloat(targetSpeed) + ", CurrentSpeed : " + FString::SanitizeFloat(currentSpeed));
+	GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxAcceleration : " + FString::SanitizeFloat(maxAcceleration) + ", MinAcceleration : " + FString::SanitizeFloat(minAcceleration) + ", TargetAcceleration : " + FString::SanitizeFloat(accelerationFactor));
+	GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxRotateRate : " + FString::SanitizeFloat(maxRotateRate) + ", TargetRotateRate : " + FString::SanitizeFloat(targetRotateRateFactor) + ", CurrentRotateRate : " + FString::SanitizeFloat(realRotateRateFactor));
+
 	switch (behaviorState) {
 	case BehaviorState::Idle:
 		break;
@@ -498,9 +502,6 @@ float AShip::GetValue(GetStatType statType) {
 	case GetStatType::maxRotateRate:
 		_value = maxRotateRate;
 		break;
-	case GetStatType::currentRotateRate:
-		_value = rotateRateFactor;
-		break;
 	default:
 		_value = -1;
 		break;
@@ -531,12 +532,14 @@ void AShip::GetRepaired(GetStatType statType, float repairValue) {
 void AShip::CommandStop() {
 
 	behaviorState = BehaviorState::Idle;
-	setedTargetSpeed = 0.0f;
+	targetSpeed = 0.0f;
 	targetRotateRateFactor = 0.0f;
 	bIsStraightMove = false;
 }
 
 bool AShip::CommandMoveToPosition(FVector position) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMoveToPosition] Commanded!"));
+
 	if (CheckCanBehavior() == true) {
 		
 		moveTargetVector = position;
@@ -550,6 +553,7 @@ bool AShip::CommandMoveToPosition(FVector position) {
 }
 
 bool AShip::CommandMoveToTarget(ASpaceObject* target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMoveToTarget] Commanded!"));
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		bIsStraightMove = true;
@@ -561,6 +565,7 @@ bool AShip::CommandMoveToTarget(ASpaceObject* target) {
 }
 
 bool AShip::CommandAttack(ASpaceObject* target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandAttack] Commanded!"));
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		behaviorState = BehaviorState::Battle;
@@ -570,6 +575,7 @@ bool AShip::CommandAttack(ASpaceObject* target) {
 }
 
 bool AShip::CommandMining(TScriptInterface<ICollectable> target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMining] Commanded!"));
 	if (CheckCanBehavior() == true) {
 		targetCollect = target;
 		behaviorState = BehaviorState::Mining;
@@ -579,6 +585,7 @@ bool AShip::CommandMining(TScriptInterface<ICollectable> target) {
 }
 
 bool AShip::CommandRepair(ASpaceObject* target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandRepair] Commanded!"));
 	if (CheckCanBehavior() == true) {
 		TArray<bool> isRepairableModuleInSlot;
 		//for(int index = 0; slotTargetModule.Num(); index++)
@@ -597,6 +604,7 @@ bool AShip::CommandRepair(ASpaceObject* target) {
 }
 
 bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandJump] Commanded!"));
 	if (CheckCanBehavior() == true) {
 		Destroy();
 		return true;
@@ -605,6 +613,8 @@ bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
 }
 
 bool AShip::CommandWarp(FVector location) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandWarp] Commanded!"));
+
 	if (CheckCanBehavior() == true) {
 		SetActorLocation(location, false, nullptr, ETeleportType::TeleportPhysics);
 		behaviorState = BehaviorState::Idle;
@@ -614,6 +624,8 @@ bool AShip::CommandWarp(FVector location) {
 }
 
 bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandDock] Commanded!"));
+
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
 		if (target->RequestedDock(Faction::Player)) {
 			targetStructure = target;
@@ -629,6 +641,7 @@ bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 }
 
 bool AShip::CommandUndock() {
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandUndock] Commanded!"));
 	if (behaviorState == BehaviorState::Docked) {
 		bIsStraightMove = true;
 		targetObject = nullptr;
@@ -721,7 +734,6 @@ bool AShip::CommandToggleActiveModule(int slotIndex) {
 #pragma endregion
 
 #pragma region Functions
-
 BehaviorType AShip::GetBehaviorType() {
 	return behaviorType;
 }
@@ -735,111 +747,121 @@ void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) {
 }
 
 bool AShip::MoveDistanceCheck() {
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+		realMoveFactor = targetVector - GetActorLocation();
+		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
+	} else {
+		if (targetObject != nullptr) {
+			moveTargetVector = targetObject->GetActorLocation();
+			remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
+		} else remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 
-	FRotator _targetRotate;
-	FVector _realMoveFactor;
-	float _distance;
+		moveTargetVector -= GetActorLocation();
+		moveTargetVector.Normalize();
+		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
+		DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
 
-	if (targetObject != nullptr) {
-		moveTargetVector = targetObject->GetActorLocation();
-		_realMoveFactor = moveTargetVector - GetActorLocation();
-		_distance = FVector::Dist(GetActorLocation(), moveTargetVector) - lengthToLongAsix - targetObject->GetValue(GetStatType::halfLength);
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
+		if (wayPoint.Num() > currentClosedPathIndex)
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return false;
+
+		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
+			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+			if (wayPoint.Num() > index + 1)
+				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
+		}
 	}
-	else {
-		_realMoveFactor = moveTargetVector - GetActorLocation();
-		_distance = FVector::Dist(FVector::ZeroVector, _realMoveFactor);
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
-	}
+	targetVector.Z = 0;
 
+	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
 
 	//checks distance and Angle For start Acceleration.
-	if (_distance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
-		if (FMath::Abs(_targetRotate.Yaw) < startAccelAngle)
-			setedTargetSpeed = targetSpeed;
-		else
-			setedTargetSpeed = 0.0f;
-	}
-	else setedTargetSpeed = 0.0f;
+	if (nextPointDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+		if (FMath::Abs(targetRotate.Yaw) < startAccelAngle)
+			targetSpeed = maxSpeed;
+		else targetSpeed = 0.0f;
+	} else targetSpeed = 0.0f;
 
 	//arrive to Destination. use upper of Nyquist Rate for high precision.
-	if (_distance < currentSpeed * tempDeltaTime * 50.0f) {
-		setedTargetSpeed = 0.0f;
-		return true;
+	if (!bIsStraightMove && nextPointDistance < currentSpeed * tempDeltaTime * 20.0f) {
+		UE_LOG(LogClass, Log, TEXT("Closed Path Point Arrive. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
+		UE_LOG(LogClass, Log, TEXT("index++. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
 	}
 
+	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+		targetSpeed = 0.0f;
+		currentClosedPathIndex = 0;
+		bIsStraightMove = false;
+		return true;
+	}
 	//arrive to Destination not yet.
 	return false;
 }
 
 void AShip::RotateCheck() {
 
-	FRotator _targetRotate;
-	FVector _realMoveFactor;
-	float resultOuter;
-
-	if (targetObject != nullptr) {
-		_realMoveFactor = targetObject->GetActorLocation() - GetActorLocation();
-		_realMoveFactor.Normalize();
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+	} else {
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, wayPoint.Num() - 1);
+		if (wayPoint.IsValidIndex(currentClosedPathIndex))
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return;
 	}
-	else {
-		_realMoveFactor = moveTargetVector - GetActorLocation();
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
-	}
-	resultOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), _realMoveFactor));
-	_targetRotate.Normalize();
+	targetVector.Z = 0;
 
-	if (resultOuter > 0.01f) {
-		if (FMath::Abs(_targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
-			targetRotateRateFactor = maxRotateRate * rotateRateFactor;
+	realMoveFactor = targetVector - GetActorLocation();
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+
+	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
+
+	if (nextPointOuter > 0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = maxRotateRate;
 		else
 			targetRotateRateFactor = 0.0f;
-	}
-	//left on side, rotate left
-	else if (resultOuter < -0.01f) {
-		if (FMath::Abs(_targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
-			targetRotateRateFactor = maxRotateRate * rotateRateFactor;
+	} else if (nextPointOuter < -0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = -maxRotateRate;
 		else
 			targetRotateRateFactor = 0.0f;
-	}
-	else targetRotateRateFactor = 0.0f;
+	} else targetRotateRateFactor = 0.0f;
 }
 
 void AShip::Movement() {
 	if (targetRotateRateFactor > 0.0f) {
 		if (realRotateRateFactor >= 0.0f) {
 			if (targetRotateRateFactor > realRotateRateFactor)
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateAcceleration * tempDeltaTime, 0.0f, targetRotateRateFactor);
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateAcceleration * tempDeltaTime, 0.0f, targetRotateRateFactor);
 			else
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateDeceleration * tempDeltaTime, targetRotateRateFactor, maxRotateRate * rotateRateFactor);
-		}
-		else {
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateDeceleration * tempDeltaTime, -maxRotateRate * rotateRateFactor, 0.0f);
-		}
-	}
-	else if (targetRotateRateFactor < 0.0f) {
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, targetRotateRateFactor, maxRotateRate);
+		} else 
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, 0.0f);
+	} else if (targetRotateRateFactor < 0.0f) {
 		if (realRotateRateFactor <= 0.0f) {
 			if (targetRotateRateFactor > realRotateRateFactor)
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateDeceleration * tempDeltaTime, -maxRotateRate * rotateRateFactor, targetRotateRateFactor);
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, targetRotateRateFactor);
 			else
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateAcceleration * tempDeltaTime, targetRotateRateFactor, 0.0f);
-		}
-		else {
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate * rotateRateFactor);
-		}
-	}
-	else {
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateAcceleration * tempDeltaTime, targetRotateRateFactor, 0.0f);
+		} else 
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
+	} else {
 		if (realRotateRateFactor < 0.0f)
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateDeceleration * tempDeltaTime, -maxRotateRate * rotateRateFactor, 0.0f);
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, maxRotateRate, 0.0f);
 		else
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate * rotateRateFactor);
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
 	}
 
-	if (currentSpeed < setedTargetSpeed)
-		currentSpeed = FMath::Clamp(currentSpeed + accelerationFactor * maxAcceleration * tempDeltaTime, 0.0f, setedTargetSpeed);
-	else if (currentSpeed > setedTargetSpeed)
-		currentSpeed = FMath::Clamp(currentSpeed - accelerationFactor * minAcceleration * tempDeltaTime, 0.0f, maxSpeed );
+	if (currentSpeed < targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed + accelerationFactor * maxAcceleration* tempDeltaTime, 0.0f, targetSpeed);
+	else if (currentSpeed > targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed - accelerationFactor * minAcceleration* tempDeltaTime, 0.0f, maxSpeed);
 
 	AddActorLocalRotation(FRotator(0.0f, realRotateRateFactor, 0.0f) * tempDeltaTime);
 	AddActorWorldOffset(GetActorForwardVector() * currentSpeed * tempDeltaTime, true);
@@ -1026,10 +1048,10 @@ void AShip::CheckPath() {
 
 	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix + 10.0f)
 		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, frontTraceResult, true);
+		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix + 10.0f)
 		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, frontTraceResult, true);
+		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 
 	bIsStraightMove = !bMoveTargetHited;
 	if (!(!bMoveTargetHited || !bFrontHited))

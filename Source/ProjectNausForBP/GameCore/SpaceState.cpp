@@ -398,8 +398,8 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			_sectorDataFind = true;
 			shipRegenLimit = FMath::Min(300, currentSectorInfo->ShipRegenTotal);
 
-			for (int index = 0; index < currentSectorInfo->ShipRegenData.Num(); index++) 
-				totalChanceFactor += currentSectorInfo->ShipRegenData[index].regenChanceFactor;
+			for (int index1 = 0; index1 < currentSectorInfo->ShipRegenData.Num(); index1++) 
+				totalChanceFactor += currentSectorInfo->ShipRegenData[index1].regenChanceFactor;
 			break;
 		}
 	}
