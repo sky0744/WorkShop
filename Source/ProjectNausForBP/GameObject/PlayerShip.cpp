@@ -1087,6 +1087,8 @@ bool APlayerShip::CommandJump(TScriptInterface<IStructureable> target) {
 bool APlayerShip::CommandWarp(FVector location) {
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandWarp] Receive Command Warp! : %.2f, %.2f, %.2f"), location.X, location.Y, location.Z);
 	if (CheckCanBehavior() == true) { 
+		SetActorLocation(location, false, nullptr, ETeleportType::TeleportPhysics);
+		behaviorState = BehaviorState::Idle;
 		return true;
 	}
 	else return false;

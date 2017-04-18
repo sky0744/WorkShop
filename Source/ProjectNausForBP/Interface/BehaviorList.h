@@ -37,7 +37,5 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Behavior List")
 		TArray<FBehaviorBlock> behaviorBlockList;
 	UPROPERTY(BlueprintReadWrite, Category = "Behavior List")
-		TArray<FItem> tradeItemList;
-	UPROPERTY(BlueprintReadWrite, Category = "Behavior List")
 		bool isCarryingSupplement;
 };

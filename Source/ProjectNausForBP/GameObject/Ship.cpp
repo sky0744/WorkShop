@@ -51,12 +51,14 @@ void AShip::Tick(float DeltaTime)
 	if (checkTime > 0.5f) {
 		checkTime = 0.0f;
 
+		currentShield = FMath::Clamp(currentShield + rechargeShield * 0.5f, 0.0f, maxShield);
+		currentArmor = FMath::Clamp(currentArmor + repairArmor * 0.5f, 0.0f, maxArmor);
+		currentHull = FMath::Clamp(currentHull + repairHull * 0.5f, 0.0f, maxHull);
+		currentPower = FMath::Clamp(currentPower + rechargePower * 0.5f, 0.0f, maxPower);
+
 		CheckPath();
 		ModuleCheck();
 	}
-
-	currentShield = FMath::Clamp(currentShield + rechargeShield * DeltaTime, 0.0f, maxShield);
-	currentPower = FMath::Clamp(currentPower + rechargePower * DeltaTime, 0.0f, maxPower);
 
 	switch (behaviorState) {
 	case BehaviorState::Idle:
@@ -596,7 +598,7 @@ bool AShip::CommandRepair(ASpaceObject* target) {
 
 bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
 	if (CheckCanBehavior() == true) {
-		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->Jump(target->GetDestinationName());
+		Destroy();
 		return true;
 	}
 	else return false;
@@ -604,6 +606,8 @@ bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
 
 bool AShip::CommandWarp(FVector location) {
 	if (CheckCanBehavior() == true) {
+		SetActorLocation(location, false, nullptr, ETeleportType::TeleportPhysics);
+		behaviorState = BehaviorState::Idle;
 		return true;
 	}
 	else return false;

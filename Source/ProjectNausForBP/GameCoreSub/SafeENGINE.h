@@ -422,8 +422,6 @@ public:
 		TArray<int> EquipedSlotTarget;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<int> EquipedAmmoForTarget;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<int> EquipedSlotActive;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<FBonusStat> bonusStats;

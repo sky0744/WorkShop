@@ -61,6 +61,7 @@ public:
 
 	int shipRegenLimit;
 	int currentShipCapacity;
+	bool skipingFirstTick;
 
 	int totalChanceFactor;
 	int shipRegenAmount;

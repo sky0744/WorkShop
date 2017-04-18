@@ -13,14 +13,17 @@ ASpaceState::ASpaceState() {
 void ASpaceState::BeginPlay() {
 	Super::BeginPlay();
 
+	skipingFirstTick = true;
 	currentShipCapacity = 0;
 }
 
 void ASpaceState::Tick(float DeltaSecondes) {
 	Super::Tick(DeltaSecondes);
 
-	if (currentSectorInfo == nullptr)
+	if (currentSectorInfo == nullptr || skipingFirstTick) {
+		skipingFirstTick = false;
 		return;
+	}
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FStationData _tempStationData;
@@ -186,8 +189,6 @@ void ASpaceState::Tick(float DeltaSecondes) {
 	}
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationInfo();
 
-	UE_LOG(LogClass, Log, TEXT("[Tick][SpaceState][SaveSpaceState] ship count : %d / %d!"), currentShipCapacity, shipRegenLimit);
-
 	//섹터 내 함선 최대 수 체크
 	if (currentShipCapacity < shipRegenLimit) {
 		shipRegenAmount = FMath::RoundToInt((shipRegenLimit - objectInSector.Num()) * 0.05f);
@@ -243,8 +244,6 @@ void ASpaceState::Tick(float DeltaSecondes) {
 }
 
 bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
-	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Save to Sector Data!"));
-
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FSectorData _tempData;
 	FStationData _tempStationData;
@@ -256,14 +255,10 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		
 		TArray<FString> _sectorNameData;
 		_tempInstance->GetAllSectorNameData(_sectorNameData);
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Get All Sector Name's is Finish! Count : %d"), _sectorNameData.Num());
 
 		sectorInfo.SetNum(_sectorNameData.Num());
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Generate SectorInfo : %d"), sectorInfo.Num());
 		for (int index = 0; index < _sectorNameData.Num(); index++) {
 			_tempData = _tempInstance->GetSectorData(_sectorNameData[index]);
-			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Get Start Sector Data : %s"), *_tempData.nSectorName.ToString());
-
 			sectorInfo[index] = _tempData;
 		}
 
@@ -297,7 +292,6 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 
 		int _exceptObjectCount = 0;
 		//Save All Object...
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save Object Info. Total Object count is %d."), _getAllObj.Num());
 		for (int index = 0; index < _getAllObj.Num(); index++) {
 			if (_getAllObj[index]->IsA(APlayerShip::StaticClass())) {
 				_exceptObjectCount++;
@@ -331,12 +325,10 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 			case ObjectType::Station:
 				break;
 			default:
-				UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Some Object isn't Save Object Type. This Object except to save."));
 				break;
 			}
 		}
 		saver->relation = factionRelation;
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Save Object Finish. Saved Object count is %d."), _getAllObj.Num() - _exceptObjectCount);
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] GameSave Create Finish!"));
 		return true;
 	}
@@ -348,10 +340,8 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 
 		saver->position = FVector(0.0f, 0.0f, 0.0f);
 		saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
-
 		FSectorData* _nextSectorInfo = nullptr;
 
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Generate SectorInfo : %d"), sectorInfo.Num());
 		for (int index = 0; index < sectorInfo.Num(); index++) {
 			if (saver->sectorInfo[index].nSectorName.ToString().Equals(saver->sectorName), ESearchCase::IgnoreCase)
 			{
@@ -381,7 +371,6 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 }
 
 bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
-	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Load to Sector Data!"));
 	bool _sectorDataFind = false;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
@@ -403,18 +392,14 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 	if (factionRelation.Num() != _EnumPtr->NumEnums())
 		factionRelation.SetNum(_EnumPtr->NumEnums());
 
-	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Faction Relation Count : %d!"), factionRelation.Num());
 	for (int index = 0; index < sectorInfo.Num(); index++) {
 		if (loader->sectorInfo[index].nSectorName.ToString().Equals(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase)) {
 			currentSectorInfo = &sectorInfo[index];
-			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Station Count : %d in Sector Data!"), currentSectorInfo->StationList.Num());
-			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Gate Count : %d in Sector Data!"), currentSectorInfo->GateList.Num());
 			_sectorDataFind = true;
 			shipRegenLimit = FMath::Min(300, currentSectorInfo->ShipRegenTotal);
 
 			for (int index = 0; index < currentSectorInfo->ShipRegenData.Num(); index++) 
 				totalChanceFactor += currentSectorInfo->ShipRegenData[index].regenChanceFactor;
-			UE_LOG(LogClass, Log, TEXT("[Tick][SpaceState][SaveSpaceState] current sector : %p, max amount : %d!"), currentSectorInfo, shipRegenLimit);
 			break;
 		}
 	}
@@ -456,7 +441,6 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			}
 		}
 
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Structure Load Finish..."));
 		//Load Objects
 		for (int index = 0; index < loader->npcShipID.Num(); index++) {
 
@@ -469,7 +453,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			}
 			_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 		}
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Object Load Finish..."));
+
 		//Load Resources
 		for (int index = 0; index < loader->resourceID.Num(); index++) {
 
@@ -485,7 +469,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 		}
 		
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Resource Load Finish... Done!"));
+		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
 		return true;
 	}
 	else if (loader->saveState == SaveState::BeforeWarp || loader->saveState == SaveState::NewGameCreate)
@@ -521,9 +505,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			}
 		}
 
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Structure Load Finish..."));
 		//Generate Inited Ship
-	
 		for (int index = 0; index < currentSectorInfo->ShipInitedData.Num(); index++) {
 			_ship = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(currentSectorInfo->ShipInitedData[index].rotation,
 				FVector(currentSectorInfo->ShipInitedData[index].location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
@@ -533,9 +515,8 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 				_ship->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 			} 
 		}
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Generate Random Object Finish..."));
+
 		//Generate Inited Resources
-		
 		for (int index = 0; index < currentSectorInfo->ResourceInitedData.Num(); index++) {
 
 			_resource = Cast<AResource>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(currentSectorInfo->ResourceInitedData[index].rotation,
@@ -546,7 +527,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 				_resource->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 			}
 		}
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Generate Random Resource Finish... Done!"));
+		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
 		return true;
 	}
 

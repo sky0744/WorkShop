@@ -232,7 +232,11 @@ FVector USafeENGINE::GetRandomLocationToTarget(ASpaceObject* requestor, ASpaceOb
 
 FVector USafeENGINE::GetRandomLocationToLocation(FVector location, float distance) {
 
-	FVector _directiveVector = FMath::VRand().GetSafeNormal();
+	FVector _directiveVector;
+	_directiveVector.X = FMath::FRandRange(-limitHalfSizeSector, limitHalfSizeSector);
+	_directiveVector.Y = FMath::FRandRange(-limitHalfSizeSector, limitHalfSizeSector);
+	_directiveVector.Z = 0.0f;
+	_directiveVector.Normalize();
 
 	return location + _directiveVector * distance;
 }
