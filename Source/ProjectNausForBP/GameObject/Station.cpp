@@ -31,85 +31,9 @@ void AStation::BeginPlay() {
 
 void AStation::Tick(float DeltaSeconds) {
 
-	currentShield = FMath::Clamp(currentShield + rechargeShield * 5.0f, 0.0f, maxShield);
-	currentArmor = FMath::Clamp(currentArmor + repairArmor * 5.0f, 0.0f, maxArmor);
-	currentHull = FMath::Clamp(currentHull + repairHull * 5.0f, 0.0f, maxHull);
-
-	if (structureInfo->remainItemListRefreshTime >= 0.0f)
-		structureInfo->remainItemListRefreshTime = FMath::Clamp(structureInfo->remainItemListRefreshTime - DeltaSeconds, 0.0f, structureInfo->maxItemListRefreshTime);
-	if (structureInfo->remainItemListRefreshTime <= 0.0f && structureInfo->structureType != StructureType::ProductionFacility) {
-		int findIndex = -1;
-		int addAmount = 0;
-		FItem item = FItem();
-
-		for (int index = 0; index < structureInfo->itemSellListId.Num(); index++) {
-			if (structureInfo->itemSellListId[index].sellingChance >= FMath::RandRange(0.0, 100.0f)) {
-				item = FItem(structureInfo->itemSellListId[index].sellingItemID, 1);
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, item);
-				addAmount = FMath::RandRange(structureInfo->itemSellListId[index].sellingItemMinAmount, structureInfo->itemSellListId[index].sellingItemMaxAmount);
-
-				if (findIndex > -1)
-					structureInfo->itemList[findIndex].itemAmount += addAmount;
-				else if (addAmount > 0)
-					structureInfo->itemList.Emplace(FItem(structureInfo->itemSellListId[index].sellingItemID, addAmount));
-			}
-			else {
-				item = FItem(structureInfo->itemSellListId[index].sellingItemID, 1);
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, item);
-
-				if (findIndex > -1)
-					structureInfo->itemList.RemoveAtSwap(findIndex);
-			}
-		}
-		structureInfo->remainItemListRefreshTime = structureInfo->maxItemListRefreshTime;
-		if (Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->DockedStructure().GetObjectRef() == this->_getUObject()) {
-			UE_LOG(LogClass, Log, TEXT("[Info][Gate][Tick] Update UI with sell refresh"));
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationInfo();
-		}
-	}
-	
-	if ((structureInfo->structureType == StructureType::ProductionFacility || structureInfo->structureType == StructureType::Hub) && structureInfo->productItemList.Num() > 0) {
-		structureInfo->remainProductTime = FMath::Clamp(structureInfo->remainProductTime - DeltaSeconds, 0.0f, structureInfo->maxItemListRefreshTime);
-		if (structureInfo->remainProductTime <= 0.0f) {
-			bool canProduct = true;
-			int findIndex = -1;
-
-			for (int index = 0; index < structureInfo->consumptItemList.Num(); index++) {
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, structureInfo->consumptItemList[index]);
-
-				if (findIndex < 0 || structureInfo->itemList[findIndex].itemAmount < structureInfo->consumptItemList[index].itemAmount)
-				{
-					canProduct = false;
-					break;
-				}
-			}
-
-			if (canProduct == true) {
-				for (int index = 0; index < structureInfo->consumptItemList.Num(); index++) {
-					findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, structureInfo->consumptItemList[index]);
-					structureInfo->itemList[findIndex].itemAmount -= structureInfo->consumptItemList[index].itemAmount;
-					if (structureInfo->itemList[findIndex].itemAmount <= 0)
-						structureInfo->itemList.RemoveAt(findIndex);
-				}
-
-				for (int index = 0; index < structureInfo->productItemList.Num(); index++) {
-					if (!canProduct || index > structureInfo->maxProductAmount.Num() || structureInfo->itemList[findIndex].itemAmount >= structureInfo->maxProductAmount[index])
-						break;
-
-					findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, structureInfo->productItemList[index]);
-					if (findIndex > -1) 
-						structureInfo->itemList[findIndex].itemAmount += structureInfo->productItemList[index].itemAmount;
-					else 
-						structureInfo->itemList.Emplace(FItem(structureInfo->productItemList[index]));
-				}
-				structureInfo->remainProductTime = structureInfo->maxProductTime;
-				if (Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->DockedStructure().GetObjectRef() == this->_getUObject()) {
-					UE_LOG(LogClass, Log, TEXT("[Info][Gate][Tick] Update UI with processing"));
-					Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationInfo();
-				}
-			}
-		}
-	}
+	currentShield = FMath::Clamp(currentShield + rechargeShield * DeltaSeconds, 0.0f, maxShield);
+	currentArmor = FMath::Clamp(currentArmor + repairArmor * DeltaSeconds, 0.0f, maxArmor);
+	currentHull = FMath::Clamp(currentHull + repairHull * DeltaSeconds, 0.0f, maxHull);
 }
 
 float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -178,6 +102,10 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 }
 
 void AStation::BeginDestroy() {
+	if (structureInfo) {
+		structureInfo->isDestroyed = true;
+		structureInfo->remainRespawnTime = structureInfo->maxRespawnTime;
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }

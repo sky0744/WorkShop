@@ -53,9 +53,9 @@ public:
 
 #pragma region Funcations : PlayerShip Only
 protected:
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Player")
-		virtual bool TotalStatsUpdate();
-
+	bool TotalStatsUpdate();
+	void CheckPassiveTypeModule(BonusStatType type, float value);
+	void CheckBonusStat(BonusStatType type, float value);
 public:
 	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
 		virtual bool LoadFromSave(USaveLoader* loader);
@@ -252,6 +252,12 @@ private:
 	float rotateRateFactor;
 	float targetRotateRateFactor;
 	float realRotateRateFactor;
+
+	float bonusDroneBaseStats;
+	float bonusDroneDamage;
+	float bonusDroneRange;
+	float bonusDroneSpeed;
+	float bonusDroneControl;
 #pragma endregion
 
 #pragma region active module temp stats
@@ -266,79 +272,5 @@ private:
 	float moduleStatEngine;
 	float moduleStatAcceleration;
 	float moduleStatThruster;
-#pragma endregion
-
-#pragma region bonus stats
-private:
-	float bonusShield;
-	float bonusShieldRecharge;
-	float bonusShieldDef;
-
-	float bonusArmor;
-	float bonusArmorRepair;
-	float bonusArmorDef;
-
-	float bonusHull;
-	float bonusHullRepair;
-	float bonusHullDef;
-
-	float bonusPower;
-	float bonusPowerRecharge;
-
-	float bonusActiveRechargeShield;
-	float bonusActiveDefShield;
-	float bonusActiveRepaireArmor;
-	float bonusActiveDefArmor;
-	float bonusActiveRepaireHull;
-	float bonusActiveDefHull;
-
-	float bonusMobilitySpeed;
-	float bonusMobilityAcceleration;
-	float bonusMobilityRotation;
-	float bonusMobilityRotateAcceleration;
-
-	float bonusActiveSpeed;
-	float bonusActiveAcceleration;
-	float bonusActiveRotation;
-
-	float bonusActiveUsagePower;
-
-	float bonusBeamDamage;
-	float bonusBeamPower;
-	float bonusBeamCoolTime;
-	float bonusBeamAccuracy;
-	float bonusBeamRange;
-
-	float bonusCannonDamage;
-	float bonusCannonCoolTime;
-	float bonusCannonAccuracy;
-	float bonusCannonLifeTime;
-	float bonusCannonLaunchVelocity;
-
-	float bonusRailGunDamage;
-	float bonusRailGunPower;
-	float bonusRailGunCoolTime;
-	float bonusRailGunAccuracy;
-	float bonusRailGunLifeTime;
-	float bonusRailGunLaunchVelocity;
-
-	float bonusMissileDamage;
-	float bonusMissileCoolTime;
-	float bonusMissileAccuracy;
-	float bonusMissileLifeTime;
-	float bonusMissileLaunchVelocity;
-
-	float bonusDroneBaseStats;
-	int bonusDroneControl;
-	float bonusDroneDamage;
-	float bonusDroneControlRange;
-	float bonusDroneAccuarcy;
-	float bonusDroneRange;
-	float bonusDroneSpeed;
-
-	float bonusMiningAmount;
-	float bonusMiningPower;
-	float bonusMiningCoolTime;
-	float bonusMiningRange;
 #pragma endregion
 };

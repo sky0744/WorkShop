@@ -5,8 +5,6 @@
 #include "GameFramework/PlayerController.h"
 #include "ProjectNausForBP.h"
 #include "../GameCoreSub/Enums.h"
-#include "../GameCoreSub/UI3DMove.h"
-#include "../GameCoreSub/UI3DTarget.h"
 #include "../GameObject/PlayerShip.h"
 #include "UserController.generated.h"
 

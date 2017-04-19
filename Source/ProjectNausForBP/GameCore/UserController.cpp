@@ -295,7 +295,7 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 		_pObj->CommandJump(_sObj);
 		break;
 	case InteractionType::Warp:
-		//warpLocation
+		_pObj->CommandWarp( USafeENGINE::CheckLocationMovetoTarget(ControlledPawn, tObj, 500.0f) );
 		break;
 	case InteractionType::Collect:
 		if (!tObj->GetClass()->ImplementsInterface(UCollectable::StaticClass()))
