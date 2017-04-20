@@ -28,26 +28,26 @@ protected:
 
 #pragma region SpaceObject Inheritance
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual int GetObjectID() override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual ObjectType GetObjectType() override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual Faction GetFaction() override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual void SetFaction(Faction setFaction) override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual BehaviorState GetBehaviorState() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual bool InitObject(int objectId) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual float GetValue(GetStatType statType) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual void GetRepaired(GetStatType statType, float repairValue) override;
 #pragma endregion
 
@@ -57,43 +57,48 @@ protected:
 	void CheckPassiveTypeModule(BonusStatType type, float value);
 	void CheckBonusStat(BonusStatType type, float value);
 public:
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual bool LoadFromSave(USaveLoader* loader);
 
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual bool EquipModule(int moduleID);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual bool UnEquipModule(ItemType moduleItemType, int slotNumber);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void GetModule(ItemType moduleType, TArray<int>& moduleList);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void GetModuleActivate(ItemType moduleType, TArray<float>& moduleActivate);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo);
 
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual bool SetCameraMode();
 
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void ControlCamRotateX(float factorX);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void ControlCamRotateY(float factorY);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void ControlCamDistance(float value);
 
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void ControlViewPointX(float value);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void ControlViewPointY(float value);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void ControlViewPointOrigin();
 
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetTargetSpeed(float value);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetAcceleration(float value);
-	UFUNCTION(BlueprintCallable, Category = "Called in Player Ship")
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetRotateRate(float value);
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
+		virtual bool ToggleTargetModule(int slotIndex, ASpaceObject* target);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
+		virtual bool ToggleActiveModule(int slotIndex);
 #pragma endregion
 
 #pragma region Interface Implementation : ICommandable
@@ -107,7 +112,7 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandAttack(ASpaceObject* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandMining(TScriptInterface<ICollectable> target) override;
+		virtual bool CommandMining(AResource* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandRepair(ASpaceObject* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
@@ -120,11 +125,6 @@ protected:
 		virtual bool CommandUndock() override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandLaunch(TArray<int> baySlot) override;
-
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandToggleTargetModule(int slotIndex, ASpaceObject* target) override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandToggleActiveModule(int slotIndex) override;
 #pragma endregion
 
 #pragma region Functions
@@ -199,8 +199,6 @@ private:
 		TScriptInterface<ICommandable> targetCommand;
 	UPROPERTY()
 		TScriptInterface<IStructureable> targetStructure;
-	UPROPERTY()
-		TScriptInterface<ICollectable> targetCollect;
 
 	float sMaxShield;
 	float sRechargeShield;
@@ -223,6 +221,11 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
+	float targetAccessAngle;
+	UPROPERTY()
+		TArray<FVector> leftHardPoint;
+	UPROPERTY()
+		TArray<FVector> rightHardPoint;
 	UPROPERTY()
 		TArray<ASpaceObject*> targetingObject;
 	UPROPERTY()

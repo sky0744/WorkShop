@@ -60,9 +60,9 @@ void AShip::Tick(float DeltaTime)
 		ModuleCheck();
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxSpeed : " + FString::SanitizeFloat(maxSpeed) + ", TargetSpeed : " + FString::SanitizeFloat(targetSpeed) + ", CurrentSpeed : " + FString::SanitizeFloat(currentSpeed));
-	GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxAcceleration : " + FString::SanitizeFloat(maxAcceleration) + ", MinAcceleration : " + FString::SanitizeFloat(minAcceleration) + ", TargetAcceleration : " + FString::SanitizeFloat(accelerationFactor));
-	GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxRotateRate : " + FString::SanitizeFloat(maxRotateRate) + ", TargetRotateRate : " + FString::SanitizeFloat(targetRotateRateFactor) + ", CurrentRotateRate : " + FString::SanitizeFloat(realRotateRateFactor));
+	//GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxSpeed : " + FString::SanitizeFloat(maxSpeed) + ", TargetSpeed : " + FString::SanitizeFloat(targetSpeed) + ", CurrentSpeed : " + FString::SanitizeFloat(currentSpeed));
+	//GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxAcceleration : " + FString::SanitizeFloat(maxAcceleration) + ", MinAcceleration : " + FString::SanitizeFloat(minAcceleration) + ", TargetAcceleration : " + FString::SanitizeFloat(accelerationFactor));
+	//GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxRotateRate : " + FString::SanitizeFloat(maxRotateRate) + ", TargetRotateRate : " + FString::SanitizeFloat(targetRotateRateFactor) + ", CurrentRotateRate : " + FString::SanitizeFloat(realRotateRateFactor));
 
 	switch (behaviorState) {
 	case BehaviorState::Idle:
@@ -291,6 +291,10 @@ bool AShip::InitObject(int npcID) {
 	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
+
+	targetAccessAngle = FMath::Clamp(FMath::Abs(FMath::Cos(_tempShipData.TargetAccessAngle)), 0.0f, 0.866f);
+	leftHardPoint = _tempShipData.LeftHardPoint;
+	rightHardPoint = _tempShipData.RightHardPoint;
 
 	for (FBonusStat& bonusStat : _tempShipData.bonusStats) {
 
@@ -574,10 +578,10 @@ bool AShip::CommandAttack(ASpaceObject* target) {
 	else return false;
 }
 
-bool AShip::CommandMining(TScriptInterface<ICollectable> target) {
+bool AShip::CommandMining(AResource* target) {
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMining] Commanded!"));
 	if (CheckCanBehavior() == true) {
-		targetCollect = target;
+		targetObject = target;
 		behaviorState = BehaviorState::Mining;
 		return true;
 	}
@@ -652,83 +656,6 @@ bool AShip::CommandUndock() {
 }
 
 bool AShip::CommandLaunch(TArray<int> baySlot) {
-	return false;
-}
-
-/*
-* 타게팅 모듈의 동작을 제어. 플레이어 전용.
-* @param slotIndex - 타게팅 모듈 슬롯 번호.
-* @return 처리 후의 모듈 동작 상태.
-*/
-bool AShip::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-	if (target == nullptr || target == this) 
-		return false;
-
-	//타게팅 모듈에 한해서만( < ModuleType::ShieldGenerator ) 함수 처리
-	if (slotIndex < slotTargetModule.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
-		//현재 모듈이 활성화되어 있을 경우 -> 작동 중지 예약, 현재 켜져있는 상태임을 리턴
-		if (slotTargetModule[slotIndex].moduleState != ModuleState::NotActivate) {
-			slotTargetModule[slotIndex].isBookedForOff = true;
-			return true;
-		}
-
-		else {
-			//현재 꺼져있는 상태
-			switch (slotTargetModule[slotIndex].moduleType) {
-			case ModuleType::Beam:
-			case ModuleType::TractorBeam:
-			case ModuleType::MinerLaser:
-				//모듈이 빔 계열인 경우
-				if (target == nullptr)
-					return false;
-				slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
-				slotTargetModule[slotIndex].isBookedForOff = false;
-				slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-				targetingObject[slotIndex] = target;
-				return true;
-				break;
-			case ModuleType::Cannon:
-			case ModuleType::Railgun:
-			case ModuleType::MissileLauncher:
-				//모듈이 실탄 계열인 경우, 모듈을 활성화하기 이전에 ammo 상태를 확인
-				if (slotTargetModule[slotIndex].ammo.itemAmount < 1) {
-					USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-					AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-					FItemData _tempModuleData = _tempInstance->GetItemData(slotTargetModule[slotIndex].moduleID);
-					TArray<FItem> _tempItemSlot;
-					int _findSlot;
-
-					userState->GetUserDataItem(_tempItemSlot);
-					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
-
-					//ammo를 카고 리스트에서 찾았음.
-					if (_findSlot > -1) {
-						slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
-						targetingObject[slotIndex] = target;
-						slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-					}
-				}
-				else if (target != nullptr) {
-					slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
-					targetingObject[slotIndex] = target;
-					slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-				}
-				slotTargetModule[slotIndex].isBookedForOff = false;
-				return true;
-				break;
-			default:
-				return false;
-				break;
-			}
-		}
-	}
-	for (int index = 0; index < slotTargetModule.Num(); index++)
-		slotTargetModule[index].moduleState = ModuleState::NotActivate;
-	return false;
-}
-
-bool AShip::CommandToggleActiveModule(int slotIndex) {
-
 	return false;
 }
 #pragma endregion

@@ -23,26 +23,26 @@ protected:
 
 #pragma region SpaceObject Inheritance
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual int GetObjectID() override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual ObjectType GetObjectType() override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual Faction GetFaction() override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual void SetFaction(Faction setFaction) override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual BehaviorState GetBehaviorState() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual bool InitObject(int objectId) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual float GetValue(GetStatType statType) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual void GetRepaired(GetStatType statType, float repairValue) override;
 #pragma endregion
 

@@ -28,7 +28,6 @@
 
 #include "Interface/Commandable.h"
 #include "Interface/Structureable.h"
-#include "Interface/Collectable.h"
 #include "Interface/BehaviorList.h"
 
 #include "Projectile/Beam.h"

@@ -201,7 +201,6 @@ FVector USafeENGINE::CheckLocationMovetoTarget(ASpaceObject* requestor, ASpaceOb
 
 	distance += requestor->GetValue(GetStatType::halfLength);
 	distance += target->GetValue(GetStatType::halfLength);
-	distance -= FMath::FRandRange(50.0f, 100.0f);
 
 	_location -= _directiveVector * distance;
 	_location.X = FMath::Clamp(_location.X, -limitHalfSizeSector, limitHalfSizeSector);
@@ -220,7 +219,6 @@ FVector USafeENGINE::GetRandomLocationToTarget(ASpaceObject* requestor, ASpaceOb
 
 	distance += requestor->GetValue(GetStatType::halfLength);
 	distance += target->GetValue(GetStatType::halfLength);
-	distance -= FMath::FRandRange(50.0f, 100.0f);
 
 	_location -= _directiveVector * distance;
 	_location.X = FMath::Clamp(_location.X, -limitHalfSizeSector, limitHalfSizeSector);

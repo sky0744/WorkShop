@@ -17,41 +17,6 @@ public:
 	ASpaceAIController();
 	virtual void Possess(APawn* inPawn) override;
 
-#pragma region AI Command Process
-
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		void AICommandStop();
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandMovetoLocation(FVector destination);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandMovetoTarget(ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandAttack(ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandMining(TScriptInterface<ICollectable> target);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandRepair(FVector destination);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandJump(TScriptInterface<IStructureable> target);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandWarp(FVector location);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandDock(TScriptInterface<IStructureable> target);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandUndock();
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool AICommandLaunch(TArray<int> baySlot);
-
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool OnTargetModule(int slotIndex);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool OffTargetModule(int slotIndex);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool OnActiveModule(int slotIndex);
-	UFUNCTION(BlueprintCallable, Category = "AI Controller")
-		bool OffActiveModule(int slotIndex);
-#pragma endregion
-
 #pragma region Components & Variables
 protected:
 	UPROPERTY()

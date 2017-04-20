@@ -266,7 +266,7 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 	_pObj = Cast<ICommandable>(ControlledPawn);
 
 	TScriptInterface<IStructureable> _sObj;
-	TScriptInterface<ICollectable> _cObj;
+	AResource* _resource;
 
 	_pObj->CommandStop();
 
@@ -298,12 +298,10 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 		_pObj->CommandWarp( USafeENGINE::CheckLocationMovetoTarget(ControlledPawn, tObj, 500.0f) );
 		break;
 	case InteractionType::Collect:
-		if (!tObj->GetClass()->ImplementsInterface(UCollectable::StaticClass()))
+		if (!tObj->IsA(AResource::StaticClass()))
 			return;
-
-		_cObj.SetObject(tObj);
-		_cObj.SetInterface(Cast<ICollectable>(tObj));
-		_pObj->CommandMining(_cObj);
+		_resource = Cast<AResource>(tObj);
+		_pObj->CommandMining(_resource);
 		break;
 	case InteractionType::Repair:
 		_pObj->CommandRepair(tObj);
@@ -323,13 +321,11 @@ bool AUserController::SetWarpLocation(FVector location) {
 }
 
 bool AUserController::ToggleTargetModule(int slotIndex) {
-	ICommandable* _possessPawn = Cast<ICommandable>(ControlledPawn);
-	return _possessPawn->CommandToggleTargetModule(slotIndex, tObj);
+	return ControlledPawn->ToggleTargetModule(slotIndex, tObj);
 }
 
 bool AUserController::ToggleActiveModule(int slotIndex) {
-	ICommandable* _possessPawn = Cast<ICommandable>(ControlledPawn);
-	return _possessPawn->CommandToggleActiveModule(slotIndex);
+	return ControlledPawn->ToggleActiveModule(slotIndex);
 }
 
 ASpaceObject* AUserController::GetTargetInfo() {

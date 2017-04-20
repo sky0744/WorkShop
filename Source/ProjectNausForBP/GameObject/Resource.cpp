@@ -128,7 +128,7 @@ float AResource::GetValue(GetStatType statType) {
 }
 #pragma endregion
 
-#pragma region Interface Implementing : ICollectable
+#pragma region Resource Functions
 void AResource::SetResource(float durability, FItem ore) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 

@@ -214,7 +214,7 @@ BehaviorState APlayerShip::GetBehaviorState() {
 }
 
 bool APlayerShip::InitObject(int objectId) {
-	if (sIsInited == true || objectId < 0)
+	if (sIsInited == true && (objectId < 0 || objectId == sShipID))
 		return false;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
@@ -263,6 +263,10 @@ bool APlayerShip::InitObject(int objectId) {
 	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, 0.0f, 90.0f);
 	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, 0.0f, 90.0f);
+
+	targetAccessAngle = FMath::Clamp(FMath::Abs(FMath::Cos(_tempShipData.TargetAccessAngle)), 0.0f, 0.866f);
+	leftHardPoint = _tempShipData.LeftHardPoint;
+	rightHardPoint = _tempShipData.RightHardPoint;
 
 	if (TotalStatsUpdate() == false)
 		return false;
@@ -377,6 +381,22 @@ float APlayerShip::GetValue(GetStatType statType) {
 		break;
 	case GetStatType::currentRotateRate:
 		_value = rotateRateFactor;
+		break;
+
+	case GetStatType::droneBaseStatsMultiple:
+		_value = bonusDroneBaseStats;
+		break;
+	case GetStatType::droneDroneDamageMultiple:
+		_value = bonusDroneDamage;
+		break;
+	case GetStatType::droneDroneRangeMultiple:
+		_value = bonusDroneRange;
+		break;
+	case GetStatType::droneDroneSpeedMultiple:
+		_value = bonusDroneSpeed;
+		break;
+	case GetStatType::droneDroneControlMultiple:
+		_value = bonusDroneControl;
 		break;
 	default:
 		_value = -1;
@@ -996,6 +1016,108 @@ void APlayerShip::SetAcceleration(float value) {
 void APlayerShip::SetRotateRate(float value) {
 	rotateRateFactor = FMath::Clamp(value, 0.0f, 1.0f);
 }
+
+/*
+* 타게팅 모듈의 동작을 제어. 플레이어 전용.
+* @param slotIndex - 타게팅 모듈 슬롯 번호.
+* @return 처리 후의 모듈 동작 상태.
+*/
+bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
+
+	//타게팅 모듈에 한해서만( < ModuleType::ShieldGenerator ) 함수 처리
+	if (slotIndex < slotTargetModule.Num() && slotIndex < targetingObject.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
+		//현재 모듈이 활성화되어 있을 경우 -> 작동 중지 예약, 현재 켜져있는 상태임을 리턴
+		if (slotTargetModule[slotIndex].moduleState != ModuleState::NotActivate) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Request Off."), slotIndex);
+			slotTargetModule[slotIndex].isBookedForOff = true;
+			return true;
+		}
+
+		else {
+			if (target == nullptr || target == this) {
+				UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Can't find target"));
+				return false;
+			}
+
+			//현재 꺼져있는 상태
+			switch (slotTargetModule[slotIndex].moduleType) {
+			case ModuleType::Beam:
+			case ModuleType::TractorBeam:
+			case ModuleType::MinerLaser:
+				//모듈이 빔 계열인 경우
+				if (target == nullptr)
+					return false;
+				slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
+				slotTargetModule[slotIndex].isBookedForOff = false;
+				slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
+				targetingObject[slotIndex] = target;
+				UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : On. target is %s."), slotIndex, *target->GetName());
+				return true;
+				break;
+			case ModuleType::Cannon:
+			case ModuleType::Railgun:
+			case ModuleType::MissileLauncher:
+				//모듈이 실탄 계열인 경우, 모듈을 활성화하기 이전에 ammo 상태를 확인
+				if (slotTargetModule[slotIndex].ammo.itemAmount < 1) {
+					USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+					AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+					FItemData _tempModuleData = _tempInstance->GetItemData(slotTargetModule[slotIndex].moduleID);
+					TArray<FItem> _tempItemSlot;
+					int _findSlot;
+
+					userState->GetUserDataItem(_tempItemSlot);
+					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
+
+					//ammo를 카고 리스트에서 찾았음.
+					if (_findSlot > -1) {
+						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - reload : On."), slotIndex);
+						slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
+						targetingObject[slotIndex] = target;
+						slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
+					} else
+						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Not On. Ammo not enoght."), slotIndex);
+				} else if (target != nullptr) {
+					slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
+					targetingObject[slotIndex] = target;
+
+					slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
+					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : On. target is %s."), slotIndex, *target->GetName());
+				} else
+					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Not On. target is Null."), slotIndex);
+				slotTargetModule[slotIndex].isBookedForOff = false;
+				return true;
+				break;
+			default:
+				return false;
+				break;
+			}
+		}
+	}
+	UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle Fail. forced OFF."), slotIndex);
+	for (int index = 0; index < slotTargetModule.Num(); index++)
+		slotTargetModule[index].moduleState = ModuleState::NotActivate;
+	return false;
+}
+
+/*
+* 액티브 모듈의 동작을 제어.
+* @param slotIndex - 타게팅 모듈 슬롯 번호.
+* @return 처리 후의 모듈 동작 상태.
+*/
+bool APlayerShip::ToggleActiveModule(int slotIndex) {
+	if (slotIndex < slotActiveModule.Num() && slotActiveModule[slotIndex].moduleType > ModuleType::HullRepairLaser && slotActiveModule[slotIndex].moduleType < ModuleType::PassiveModule) {
+
+		slotActiveModule[slotIndex].moduleState = (slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? ModuleState::NotActivate : ModuleState::Activate);
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Active Module %d - Toggle : %s"),
+			slotIndex, slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? TEXT("ON") : TEXT("OFF"));
+		return slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? true : false;
+	}
+
+	UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Active Module - Toggle Fail. forced OFF to init."));
+	for (int index = 0; index < slotActiveModule.Num(); index++)
+		slotActiveModule[index].moduleState = ModuleState::NotActivate;
+	return false;
+}
 #pragma endregion
 
 #pragma region Interface Implementing : ICommandable
@@ -1046,10 +1168,10 @@ bool APlayerShip::CommandAttack(ASpaceObject* target) {
 	else return false;
 }
 
-bool APlayerShip::CommandMining(TScriptInterface<ICollectable> target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMining] Receive Command Mining! : %s"), *target.GetObjectRef()->GetName());
+bool APlayerShip::CommandMining(AResource* target) {
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMining] Receive Command Mining! : %s"), *target->GetName());
 	if (CheckCanBehavior() == true) {
-		targetCollect = target;
+		targetObject = target;
 		behaviorState = BehaviorState::Mining;
 		return true;
 	}
@@ -1134,111 +1256,6 @@ bool APlayerShip::CommandLaunch(TArray<int> baySlot) {
 	}
 	else return false;
 }
-
-/*
-* 타게팅 모듈의 동작을 제어. 플레이어 전용.
-* @param slotIndex - 타게팅 모듈 슬롯 번호.
-* @return 처리 후의 모듈 동작 상태.
-*/
-bool APlayerShip::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-
-	//타게팅 모듈에 한해서만( < ModuleType::ShieldGenerator ) 함수 처리
-	if (slotIndex < slotTargetModule.Num() && slotIndex < targetingObject.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
-		//현재 모듈이 활성화되어 있을 경우 -> 작동 중지 예약, 현재 켜져있는 상태임을 리턴
-		if (slotTargetModule[slotIndex].moduleState != ModuleState::NotActivate) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Request Off."), slotIndex);
-			slotTargetModule[slotIndex].isBookedForOff = true;
-			return true;
-		}
-
-		else {
-			if (target == nullptr || target == this) {
-				UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Can't find target"));
-				return false;
-			}
-
-			//현재 꺼져있는 상태
-			switch (slotTargetModule[slotIndex].moduleType) {
-			case ModuleType::Beam:
-			case ModuleType::TractorBeam:
-			case ModuleType::MinerLaser:
-				//모듈이 빔 계열인 경우
-				if (target == nullptr)
-					return false;
-				slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
-				slotTargetModule[slotIndex].isBookedForOff = false;
-				slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-				targetingObject[slotIndex] = target;
-				UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : On. target is %s."), slotIndex, *target->GetName());
-				return true;
-				break;
-			case ModuleType::Cannon:
-			case ModuleType::Railgun:
-			case ModuleType::MissileLauncher:
-				//모듈이 실탄 계열인 경우, 모듈을 활성화하기 이전에 ammo 상태를 확인
-				if (slotTargetModule[slotIndex].ammo.itemAmount < 1) {
-					USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-					AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-					FItemData _tempModuleData = _tempInstance->GetItemData(slotTargetModule[slotIndex].moduleID);
-					TArray<FItem> _tempItemSlot;
-					int _findSlot;
-
-					userState->GetUserDataItem(_tempItemSlot);
-					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
-
-					//ammo를 카고 리스트에서 찾았음.
-					if (_findSlot > -1) {
-						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - reload : On."), slotIndex);
-						slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
-						targetingObject[slotIndex] = target;
-						slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-					}
-					else 
-						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Not On. Ammo not enoght."), slotIndex);
-				}
-				else if (target != nullptr) {
-					slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
-					targetingObject[slotIndex] = target;
-					
-					slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : On. target is %s."), slotIndex, *target->GetName());
-				}
-				else 
-					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Not On. target is Null."), slotIndex);
-				slotTargetModule[slotIndex].isBookedForOff = false;
-				return true;
-				break;
-			default:
-				return false;
-				break;
-			}
-		}
-	}
-	UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle Fail. forced OFF."), slotIndex);
-	for (int index = 0; index < slotTargetModule.Num(); index++)
-		slotTargetModule[index].moduleState = ModuleState::NotActivate;
-	return false;
-}
-
-/*
-* 액티브 모듈의 동작을 제어.
-* @param slotIndex - 타게팅 모듈 슬롯 번호.
-* @return 처리 후의 모듈 동작 상태.
-*/
-bool APlayerShip::CommandToggleActiveModule(int slotIndex) {
-	if (slotIndex < slotActiveModule.Num() && slotActiveModule[slotIndex].moduleType > ModuleType::HullRepairLaser && slotActiveModule[slotIndex].moduleType < ModuleType::PassiveModule) {
-
-		slotActiveModule[slotIndex].moduleState = (slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? ModuleState::NotActivate : ModuleState::Activate);
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Active Module %d - Toggle : %s"),
-			slotIndex, slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? TEXT("ON") : TEXT("OFF"));
-		return slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? true : false;
-	}
-
-	UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Active Module - Toggle Fail. forced OFF to init."));
-	for(int index = 0; index < slotActiveModule.Num(); index++)
-		slotActiveModule[index].moduleState = ModuleState::NotActivate;
-	return false;
-}
 #pragma endregion
 
 #pragma region Functions
@@ -1251,10 +1268,10 @@ bool APlayerShip::MoveDistanceCheck() {
 		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
 	}
 	else {
-		if (targetObject != nullptr) {
-			moveTargetVector = targetObject->GetActorLocation();
-			remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
-		} else remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+		if (targetObject != nullptr) 
+			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
+ 
+		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 
 		moveTargetVector -= GetActorLocation();
 		moveTargetVector.Normalize();
@@ -1266,8 +1283,11 @@ bool APlayerShip::MoveDistanceCheck() {
 			targetVector = wayPoint[currentClosedPathIndex];
 		else return false;
 
-		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
-			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+		for (int index = 0; index < wayPoint.Num(); index++) {
+			if(index < currentClosedPathIndex)
+				DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::White, false, 0.1f);
+			else
+				DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
 			if (wayPoint.Num() > index + 1)
 				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
 		}
@@ -1286,7 +1306,7 @@ bool APlayerShip::MoveDistanceCheck() {
 	else setedTargetSpeed = 0.0f;
 
 	//arrive to Destination. use upper of Nyquist Rate for high precision.
-	if (!bIsStraightMove && nextPointDistance < currentSpeed * tempDeltaTime * 20.0f) {
+	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) {
 		UE_LOG(LogClass, Log, TEXT("Closed Path Point Arrive. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
 		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
 		UE_LOG(LogClass, Log, TEXT("index++. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
@@ -1653,10 +1673,10 @@ void APlayerShip::CheckPath() {
 
 	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix + 10.0f)
 		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::ForOneFrame, frontTraceResult, true);
+		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix + 10.0f)
 		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::ForOneFrame, frontTraceResult, true);
+		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 	
 	bIsStraightMove = !bMoveTargetHited;
 	if (!(!bMoveTargetHited || !bFrontHited))

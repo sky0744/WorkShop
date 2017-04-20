@@ -29,7 +29,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
 		virtual bool CommandAttack(ASpaceObject* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		virtual bool CommandMining(TScriptInterface<ICollectable> target);
+		virtual bool CommandMining(AResource* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
 		virtual bool CommandRepair(ASpaceObject* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
@@ -42,9 +42,4 @@ public:
 		virtual bool CommandUndock();
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
 		virtual bool CommandLaunch(TArray<int> baySlot);
-
-	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		virtual bool CommandToggleTargetModule(int slotIndex, ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		virtual bool CommandToggleActiveModule(int slotIndex);
 };

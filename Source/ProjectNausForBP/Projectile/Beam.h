@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ede26be95d71af20495a189bbd314b8908f63877abf1c6bb5e34df5df89283ef
-size 749
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "GameFramework/Actor.h"
+#include "ProjectNausForBP.h"
+#include "Beam.generated.h"
+
+UCLASS()
+class PROJECTNAUSFORBP_API ABeam : public AActor
+{
+	GENERATED_BODY()
+	
+public:	
+	// Sets default values for this actor's properties
+	ABeam();
+
+	virtual void BeginPlay() override;
+	virtual void Tick( float DeltaSeconds ) override;
+
+	void SetBeamProperty(ASpaceObject* launchActor, FVector targetedLocation, bool isWeapon, float setedDamage, float aliveTime = 1.0f);
+#pragma region Beam Property
+	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Beam Data")
+		UParticleSystemComponent* beamParticle;
+#pragma endregion
+};

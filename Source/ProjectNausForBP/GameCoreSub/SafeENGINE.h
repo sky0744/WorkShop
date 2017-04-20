@@ -87,9 +87,9 @@ public:
 	:	bonusStatType(type)
 	,	bonusStat(stat)		{}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Bonus State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
 		BonusStatType bonusStatType;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Bonus State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
 		float bonusStat;
 };
 #pragma endregion
@@ -228,13 +228,13 @@ public:
 		, skillLevel(level)
 		, skillLearning(learning) {}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Instance Skill Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int skillID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Instance Skill Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int canLearnMaxLevel;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Instance Skill Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int skillLevel;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Instance Skill Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		float skillLearning;
 };
 USTRUCT(BlueprintType)		//인덱스 자체가 ID(중복 X)
@@ -244,61 +244,61 @@ struct PROJECTNAUSFORBP_API FStructureInfo
 public:
 	FStructureInfo() {}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		int structureID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		Faction structureFaction;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		StructureType structureType;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		int techLevel;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FVector2D structureLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FRotator structureRotation;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FString LinkedSector;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		bool isDestroyed;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		bool isRespawnable;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float maxRespawnTime;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float remainRespawnTime;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float structureShieldRate;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float structureArmorRate;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float structureHullRate;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
 		TArray<FItem> itemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FItemSellData> itemSellListId;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float maxItemListRefreshTime;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float remainItemListRefreshTime;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FItem> productItemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<int> maxProductAmount;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FItem> consumptItemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float maxProductTime;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float remainProductTime;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<int> shipSellList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FItem> playerItemList;
 };
 #pragma endregion
@@ -309,24 +309,24 @@ struct PROJECTNAUSFORBP_API FShipData : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ship Data")
 		FText Name;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		FName MeshPath;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ship Data")
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<int> RequireSkill;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<int> RequireSkillLevel;
+		TArray<FSkill> RequireSkills;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		Faction Shipfaction;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		ShipClass Shipclass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		float ShipValue;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float lengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
@@ -360,6 +360,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		int SlotTarget;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		float TargetAccessAngle;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		TArray<FVector> LeftHardPoint;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		TArray<FVector> RightHardPoint;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		int SlotActive;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
@@ -443,7 +449,7 @@ public:
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FName MeshPath;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
@@ -501,7 +507,7 @@ public:
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FName MeshPath;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
 		UTexture2D* Icon;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		ResourceType Type;
@@ -532,7 +538,7 @@ public:
 		FText Name;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		FText Desc;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill Data")
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
@@ -564,7 +570,7 @@ public:
 		FText Name;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
 		FText Desc;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Data")
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
@@ -656,7 +662,7 @@ public:
 		int itemLinkedID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		FName MeshPath;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Proejctile Data")
 		UTexture2D* Icon;
 
 	FProjectileData() {}

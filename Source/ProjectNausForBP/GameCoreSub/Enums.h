@@ -159,7 +159,13 @@ enum class GetStatType : uint8 {
 	maxRotateRate			UMETA(DisplayName = "maxRotateRate"),
 	rotateAcceleraion		UMETA(DisplayName = "rotateAcceleraion"),
 	rotateDeceleraion		UMETA(DisplayName = "rotateDeceleraion"),
-	currentRotateRate		UMETA(DisplayName = "currentRotateRate")
+	currentRotateRate		UMETA(DisplayName = "currentRotateRate"),
+
+	droneBaseStatsMultiple		UMETA(DisplayName = "droneBaseStatsMultiple"),
+	droneDroneDamageMultiple	UMETA(DisplayName = "droneDroneDamageMultiple"),
+	droneDroneRangeMultiple		UMETA(DisplayName = "droneDroneRangeMultiple"),
+	droneDroneSpeedMultiple		UMETA(DisplayName = "droneDroneSpeedMultiple"),
+	droneDroneControlMultiple	UMETA(DisplayName = "droneDroneControlMultiple")
 };
 UENUM(BlueprintType)
 enum class BonusStatType : uint8 {

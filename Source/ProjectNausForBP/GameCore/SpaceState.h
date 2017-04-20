@@ -10,7 +10,6 @@
 
 #include "../Interface/Commandable.h"
 #include "../Interface/Structureable.h"
-#include "../Interface/Collectable.h"
 
 #include "../GameCoreSub/Enums.h"
 #include "SpaceState.generated.h"

@@ -1,3 +1,44 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f459a2bafa2f67d819c80a30810cd00695fd07d49dec7edc1d21ecd5e118630b
-size 1027
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "ProjectNausForBP.h"
+#include "Structureable.h"
+
+
+// This function does not need to be modified.
+UStructureable::UStructureable(const class FObjectInitializer& ObjectInitializer)
+: Super(ObjectInitializer)
+{
+}
+
+// Add default functionality here for any IStructureable functions that are not pure virtual.
+
+FString IStructureable::GetDestinationName() {
+	unimplemented();
+	return "";
+}
+
+StructureType IStructureable::GetStationType() {
+	unimplemented();
+	return StructureType::TradingCenter;
+}
+
+bool IStructureable::RequestedDock(Faction requestFaction) {
+	unimplemented();
+	return false;
+}
+
+bool IStructureable::RequestedJump(Faction requestFaction) {
+	unimplemented();
+	return false;
+}
+
+
+bool IStructureable::SetStructureData(FStructureInfo& structureData) {
+	unimplemented();
+	return false;
+}
+
+void IStructureable::GetStructureData(FStructureInfo& structureData) {
+	unimplemented();
+	return;
+}

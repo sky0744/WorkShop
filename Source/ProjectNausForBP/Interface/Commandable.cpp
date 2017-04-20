@@ -31,7 +31,7 @@ bool ICommandable::CommandAttack(ASpaceObject* target) {
 	return false;
 }
 
-bool ICommandable::CommandMining(TScriptInterface<ICollectable> target) {
+bool ICommandable::CommandMining(AResource* target) {
 	unimplemented();
 	return false;
 }
@@ -62,16 +62,6 @@ bool ICommandable::CommandUndock() {
 }
 
 bool ICommandable::CommandLaunch(TArray<int> baySlot) {
-	unimplemented();
-	return false;
-}
-
-bool ICommandable::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-	unimplemented();
-	return false;
-}
-
-bool ICommandable::CommandToggleActiveModule(int slotIndex) {
 	unimplemented();
 	return false;
 }

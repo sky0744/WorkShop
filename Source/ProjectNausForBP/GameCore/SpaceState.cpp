@@ -81,7 +81,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 					_regenStructure = Cast<IStructureable>(_regenStation);
 					_regenStructure->SetStructureData(stationData);
 					UGameplayStatics::FinishSpawningActor(_regenStation, _regenStation->GetActorTransform());
-					_regenStation->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
+					_regenStation->AddActorWorldOffset(USafeENGINE::GetRandomLocation(true) * 0.01f);
 				}
 			}
 		} else {
@@ -158,7 +158,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 					_regenStructure = Cast<IStructureable>(_regenGate);
 					_regenStructure->SetStructureData(gateData);
 					UGameplayStatics::FinishSpawningActor(_regenGate, _regenGate->GetActorTransform());
-					_regenGate->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
+					_regenGate->AddActorWorldOffset(USafeENGINE::GetRandomLocation(true) * 0.01f);
 				}
 			}
 		} else if (gateData.remainItemListRefreshTime <= 0.0f) {
@@ -187,7 +187,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 			gateData.remainItemListRefreshTime = gateData.maxItemListRefreshTime;
 		}
 	}
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationInfo();
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOverTime();
 
 	//섹터 내 함선 최대 수 체크
 	if (currentShipCapacity < shipRegenLimit) {
@@ -219,7 +219,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 						if (_regenShip != nullptr) {
 							_regenShip->InitObject(currentSectorInfo->ShipRegenData[index1].objectID);
 							UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
-							_regenShip->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
+							_regenShip->AddActorWorldOffset(USafeENGINE::GetRandomLocation(true) * 0.01f);
 						}
 						break;
 					} else if (!currentSectorInfo->ShipRegenData[index1].isPlacementToGate) {
@@ -280,7 +280,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpaceObject::StaticClass(), _getAllObj);
 
 		TScriptInterface<IStructureable> _transStruct;
-		TScriptInterface<ICollectable> _transResource;
+		AResource* _resource;
 
 		saver->npcShipID.Reserve(_getAllObj.Num() - 1);
 		saver->npcShipLocation.Reserve(_getAllObj.Num() - 1);
@@ -312,14 +312,13 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				}
 				break;
 			case ObjectType::Resource:
-				_transResource.SetObject(_obj);
-				_transResource.SetInterface(Cast<ICollectable>(_obj));
+				_resource = Cast<AResource>(_obj);
 
-				saver->resourceID.Emplace(_obj->GetObjectID());
-				saver->resourceLocation.Emplace(_obj->GetActorLocation());
-				saver->resourceRotation.Emplace(_obj->GetActorRotation());
-				saver->resourceDurability.Emplace(_transResource->GetResourceDurability());
-				saver->resourceAmount.Emplace(_transResource->GetResourceAmount());
+				saver->resourceID.Emplace(_resource->GetObjectID());
+				saver->resourceLocation.Emplace(_resource->GetActorLocation());
+				saver->resourceRotation.Emplace(_resource->GetActorRotation());
+				saver->resourceDurability.Emplace(_resource->GetResourceDurability());
+				saver->resourceAmount.Emplace(_resource->GetResourceAmount());
 				break;
 			case ObjectType::Gate:
 			case ObjectType::Station:
@@ -383,8 +382,6 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 	AShip* _ship;
 	AResource* _resource;
 	IStructureable* _sObj;
-	ICollectable* _cObj;
-
 	sectorInfo = loader->sectorInfo;
 
 	UEnum* _EnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
@@ -462,8 +459,8 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 
 			if (_obj != nullptr) {
 				Cast<ASpaceObject>(_obj)->InitObject(loader->resourceID[index]);
-				_cObj = Cast<ICollectable>(_obj);
-				_cObj->SetResource(loader->resourceDurability[index], loader->resourceAmount[index]);
+				_resource = Cast<AResource>(_obj);
+				_resource->SetResource(loader->resourceDurability[index], loader->resourceAmount[index]);
 				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 			}
 			_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));

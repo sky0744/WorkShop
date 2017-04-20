@@ -282,7 +282,7 @@ bool ADrone::CommandAttack(ASpaceObject* target) {
 	return false;
 }
 
-bool ADrone::CommandMining(TScriptInterface<ICollectable> target) {
+bool ADrone::CommandMining(AResource* target) {
 	return false;
 }
 
@@ -307,14 +307,6 @@ bool ADrone::CommandUndock() {
 }
 
 bool ADrone::CommandLaunch(TArray<int> BaySlot) {
-	return false;
-}
-
-bool ADrone::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-	return false;
-}
-
-bool ADrone::CommandToggleActiveModule(int slotIndex) {
 	return false;
 }
 #pragma endregion

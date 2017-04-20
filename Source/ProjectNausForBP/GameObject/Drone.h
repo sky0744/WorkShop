@@ -27,26 +27,26 @@ protected:
 
 #pragma region SpaceObject Inheritance
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual int GetObjectID() override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual ObjectType GetObjectType() override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual Faction GetFaction() override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual void SetFaction(Faction setFaction) override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual BehaviorState GetBehaviorState() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual bool InitObject(int objectId) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual float GetValue(GetStatType statType) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
 		virtual void GetRepaired(GetStatType statType, float repairValue) override;
 #pragma endregion
 
@@ -61,7 +61,7 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandAttack(ASpaceObject* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandMining(TScriptInterface<ICollectable> target) override;
+		virtual bool CommandMining(AResource* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandRepair(ASpaceObject* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
@@ -74,11 +74,6 @@ protected:
 		virtual bool CommandUndock() override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandLaunch(TArray<int> BaySlot) override;
-
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandToggleTargetModule(int slotIndex, ASpaceObject* target) override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandToggleActiveModule(int slotIndex) override;
 #pragma endregion
 
 #pragma region Functions
