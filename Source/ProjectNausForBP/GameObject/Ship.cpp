@@ -252,7 +252,7 @@ bool AShip::InitObject(int npcID) {
 			slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
 			slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
 
-			slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
+			slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo[FMath::RandRange(0, _tempModuleData.UsageAmmo.Num() - 1)], FMath::RandRange(0, _tempModuleData.AmmoCapacity));
 			slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
 		}
 	}
@@ -291,10 +291,6 @@ bool AShip::InitObject(int npcID) {
 	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
-
-	targetAccessAngle = FMath::Clamp(FMath::Abs(FMath::Cos(_tempShipData.TargetAccessAngle)), 0.0f, 0.866f);
-	leftHardPoint = _tempShipData.LeftHardPoint;
-	rightHardPoint = _tempShipData.RightHardPoint;
 
 	for (FBonusStat& bonusStat : _tempShipData.bonusStats) {
 
@@ -645,8 +641,8 @@ bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 }
 
 bool AShip::CommandUndock() {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandUndock] Commanded!"));
 	if (behaviorState == BehaviorState::Docked) {
+		UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandUndock] Commanded!"));
 		bIsStraightMove = true;
 		targetObject = nullptr;
 		behaviorState = BehaviorState::Idle;

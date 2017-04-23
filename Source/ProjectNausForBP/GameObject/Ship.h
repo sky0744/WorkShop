@@ -154,11 +154,6 @@ private:
 
 	UPROPERTY()
 		ASpaceObject* targetObject;
-	float targetAccessAngle;
-	UPROPERTY()
-		TArray<FVector> leftHardPoint;
-	UPROPERTY()
-		TArray<FVector> rightHardPoint;
 	UPROPERTY()
 		TScriptInterface<ICommandable> targetCommand;
 	UPROPERTY()

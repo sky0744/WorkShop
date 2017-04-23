@@ -255,18 +255,14 @@ enum class ItemType : uint8 {
 
 	Ore				UMETA(DisplayName = "Ore"),
 	Mineral				UMETA(DisplayName = "Mineral"),
-	Resource			UMETA(DisplayName = "Resource"),
 	IndustryParts			UMETA(DisplayName = "IndustryParts"),
-	
 	ConstructPart			UMETA(DisplayName = "ConstructPart"),
 	Blueprint			UMETA(DisplayName = "Blueprint"),
 	Trade				UMETA(DisplayName = "Trade"),
 
-	Ammo_EnergyCell			UMETA(DisplayName = "EnergyCell"),
 	Ammo_Shell			UMETA(DisplayName = "Shell"),
 	Ammo_Sabot			UMETA(DisplayName = "Sabot"),
 	Ammo_Missile			UMETA(DisplayName = "Missile"),
-	Consumption			UMETA(DisplayName = "Consumption"),
 	Quest				UMETA(DisplayName = "Quest")
 };
 UENUM(BlueprintType)

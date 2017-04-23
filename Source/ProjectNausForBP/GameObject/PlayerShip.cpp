@@ -226,11 +226,17 @@ bool APlayerShip::InitObject(int objectId) {
 		if (newMesh)
 			objectMesh->SetStaticMesh(newMesh);
 
-		slotTargetModule.Init(FTargetModule(), _tempShipData.SlotTarget);
-		targetingObject.Init(nullptr, _tempShipData.SlotTarget);
-		slotActiveModule.Init(FActiveModule(), _tempShipData.SlotActive);
-		slotPassiveModule.Init(0, FMath::Clamp(_tempShipData.SlotPassive, 0, 9));
-		slotSystemModule.Init(0, FMath::Clamp(_tempShipData.SlotSystem, 0, 9));
+		slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
+		targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
+		slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, 0, 8));
+		slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, 0, 8));
+		slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, 0, 8));
+
+		slotTargetModule.Init(FTargetModule(), FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
+		targetingObject.Init(nullptr, FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
+		slotActiveModule.Init(FActiveModule(), FMath::Clamp(_tempShipData.SlotActive, 0, 8));
+		slotPassiveModule.Init(0, FMath::Clamp(_tempShipData.SlotPassive, 0, 8));
+		slotSystemModule.Init(0, FMath::Clamp(_tempShipData.SlotSystem, 0, 8));
 		
 		lengthToLongAsix = FMath::Clamp(_tempShipData.lengthToLongAsix, 10.0f, 10000.0f);
 		lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f);
@@ -263,10 +269,6 @@ bool APlayerShip::InitObject(int objectId) {
 	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, 0.0f, 90.0f);
 	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, 0.0f, 90.0f);
-
-	targetAccessAngle = FMath::Clamp(FMath::Abs(FMath::Cos(_tempShipData.TargetAccessAngle)), 0.0f, 0.866f);
-	leftHardPoint = _tempShipData.LeftHardPoint;
-	rightHardPoint = _tempShipData.RightHardPoint;
 
 	if (TotalStatsUpdate() == false)
 		return false;
@@ -707,7 +709,7 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 				slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
 				slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
 				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
-				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
+				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];//FItem(_tempModuleData.UsageAmmo, 0);
 				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
 			}
 			else slotTargetModule[index] = FTargetModule();
@@ -801,7 +803,8 @@ bool APlayerShip::EquipModule(int moduleID) {
 				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
 				slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
 
-				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
+				slotTargetModule[index].ammo = FItem(-1, 0);
+				slotTargetModule[index].compatibleAmmo = _tempModuleData.UsageAmmo;
 				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
 				TotalStatsUpdate();
 				for (int index1 = 0; index1 < slotTargetModule.Num(); index1++)
@@ -892,6 +895,7 @@ bool APlayerShip::UnEquipModule(ItemType moduleItemType, int slotNumber) {
 		case ModuleType::MissileLauncher:
 			if (userState->AddPlayerCargo(slotTargetModule[slotNumber].ammo))
 				slotTargetModule[slotNumber] = FTargetModule();
+			else return false;
 			break;
 		default:
 			break;
@@ -1059,14 +1063,12 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 			case ModuleType::MissileLauncher:
 				//모듈이 실탄 계열인 경우, 모듈을 활성화하기 이전에 ammo 상태를 확인
 				if (slotTargetModule[slotIndex].ammo.itemAmount < 1) {
-					USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 					AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-					FItemData _tempModuleData = _tempInstance->GetItemData(slotTargetModule[slotIndex].moduleID);
 					TArray<FItem> _tempItemSlot;
 					int _findSlot;
 
 					userState->GetUserDataItem(_tempItemSlot);
-					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
+					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, slotTargetModule[slotIndex].ammo);
 
 					//ammo를 카고 리스트에서 찾았음.
 					if (_findSlot > -1) {
@@ -1097,6 +1099,47 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 	for (int index = 0; index < slotTargetModule.Num(); index++)
 		slotTargetModule[index].moduleState = ModuleState::NotActivate;
 	return false;
+}
+
+/*
+* 타게팅 모듈의 탄을 변경. 플레이어 전용.
+* @param slotIndex - 타게팅 모듈 슬롯 번호.
+* @param selectedAmmoID - 변경할 탄의 ID.
+*/
+void APlayerShip::SettingAmmo(int slotIndex, int selectedAmmoID) {
+
+	//탄 및 인덱스 유효성, 소유 검사
+	if (slotIndex >= slotTargetModule.Num() || slotIndex < 0)
+		return;
+
+	bool isCompatibleAmmoFound = false;
+	for (int& id : slotTargetModule[slotIndex].compatibleAmmo) {
+		if (id == selectedAmmoID) {
+			isCompatibleAmmoFound = true;
+			break;
+		}
+	}
+	if (isCompatibleAmmoFound == false)
+		return;
+
+	AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+	TArray<FItem> _itemList;
+	int _findSlot;
+
+	if (_userState == nullptr)
+		return;
+
+	_userState->GetUserDataItem(_itemList);
+	_findSlot = USafeENGINE::FindItemSlot(_itemList, FItem(selectedAmmoID, 0));
+	if (_findSlot < 0)
+		return;
+	if (!_userState->AddPlayerCargo(slotTargetModule[slotIndex].ammo))
+		return;
+	//검사 완료
+	slotTargetModule[slotIndex].ammo = FItem(selectedAmmoID, 0);
+	slotTargetModule[slotIndex].remainCooltime = slotTargetModule[slotIndex].maxCooltime;
+	slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
+	return;
 }
 
 /*
@@ -1219,14 +1262,24 @@ bool APlayerShip::CommandWarp(FVector location) {
 bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Receive Command Dock!"));
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
+
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Request : %s"), *target.GetObjectRef()->GetName());
 		if (target->RequestedDock(Faction::Player)) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
+
+			if (USafeENGINE::CheckDistacneConsiderSize(this, targetObject) < 500.0f) {
+				targetObject = nullptr;
+				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
+				behaviorState = BehaviorState::Docked;
+				Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
+				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
+			} else {
+				RequestPathUpdate();
+				behaviorState = BehaviorState::Docking;
+				UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
+			}
 			bIsStraightMove = true;
-			RequestPathUpdate();
-			behaviorState = BehaviorState::Docking;
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
 			return true;
 		}
 		else {
@@ -1292,7 +1345,7 @@ bool APlayerShip::MoveDistanceCheck() {
 				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
 		}
 	}
-	targetVector.Z = 0;
+	targetVector.Z = 0.0f;
 
 	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
 	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
@@ -1431,7 +1484,10 @@ void APlayerShip::ModuleCheck() {
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
-						FTransform _spawnedTransform = FTransform(_targetedRotation, GetActorLocation() + _targetedDirect * lengthToLongAsix);
+						
+						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix 
+							+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 
 						//빔계열 모듈의 경우
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
@@ -1498,22 +1554,17 @@ void APlayerShip::ModuleCheck() {
 						slotTargetModule[index].moduleType == ModuleType::Railgun ||
 						slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
 
-						USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 						AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-
-						FItemData _tempModuleData = _tempInstance->GetItemData(slotTargetModule[index].moduleID);
 						TArray<FItem> _tempItemSlot;
 						int _reloadedAmount;
 						int _findSlot;
 
 						userState->GetUserDataItem(_tempItemSlot);
-						_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
+						_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, slotTargetModule[index].ammo);
 						
-
 						//ammo를 찾지 못하였음. 재장전 및 모듈 동작 실시하지 않음.
 						if (_findSlot < 0)
 							slotTargetModule[index].moduleState = ModuleState::NotActivate;
-
 						//ammo를 찾음. 재장전 실시. 모듈 동작은 재장전이 완료되면 자동으로 시작.
 						else {
 							_reloadedAmount = FMath::Min(_tempItemSlot[_findSlot].itemAmount, slotTargetModule[index].ammoCapacity - slotTargetModule[index].ammo.itemAmount);

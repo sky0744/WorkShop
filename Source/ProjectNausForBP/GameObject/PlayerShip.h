@@ -95,9 +95,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetRotateRate(float value);
 
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
 		virtual bool ToggleTargetModule(int slotIndex, ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
+		virtual void SettingAmmo(int slotIndex, int selectedAmmoID);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
 		virtual bool ToggleActiveModule(int slotIndex);
 #pragma endregion
 
@@ -221,11 +223,6 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
-	float targetAccessAngle;
-	UPROPERTY()
-		TArray<FVector> leftHardPoint;
-	UPROPERTY()
-		TArray<FVector> rightHardPoint;
 	UPROPERTY()
 		TArray<ASpaceObject*> targetingObject;
 	UPROPERTY()

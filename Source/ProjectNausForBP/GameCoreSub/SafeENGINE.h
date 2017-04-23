@@ -133,6 +133,7 @@ public:
 		, ammoLifeSpanBonus(0.0f)
 		
 		, ammo(FItem(0, 0))
+		, compatibleAmmo(TArray<int>())
 		, ammoCapacity(0) {}
 
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
@@ -169,6 +170,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		FItem ammo;
+	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
+		TArray<int> compatibleAmmo;
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		int ammoCapacity;
 };
@@ -360,12 +363,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		int SlotTarget;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float TargetAccessAngle;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FVector> LeftHardPoint;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FVector> RightHardPoint;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		int SlotActive;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
@@ -637,9 +634,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon In Item Data")
 		float AmmoLifeSpanBonus;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon In Item Data")
-		int UsageAmmo;
+		TArray<int> UsageAmmo;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon In Item Data")
-		float AmmoCapacity;
+		int AmmoCapacity;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile In Item Data")
 		int ProjectileID;

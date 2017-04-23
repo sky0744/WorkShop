@@ -254,6 +254,7 @@ bool AUserState::ShipBuy(int newShipID) {
 
 	FShipData _tempShipData = _tempInstance->GetShipData(newShipID);
 	TArray<int> _moduleToBeRemoved;
+	bool _isModuleEmptyCheck = true;
 
 	if (_tempShipData.ShipValue > sCredit) 	{
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][ShipBuy] The credit you have is lower than the price of the ship. Can't buying this ship."));
@@ -267,20 +268,28 @@ bool AUserState::ShipBuy(int newShipID) {
 
 	_obj->GetModule(ItemType::TargetModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
-		if (!_obj->UnEquipModule(ItemType::TargetModule, index))
+		if (_moduleToBeRemoved[index] != 0) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
 			return false;
+		}
 	_obj->GetModule(ItemType::ActiveModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
-		if (!_obj->UnEquipModule(ItemType::ActiveModule, index))
+		if (_moduleToBeRemoved[index] != 0) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
 			return false;
+		}
 	_obj->GetModule(ItemType::PassiveModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
-		if (!_obj->UnEquipModule(ItemType::PassiveModule, index))
+		if (_moduleToBeRemoved[index] != 0) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
 			return false;
+		}
 	_obj->GetModule(ItemType::SystemModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
-		if (!_obj->UnEquipModule(ItemType::SystemModule, index))
+		if (_moduleToBeRemoved[index] != 0) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
 			return false;
+		}
 
 	ChangeCredit(-_tempShipData.ShipValue);
 	_tempShipData = _tempInstance->GetShipData(_obj->GetObjectID());
@@ -325,8 +334,8 @@ float AUserState::GetBounty() {
 bool AUserState::AddPlayerCargo(FItem addItem) {
 	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
 		return false;
-	if (addItem.itemAmount < 1)
-		return false;
+	if (addItem.itemID < 0 || addItem.itemAmount < 1)
+		return true;
 
 	ASpaceObject* _obj = Cast<ASpaceObject>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 
