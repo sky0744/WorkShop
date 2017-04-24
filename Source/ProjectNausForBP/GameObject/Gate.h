@@ -66,9 +66,6 @@ protected:
 #pragma region Functions
 public:
 	FStructureInfo* GetStructureDataPointer();
-protected:
-	void CheckGateRefreshTime();
-	void RefreshGateItem();
 #pragma endregion
 
 #pragma region Components

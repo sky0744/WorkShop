@@ -240,6 +240,24 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		float skillLearning;
 };
+
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FProductProcess {
+	GENERATED_USTRUCT_BODY()
+public:
+	FProductProcess(FItem item = FItem(), float startItem = 0.0f)
+		: productItem(item)
+		, productTime(startItem)
+		, maxProductTime(startItem) {}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		FItem productItem;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		float productTime;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		float maxProductTime;
+};
+
 USTRUCT(BlueprintType)		//인덱스 자체가 ID(중복 X)
 struct PROJECTNAUSFORBP_API FStructureInfo
 {
@@ -511,20 +529,44 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		float lengthToLongAsix;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float respawnTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float Durability;
+		float DurabilityMin;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		float DurabilityMax;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		float DurabilityDef;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		float ResourceID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float ResourceAmount;
+		float ResourceAmountMin;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		float ResourceAmountMax;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		float RichOreChance;
 
 	FResourceData() {}
+};
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FProductData : public FTableRowBase {
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		FItem ProductItem;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		TArray<int> RequireSkill;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		TArray<int> RequireSkillLevel;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		TArray<FItem> requireItems;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		float ProductTime;
+
+	FProductData() {}
 };
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FSkillData : public FTableRowBase
@@ -590,6 +632,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
 		float CargoVolume;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
+		TArray<FItem> ReprocessResult;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Module In Item Data")
 		ItemType Type;

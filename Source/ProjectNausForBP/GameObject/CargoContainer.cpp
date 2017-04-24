@@ -63,6 +63,11 @@ float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const&
 }
 
 void ACargoContainer::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }

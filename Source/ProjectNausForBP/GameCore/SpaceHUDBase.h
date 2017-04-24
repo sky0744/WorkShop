@@ -37,6 +37,14 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void UpdateUIContract();
 	virtual void UpdateUIContract_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void AddToObjectList(ASpaceObject* object);
+	virtual void AddToObjectList_Implementation(ASpaceObject* object);
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void RemoveFromObjectList(ASpaceObject* object);
+	virtual void RemoveFromObjectList_Implementation(ASpaceObject* object);
 #pragma endregion
 
 #pragma region Docked UI Update

@@ -27,7 +27,7 @@ AResource::AResource()
 void AResource::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	UE_LOG(LogClass, Log, TEXT("[Info][Resource][Spawn] Spawn Finish!"));
 }
 
@@ -59,6 +59,11 @@ float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 }
 
 void AResource::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
@@ -94,6 +99,7 @@ bool AResource::InitObject(int objectId) {
 
 	if (resourceID != objectId) {
 		resourceID = objectId;
+		objectName = tempData.Name;
 
 		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempData.MeshPath.ToString()));
 		objectMesh->SetStaticMesh(newMesh);
@@ -103,9 +109,15 @@ bool AResource::InitObject(int objectId) {
 	resourceType = tempData.Type;
 	lengthToLongAsix = tempData.lengthToLongAsix;
 
-	currentDurability = maxDurability = tempData.Durability;
-	currentResource = FItem(tempData.ResourceID, tempData.ResourceAmount);
+	currentDurability = maxDurability = FMath::FRandRange(tempData.DurabilityMin, tempData.DurabilityMax);
+	currentResource = FItem(tempData.ResourceID, FMath::FRandRange(tempData.ResourceAmountMin, tempData.ResourceAmountMax));
 	defResource = tempData.DurabilityDef;
+	if (FMath::FRandRange(0.0f, 1.0f) > 1.0f - tempData.RichOreChance) {
+		currentDurability *= 2.0f;
+		currentResource.itemAmount *= 2.0f;
+		defResource *= 2.0f;
+	}
+
 	return true;
 }
 
@@ -132,8 +144,8 @@ float AResource::GetValue(GetStatType statType) {
 void AResource::SetResource(float durability, FItem ore) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 
-	currentDurability = FMath::Clamp(durability, 0.0f, _tempInstance->GetResourceData(resourceID).Durability);
-	currentResource.itemAmount = FMath::Clamp((float)ore.itemAmount, 0.0f, _tempInstance->GetResourceData(resourceID).ResourceAmount);
+	currentDurability = FMath::Clamp(durability, 0.0f, _tempInstance->GetResourceData(resourceID).DurabilityMax);
+	currentResource.itemAmount = FMath::Clamp((float)ore.itemAmount, 0.0f, _tempInstance->GetResourceData(resourceID).ResourceAmountMax);
 }
 
 float AResource::GetResourceAmount() {

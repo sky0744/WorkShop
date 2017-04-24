@@ -102,6 +102,11 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 }
 
 void AStation::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	if (structureInfo) {
 		structureInfo->isDestroyed = true;
 		structureInfo->remainRespawnTime = structureInfo->maxRespawnTime;
@@ -221,11 +226,15 @@ FString AStation::GetDestinationName() {
 }
 
 StructureType AStation::GetStationType() {
-	return structureInfo->structureType;
+	if(structureInfo != nullptr)
+		return structureInfo->structureType;
+	else return StructureType::TradingCenter;
 }
 
 bool AStation::RequestedDock(Faction requestFaction) {
-	return true;
+	if(structureInfo != nullptr)
+		return true;
+	else return false;
 }
 
 bool AStation::RequestedJump(Faction requestFaction) {
@@ -241,6 +250,7 @@ bool AStation::SetStructureData(FStructureInfo& structureData) {
 
 	structureInfo = &structureData;
 	tempStationData = tempInstance->GetStationData((structureInfo->structureID));
+	objectName = tempStationData.Name;
 
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempStationData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
@@ -261,7 +271,6 @@ bool AStation::SetStructureData(FStructureInfo& structureData) {
 	repairHull = tempStationData.RepairHull;
 	defHull = tempStationData.DefHull;
 
-	AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 	isInited = true;
 	return true;
 }
@@ -277,13 +286,4 @@ FStructureInfo* AStation::GetStructureDataPointer() {
 	return structureInfo;
 }
 
-void AStation::RefreshStationItem(){
-
-}
-void AStation::ProductItemInStationCargo(){
-
-}
-void AStation::ProductItemInPlayerCargo(){
-
-}
 #pragma endregion

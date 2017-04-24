@@ -38,8 +38,6 @@ void AShip::BeginPlay()
 	traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
 
 	checkTime = 0.0f;
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()))
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(false);
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Begin] Spawn Finish!"));
 }
 
@@ -58,11 +56,11 @@ void AShip::Tick(float DeltaTime)
 
 		CheckPath();
 		ModuleCheck();
-	}
 
-	//GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxSpeed : " + FString::SanitizeFloat(maxSpeed) + ", TargetSpeed : " + FString::SanitizeFloat(targetSpeed) + ", CurrentSpeed : " + FString::SanitizeFloat(currentSpeed));
-	//GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxAcceleration : " + FString::SanitizeFloat(maxAcceleration) + ", MinAcceleration : " + FString::SanitizeFloat(minAcceleration) + ", TargetAcceleration : " + FString::SanitizeFloat(accelerationFactor));
-	//GEngine->AddOnScreenDebugMessage(-1, 0.01333f, FColor::White, "MaxRotateRate : " + FString::SanitizeFloat(maxRotateRate) + ", TargetRotateRate : " + FString::SanitizeFloat(targetRotateRateFactor) + ", CurrentRotateRate : " + FString::SanitizeFloat(realRotateRateFactor));
+		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::White, "MaxSpeed : " + FString::SanitizeFloat(maxSpeed) + ", TargetSpeed : " + FString::SanitizeFloat(targetSpeed) + ", CurrentSpeed : " + FString::SanitizeFloat(currentSpeed));
+		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::White, "MaxAcceleration : " + FString::SanitizeFloat(maxAcceleration) + ", MinAcceleration : " + FString::SanitizeFloat(minAcceleration));
+		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::White, "MaxRotateRate : " + FString::SanitizeFloat(maxRotateRate) + ", TargetRotateRate : " + FString::SanitizeFloat(targetRotateRateFactor) + ", CurrentRotateRate : " + FString::SanitizeFloat(realRotateRateFactor));
+	}
 
 	switch (behaviorState) {
 	case BehaviorState::Idle:
@@ -185,8 +183,10 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 }
 
 void AShip::BeginDestroy() {
-	if(GetWorld() && UGameplayStatics::GetGameState(GetWorld()))
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
 		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 
 	UnregisterAllComponents();
 	Super::BeginDestroy();
@@ -227,6 +227,8 @@ bool AShip::InitObject(int npcID) {
 	FItemData _tempModuleData;
 
 	npcShipID = _tempNpcShipData.NPCID;
+	objectName = _tempNpcShipData.Name;
+
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
 
@@ -414,7 +416,6 @@ bool AShip::InitObject(int npcID) {
 			break;
 		}
 	}
-	AddActorWorldOffset(FVector(0.0f, 0.0f, 0.0f));
 	return true;
 }
 
@@ -495,9 +496,6 @@ float AShip::GetValue(GetStatType statType) {
 	case GetStatType::minAcceleration:
 		_value = minAcceleration;
 		break;
-	case GetStatType::currentAcceleration:
-		_value = accelerationFactor;
-		break;
 
 	case GetStatType::maxRotateRate:
 		_value = maxRotateRate;
@@ -538,7 +536,6 @@ void AShip::CommandStop() {
 }
 
 bool AShip::CommandMoveToPosition(FVector position) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMoveToPosition] Commanded!"));
 
 	if (CheckCanBehavior() == true) {
 		
@@ -553,7 +550,7 @@ bool AShip::CommandMoveToPosition(FVector position) {
 }
 
 bool AShip::CommandMoveToTarget(ASpaceObject* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMoveToTarget] Commanded!"));
+
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		bIsStraightMove = true;
@@ -565,17 +562,22 @@ bool AShip::CommandMoveToTarget(ASpaceObject* target) {
 }
 
 bool AShip::CommandAttack(ASpaceObject* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandAttack] Commanded!"));
+
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		behaviorState = BehaviorState::Battle;
+
+		for (FTargetModule& module : slotTargetModule) {
+			module.moduleState = ModuleState::Activate;
+		}
+
 		return true;
 	}
 	else return false;
 }
 
 bool AShip::CommandMining(AResource* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandMining] Commanded!"));
+
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		behaviorState = BehaviorState::Mining;
@@ -585,26 +587,12 @@ bool AShip::CommandMining(AResource* target) {
 }
 
 bool AShip::CommandRepair(ASpaceObject* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandRepair] Commanded!"));
-	if (CheckCanBehavior() == true) {
-		TArray<bool> isRepairableModuleInSlot;
-		//for(int index = 0; slotTargetModule.Num(); index++)
-		//	slotTargetModule[index]
-		switch (target->GetObjectType()) {
 
-		case ObjectType::Station:
-		case ObjectType::Ship:
-		case ObjectType::Drone:
-		case ObjectType::Gate:
-			targetObject = target;
-		}
-		return true;
-	}
-	else return false;
+	return false;
 }
 
 bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandJump] Commanded!"));
+
 	if (CheckCanBehavior() == true) {
 		Destroy();
 		return true;
@@ -613,7 +601,6 @@ bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
 }
 
 bool AShip::CommandWarp(FVector location) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandWarp] Commanded!"));
 
 	if (CheckCanBehavior() == true) {
 		SetActorLocation(location, false, nullptr, ETeleportType::TeleportPhysics);
@@ -624,7 +611,6 @@ bool AShip::CommandWarp(FVector location) {
 }
 
 bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandDock] Commanded!"));
 
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
 		if (target->RequestedDock(Faction::Player)) {
@@ -641,8 +627,8 @@ bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 }
 
 bool AShip::CommandUndock() {
+
 	if (behaviorState == BehaviorState::Docked) {
-		UE_LOG(LogClass, Log, TEXT("[Info][Ship][CommandUndock] Commanded!"));
 		bIsStraightMove = true;
 		targetObject = nullptr;
 		behaviorState = BehaviorState::Idle;
@@ -669,6 +655,247 @@ void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) {
 	getStructure = targetStructure;
 }
 
+bool AShip::MoveDistanceCheck() {
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+		realMoveFactor = targetVector - GetActorLocation();
+		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
+	} else {
+		if (targetObject != nullptr)
+			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
+
+		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+
+		moveTargetVector -= GetActorLocation();
+		moveTargetVector.Normalize();
+		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
+		DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
+		if (wayPoint.Num() > currentClosedPathIndex)
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return false;
+
+		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
+			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+			if (wayPoint.Num() > index + 1)
+				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
+		}
+	}
+	targetVector.Z = 0.0f;
+
+	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+
+	//checks distance and Angle For start Acceleration.
+	if (nextPointDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+		if (FMath::Abs(targetRotate.Yaw) < startAccelAngle)
+			targetSpeed = maxSpeed;
+		else targetSpeed = 0.0f;
+	} else targetSpeed = 0.0f;
+
+	//arrive to Destination. use upper of Nyquist Rate for high precision.
+	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
+	
+	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+		targetSpeed = 0.0f;
+		currentClosedPathIndex = 0;
+		bIsStraightMove = false;
+		return true;
+	}
+	//arrive to Destination not yet.
+	return false;
+}
+
+void AShip::RotateCheck() {
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+	} else {
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, wayPoint.Num() - 1);
+		if (wayPoint.IsValidIndex(currentClosedPathIndex))
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return;
+	}
+	targetVector.Z = 0;
+
+	realMoveFactor = targetVector - GetActorLocation();
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
+
+	if (nextPointOuter > 0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = maxRotateRate;
+		else
+			targetRotateRateFactor = 0.0f;
+	} else if (nextPointOuter < -0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = -maxRotateRate;
+		else
+			targetRotateRateFactor = 0.0f;
+	} else targetRotateRateFactor = 0.0f;
+}
+
+void AShip::Movement() {
+
+	if (targetRotateRateFactor > 0.0f) {
+		if (realRotateRateFactor >= 0.0f) {
+			if (targetRotateRateFactor > realRotateRateFactor)
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateAcceleration * tempDeltaTime, 0.0f, targetRotateRateFactor);
+			else
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, targetRotateRateFactor, maxRotateRate);
+		} else
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, 0.0f);
+	} else if (targetRotateRateFactor < 0.0f) {
+		if (realRotateRateFactor <= 0.0f) {
+			if (targetRotateRateFactor > realRotateRateFactor)
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, targetRotateRateFactor);
+			else
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateAcceleration * tempDeltaTime, targetRotateRateFactor, 0.0f);
+		} else
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
+	} else {
+
+		if (realRotateRateFactor < 0.0f)
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, 0.0f);
+		else
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
+	}
+
+	if (currentSpeed < targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed + maxAcceleration * tempDeltaTime, 0.0f, targetSpeed);
+	else if (currentSpeed > targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed - minAcceleration * tempDeltaTime, 0.0f, maxSpeed);
+
+	AddActorLocalRotation(FRotator(0.0f, realRotateRateFactor, 0.0f) * tempDeltaTime);
+	AddActorWorldOffset(GetActorForwardVector() * currentSpeed * tempDeltaTime, true);
+}
+
+void AShip::ModuleCheck() {
+
+	moduleConsumptPower = 0.0f;
+
+	for (int index = 0; index < slotTargetModule.Num(); index++) {
+		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
+		if (currentPower < 5.0f)
+			slotTargetModule[index].isBookedForOff = true;
+
+		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
+		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
+				0.0f, slotTargetModule[index].maxUsagePower);
+			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+
+			//쿨타임 완료시 행동 실시
+			if (slotTargetModule[index].remainCooltime <= 0.0f) {
+				switch (slotTargetModule[index].moduleState) {
+				case ModuleState::Activate:
+				case ModuleState::Overload:
+					if (targetObject != nullptr && targetObject != this) {
+						//목표 지점 및 방향 계산
+						FVector _targetedLocation = targetObject->GetActorLocation();
+						FVector _targetedDirect = _targetedLocation - GetActorLocation();
+						_targetedDirect.Normalize();
+						FRotator _targetedRotation = _targetedDirect.Rotation();
+
+						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
+							+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
+
+						//빔계열 모듈의 경우
+						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
+							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
+
+							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
+								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+							if (_beam == nullptr)
+								return;
+							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
+
+							if (slotTargetModule[index].moduleType == ModuleType::Beam)
+								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
+									true, slotTargetModule[index].damageMultiple, 1.0f);
+							else
+								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
+									true, slotTargetModule[index].damageMultiple, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+						}
+						//탄도 무기류의 경우
+						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
+							slotTargetModule[index].moduleType == ModuleType::Railgun ||
+							slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
+
+							if (slotTargetModule[index].ammo.itemAmount < 1) {
+								slotTargetModule[index].moduleState = ModuleState::ReloadAmmo;
+								slotTargetModule[index].isBookedForOff = false;
+							} else {
+								slotTargetModule[index].ammo.itemAmount--;
+
+								AProjectiles* _projectile = Cast<AProjectiles>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AProjectiles::StaticClass(),
+									_spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
+								if (_projectile == nullptr)
+									return;
+								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
+
+								switch (slotTargetModule[index].moduleType) {
+								case ModuleType::Cannon:
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+									break;
+								case ModuleType::Railgun:
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+									break;
+								case ModuleType::MissileLauncher:
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus, targetObject);
+									break;
+								}
+							}
+						}
+					} else {
+						slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						targetObject = nullptr;
+						slotTargetModule[index].isBookedForOff = false;
+					}
+					break;
+				case ModuleState::ReloadAmmo:
+					if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
+						slotTargetModule[index].moduleType == ModuleType::Railgun ||
+						slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
+
+						//재장전 실시. 모듈 동작은 재장전이 완료되면 자동으로 시작.
+							slotTargetModule[index].ammo.itemAmount = slotTargetModule[index].ammoCapacity;
+							if (targetObject != nullptr)
+								slotTargetModule[index].moduleState = ModuleState::Activate;
+							else 
+								slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						 
+						slotTargetModule[index].isBookedForOff = false;
+					}
+					break;
+				default:
+					break;
+				}
+
+				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
+				//모듈 동작 중지 예약이 활성화되어 있다면 동작 중지.
+				if (slotTargetModule[index].isBookedForOff) {
+					slotTargetModule[index].moduleState = ModuleState::NotActivate;
+					targetObject = nullptr;
+					slotTargetModule[index].isBookedForOff = false;
+				}
+			}
+		}
+		//모듈이 꺼져있을 경우 power 소모량 감소
+		else
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
+				0.0f, slotTargetModule[index].maxUsagePower);
+		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
+	}
+}
+
+/*
 bool AShip::MoveDistanceCheck() {
 	if (bIsStraightMove) {
 		targetVector = moveTargetVector;
@@ -940,8 +1167,8 @@ void AShip::ModuleCheck() {
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
 		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
-	}*/
-}
+	}
+}*/
 
 bool AShip::CheckCanBehavior() {
 	switch (behaviorState)

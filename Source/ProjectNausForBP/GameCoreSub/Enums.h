@@ -39,8 +39,9 @@ enum class ObjectType : uint8 {
 	Ship			UMETA(DisplayName = "Ship"),
 	Station			UMETA(DisplayName = "Station"),
 	Gate			UMETA(DisplayName = "Gate"),
-	Drone	UMETA(DisplayName = "Drone"),
+	Drone			UMETA(DisplayName = "Drone"),
 	SpaceObject		UMETA(DisplayName = "SpaceObject"),
+	Container		UMETA(DisplayName = "Container"),
 	Resource		UMETA(DisplayName = "Resource")
 };
 UENUM(BlueprintType)

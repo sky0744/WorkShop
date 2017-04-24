@@ -109,6 +109,10 @@ void AGate::BeginDestroy() {
 		structureInfo->isDestroyed = true;
 		structureInfo->remainRespawnTime = structureInfo->maxRespawnTime;
 	}
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 
 	UnregisterAllComponents();
 	Super::BeginDestroy();
@@ -222,7 +226,9 @@ void AGate::GetRepaired(GetStatType statType, float repairValue) {
 
 #pragma region Interface Implementation : IStructureable
 FString AGate::GetDestinationName() {
-	return structureInfo->LinkedSector;
+	if (structureInfo != nullptr)
+		return structureInfo->LinkedSector;
+	else return "";
 }
 
 StructureType AGate::GetStationType() {
@@ -230,10 +236,14 @@ StructureType AGate::GetStationType() {
 }
 
 bool AGate::RequestedDock(Faction requestFaction) {
-	return true;
+	if (structureInfo != nullptr)
+		return true;
+	else return false;
 }
 bool AGate::RequestedJump(Faction requestFaction) {
-	return true;
+	if(structureInfo != nullptr)
+		return true;
+	else return false;
 }
 
 bool AGate::SetStructureData(FStructureInfo& structureData) {
@@ -278,13 +288,6 @@ void AGate::GetStructureData(FStructureInfo& structureData) {
 #pragma region Functions
 FStructureInfo* AGate::GetStructureDataPointer() {
 	return structureInfo;
-}
-
-void AGate::CheckGateRefreshTime(){
-
-}
-void AGate::RefreshGateItem(){
-
 }
 
 #pragma endregion

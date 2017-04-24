@@ -68,11 +68,6 @@ protected:
 #pragma region Functions
 public:
 	FStructureInfo* GetStructureDataPointer();
-protected:
-	void CheckStationRefreshTime();
-	void RefreshStationItem();
-	void ProductItemInStationCargo();
-	void ProductItemInPlayerCargo();
 #pragma endregion
 
 #pragma region Components

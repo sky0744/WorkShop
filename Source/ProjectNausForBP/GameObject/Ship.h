@@ -180,8 +180,6 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
-	UPROPERTY()
-		TArray<ASpaceObject*> targetingObject;
 
 	float maxSpeed;
 	float targetSpeed;
@@ -201,5 +199,7 @@ private:
 	float bonusCannonLifeTime;
 	float bonusRailGunLifeTime;
 	float bonusMissileLifeTime;
+
+	float moduleConsumptPower;
 #pragma endregion
 };

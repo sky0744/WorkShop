@@ -24,6 +24,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual int GetObjectID();
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual void GetObjectName(FText& spaceObjectName);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
 		virtual ObjectType GetObjectType();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
@@ -53,6 +55,8 @@ protected:
 #pragma region Variables
 protected:
 		int objectID;
+		UPROPERTY()
+			FText objectName;
 		Faction faction;
 		float lengthToLongAsix;
 

@@ -32,6 +32,10 @@ APlayerShip::APlayerShip()
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+
+	sShipID = -1;
+	checkTime = 0.0f;
+	sIsInited = false;
 }
 
 #pragma region Event Calls
@@ -39,7 +43,7 @@ void APlayerShip::BeginPlay()
 {
 	Super::BeginPlay();
 	if (Cast<APawn>(this) != UGameplayStatics::GetPlayerPawn(GetWorld(), 0)) {
-		UE_LOG(LogClass, Log, TEXT("[Warning][Ship][Begin] Spawn Fail! this is not User's Ship!"));
+		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][Begin] Spawn Fail! this is not User's Ship!"));
 		Destroy();
 	}
 	traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
@@ -57,7 +61,7 @@ void APlayerShip::BeginPlay()
 	sShipID = -1;
 	checkTime = 0.0f;
 	sIsInited = false;
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Begin] Spawn Finish!"));
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Begin] Spawn Finish!"));
 }
 
 void APlayerShip::Tick(float DeltaTime)
@@ -217,14 +221,19 @@ bool APlayerShip::InitObject(int objectId) {
 	if (sIsInited == true && (objectId < 0 || objectId == sShipID))
 		return false;
 
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] before init ID : %d, Init to ID : %d"), sShipID, objectId);
+
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
 	if (sShipID != objectId) {
 		sShipID = objectId;
+		objectName = _tempShipData.Name;
 		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-		if (newMesh)
+		if (newMesh) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Mesh Generate!"));
 			objectMesh->SetStaticMesh(newMesh);
+		}
 
 		slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
 		targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
@@ -238,6 +247,8 @@ bool APlayerShip::InitObject(int objectId) {
 		slotPassiveModule.Init(0, FMath::Clamp(_tempShipData.SlotPassive, 0, 8));
 		slotSystemModule.Init(0, FMath::Clamp(_tempShipData.SlotSystem, 0, 8));
 		
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Init Module Slots : %d, %d, %d, %d"), slotTargetModule.Num(), slotActiveModule.Num(), slotPassiveModule.Num(), slotSystemModule.Num());
+
 		lengthToLongAsix = FMath::Clamp(_tempShipData.lengthToLongAsix, 10.0f, 10000.0f);
 		lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f);
 	}
@@ -695,7 +706,7 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 		FItemData _tempModuleData;
 		int _tempIndex = loader->slotTargetModule.Num();
 
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][LoadModuleInit] Currnet Target Module List : %d, Load Module List : %d"), slotTargetModule.Num(), loader->slotTargetModule.Num());
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][LoadFromSave] Currnet Target Module List : %d, Load Module List : %d"), slotTargetModule.Num(), loader->slotTargetModule.Num());
 		for (int index = 0; index < slotTargetModule.Num(); index++) {
 			if (index < _tempIndex && loader->slotTargetModule[index] > 0) {
 				_tempModuleData = _tempInstance->GetItemData(loader->slotTargetModule[index]);
@@ -709,7 +720,7 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 				slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
 				slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
 				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
-				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];//FItem(_tempModuleData.UsageAmmo, 0);
+				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];
 				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
 			}
 			else slotTargetModule[index] = FTargetModule();
@@ -750,7 +761,6 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 		}
 
 		int _tempMaxIndex = FMath::Min(loader->targetModuleAmmo.Num(), slotTargetModule.Num());
-
 		for (int index = 0; index < slotTargetModule.Num(); index++) {
 			if (index < _tempMaxIndex)
 				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];
@@ -1165,12 +1175,13 @@ bool APlayerShip::ToggleActiveModule(int slotIndex) {
 
 #pragma region Interface Implementing : ICommandable
 void APlayerShip::CommandStop() {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandStop] Receive Command Stop!"));
-
-	behaviorState = BehaviorState::Idle;
-	setedTargetSpeed = 0.0f;
-	targetRotateRateFactor = 0.0f;
-	bIsStraightMove = false;
+	if (CheckCanBehavior() == true) {
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandStop] Receive Command Stop!"));
+		behaviorState = BehaviorState::Idle;
+		setedTargetSpeed = 0.0f;
+		targetRotateRateFactor = 0.0f;
+		bIsStraightMove = false;
+	}
 }
 
 bool APlayerShip::CommandMoveToPosition(FVector position) {
@@ -1190,8 +1201,9 @@ bool APlayerShip::CommandMoveToPosition(FVector position) {
 }
 
 bool APlayerShip::CommandMoveToTarget(ASpaceObject* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMove] Receive Command Move! : %s"), *target->GetName());
+
 	if (CheckCanBehavior() == true) {
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMove] Receive Command Move! : %s"), *target->GetName());
 		targetObject = target;
 		bIsStraightMove = true;
 		RequestPathUpdate();
@@ -1202,18 +1214,14 @@ bool APlayerShip::CommandMoveToTarget(ASpaceObject* target) {
 }
 
 bool APlayerShip::CommandAttack(ASpaceObject* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandAttack] Receive Command Attack! : %s"), *target->GetName());
-	if (CheckCanBehavior() == true) { 
-		targetObject = target;
-		behaviorState = BehaviorState::Battle;
-		return true;
-	}
-	else return false;
+
+	return false;
 }
 
 bool APlayerShip::CommandMining(AResource* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMining] Receive Command Mining! : %s"), *target->GetName());
+	
 	if (CheckCanBehavior() == true) {
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMining] Receive Command Mining! : %s"), *target->GetName());
 		targetObject = target;
 		behaviorState = BehaviorState::Mining;
 		return true;
@@ -1222,8 +1230,9 @@ bool APlayerShip::CommandMining(AResource* target) {
 }
 
 bool APlayerShip::CommandRepair(ASpaceObject* target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandRepair] Receive Command Repair! : %s"), *target->GetName());
+	
 	if (CheckCanBehavior() == true) { 
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandRepair] Receive Command Repair! : %s"), *target->GetName());
 		TArray<bool> isRepairableModuleInSlot;
 		//for(int index = 0; slotTargetModule.Num(); index++)
 		//	slotTargetModule[index]
@@ -1241,8 +1250,9 @@ bool APlayerShip::CommandRepair(ASpaceObject* target) {
 }
 
 bool APlayerShip::CommandJump(TScriptInterface<IStructureable> target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandJump] Receive Command Jump! : %s"), *target->GetDestinationName());
+	
 	if (CheckCanBehavior() == true) { 
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandJump] Receive Command Jump! : %s"), *target->GetDestinationName());
 		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->Jump(target->GetDestinationName());
 		return true;
 	}
@@ -1250,8 +1260,9 @@ bool APlayerShip::CommandJump(TScriptInterface<IStructureable> target) {
 }
 
 bool APlayerShip::CommandWarp(FVector location) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandWarp] Receive Command Warp! : %.2f, %.2f, %.2f"), location.X, location.Y, location.Z);
+	
 	if (CheckCanBehavior() == true) { 
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandWarp] Receive Command Warp! : %.2f, %.2f, %.2f"), location.X, location.Y, location.Z);
 		SetActorLocation(location, false, nullptr, ETeleportType::TeleportPhysics);
 		behaviorState = BehaviorState::Idle;
 		return true;
@@ -1260,10 +1271,9 @@ bool APlayerShip::CommandWarp(FVector location) {
 }
 
 bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Receive Command Dock!"));
+	
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
-
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Request : %s"), *target.GetObjectRef()->GetName());
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Receive Command Dock! Docking to Station Request : %s"), *target.GetObjectRef()->GetName());
 		if (target->RequestedDock(Faction::Player)) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
@@ -1291,8 +1301,8 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 }
 
 bool APlayerShip::CommandUndock() {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandUndock] Receive Command Undock!"));
 	if (behaviorState == BehaviorState::Docked) { 
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandUndock] Receive Command Undock!"));
 		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(nullptr);
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIStationButton();
 		bIsStraightMove = true;
@@ -1303,8 +1313,8 @@ bool APlayerShip::CommandUndock() {
 }
 
 bool APlayerShip::CommandLaunch(TArray<int> baySlot) {
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandLaunch] Receive Command Launch! : %d"), baySlot.Num());
 	if (CheckCanBehavior() == true) { 
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandLaunch] Receive Command Launch! : %d"), baySlot.Num());
 		return true;
 	}
 	else return false;
@@ -1316,7 +1326,6 @@ bool APlayerShip::MoveDistanceCheck() {
 	if (bIsStraightMove) {
 		targetVector = moveTargetVector;
 		realMoveFactor = targetVector - GetActorLocation();
-		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
 		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
 	}
@@ -1336,11 +1345,8 @@ bool APlayerShip::MoveDistanceCheck() {
 			targetVector = wayPoint[currentClosedPathIndex];
 		else return false;
 
-		for (int index = 0; index < wayPoint.Num(); index++) {
-			if(index < currentClosedPathIndex)
-				DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::White, false, 0.1f);
-			else
-				DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
+			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
 			if (wayPoint.Num() > index + 1)
 				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
 		}
@@ -1359,11 +1365,8 @@ bool APlayerShip::MoveDistanceCheck() {
 	else setedTargetSpeed = 0.0f;
 
 	//arrive to Destination. use upper of Nyquist Rate for high precision.
-	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) {
-		UE_LOG(LogClass, Log, TEXT("Closed Path Point Arrive. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
+	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
 		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
-		UE_LOG(LogClass, Log, TEXT("index++. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
-	}
 
 	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
 		setedTargetSpeed = 0.0f;
@@ -1524,19 +1527,17 @@ void APlayerShip::ModuleCheck() {
 									return;
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
 
-								ASpaceObject* selfObject = this;
-
 								switch (slotTargetModule[index].moduleType) {
 								case ModuleType::Cannon:
-									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, selfObject,
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
 										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
 									break;
 								case ModuleType::Railgun:
-									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, selfObject,
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
 										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
 									break;
 								case ModuleType::MissileLauncher:
-									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, selfObject,
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
 										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus, targetingObject[index]);
 									break;
 								}
@@ -1546,6 +1547,7 @@ void APlayerShip::ModuleCheck() {
 					else {
 						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Target Module %d - Off."), index);
 						slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						targetingObject[index] = nullptr;
 						slotTargetModule[index].isBookedForOff = false;
 					}
 					break;
@@ -1599,6 +1601,7 @@ void APlayerShip::ModuleCheck() {
 				if (slotTargetModule[index].isBookedForOff) {
 					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Target Module %d - Off."), index);
 					slotTargetModule[index].moduleState = ModuleState::NotActivate;
+					targetingObject[index] = nullptr;
 					slotTargetModule[index].isBookedForOff = false;
 				}
 			}

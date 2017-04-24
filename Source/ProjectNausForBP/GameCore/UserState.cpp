@@ -216,7 +216,7 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerLoad] Fail to Get Player Unit's Infomation!"));
 		return false;
 	}
-	_obj->InitObject(loader->shipID);
+
 
 	sUserName = loader->name;
 	sShipID = loader->shipID;
@@ -225,7 +225,11 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	listItem = loader->itemList;
 	listSkill = loader->skillList;
 
-	if (_obj->LoadFromSave(loader) == false) {
+	if(!_obj->InitObject(loader->shipID)) {
+		UE_LOG(LogClass, Warning, TEXT("[Invaild Access][PlayerState][PlayerLoad] Player's Pawn Already Inited."));
+		return false;
+	}
+	if (!_obj->LoadFromSave(loader)) {
 		UE_LOG(LogClass, Warning, TEXT("[Invaild Access][PlayerState][PlayerLoad] Player's Pawn Already Inited."));
 		return false;
 	}
@@ -299,6 +303,7 @@ bool AUserState::ShipBuy(int newShipID) {
 	if (!_obj->InitObject(newShipID))
 		return false;
 	
+	sShipID = newShipID;
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] The ship purchase was successful."));
 	return true;
 }

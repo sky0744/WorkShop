@@ -28,6 +28,14 @@ void ASpaceHUDBase::UpdateUICargo_Implementation() {
 void ASpaceHUDBase::UpdateUIContract_Implementation() {
 	return;
 }
+
+void ASpaceHUDBase::AddToObjectList_Implementation(ASpaceObject* object) {
+	return;
+}
+
+void ASpaceHUDBase::RemoveFromObjectList_Implementation(ASpaceObject* object) {
+	return;
+}
 #pragma endregion
 
 #pragma region Docked UI Update

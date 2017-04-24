@@ -110,6 +110,11 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 }
 
 void ADrone::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
@@ -154,6 +159,7 @@ bool ADrone::InitObject(int objectId) {
 
 	if (sShipID.GetValue() != objectId) {
 	sShipID.SetValue(objectId);
+	objectName = ...?
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
 

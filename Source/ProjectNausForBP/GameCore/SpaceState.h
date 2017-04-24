@@ -18,7 +18,7 @@
  * 
  */
 UCLASS()
-class PROJECTNAUSFORBP_API ASpaceState : public AGameState {
+class PROJECTNAUSFORBP_API ASpaceState : public AGameStateBase {
 	GENERATED_BODY()
 public:
 	ASpaceState();

@@ -160,43 +160,9 @@ void AUserController::ClickReleaseMouseLeft(FKey key) {
 		, traceObjectParams
 		, traceParams);
 
-	if (hitResult.bBlockingHit) {
-		if (hitResult.Actor->IsA(ASpaceObject::StaticClass())) {
-
-			ASpaceObject* _tempObj = Cast<ASpaceObject>(hitResult.Actor.Get());
-			FColor _peerColor;
-
-			if (ControlledPawn == _tempObj)
-				return;
-
-			if (tObj == nullptr || tObj != _tempObj) {
-				tObj = _tempObj;
-				switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction())) {
-				case Peer::Neutral:
-					_peerColor = FColor::Yellow;
-					break;
-				case Peer::Friendship:
-					_peerColor = FColor::Green;
-					break;
-				case Peer::Enemy:
-					_peerColor = FColor::Red;
-					break;
-				case Peer::TempHold:
-					_peerColor = FColor::Blue;
-					break;
-				default:
-					_peerColor = FColor::White;
-					break;
-				}
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUITarget(tObj, _peerColor, 5.0f);
-			}
-			else if (tObj == _tempObj) 
-				tObj = nullptr;
-			else
-				return;
-
-			UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseLeft] Click Object : %s"), *hitResult.Actor.Get()->GetName());
-		}
+	if (hitResult.bBlockingHit &&hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) {
+		SetTarget(Cast<ASpaceObject>(hitResult.Actor.Get()));
+		UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseLeft] Click Object : %s"), *hitResult.Actor.Get()->GetName());
 	}
 }
 
@@ -232,18 +198,8 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 		, traceObjectParams
 		, traceParams);
 
-	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) {
-		ASpaceObject* _tempObj = Cast<ASpaceObject>(hitResult.Actor.Get());
-		FColor peerColor;
-
-		if (ControlledPawn == _tempObj)
-			return;
-
-		if (tObj == _tempObj)
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIInteraction(hitResult.Actor.Get(), tObj->GetObjectType());
-
-		UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseright] Click Object : %s"), *hitResult.Actor.Get()->GetName());
-	}
+	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) 
+		SettingInteraction(Cast<ASpaceObject>(hitResult.Actor.Get()));
 	else {
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIInteraction();
 		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
@@ -332,5 +288,50 @@ ASpaceObject* AUserController::GetTargetInfo() {
 	if(tObj != ControlledPawn)
 		return tObj;
 	else return nullptr;
+}
+
+void AUserController::SetTarget(ASpaceObject* target) {
+
+	if (target->IsA(ASpaceObject::StaticClass())) {
+
+		FColor _peerColor;
+		if (ControlledPawn == target)
+			return;
+
+		if (tObj == nullptr || tObj != target) {
+			tObj = target;
+			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction())) {
+			case Peer::Neutral:
+				_peerColor = FColor::Yellow;
+				break;
+			case Peer::Friendship:
+				_peerColor = FColor::Green;
+				break;
+			case Peer::Enemy:
+				_peerColor = FColor::Red;
+				break;
+			case Peer::TempHold:
+				_peerColor = FColor::Blue;
+				break;
+			default:
+				_peerColor = FColor::White;
+				break;
+			}
+			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUITarget(tObj, _peerColor, 5.0f);
+		} else if (tObj == target)
+			tObj = nullptr;
+		else
+			return;
+	}
+}
+
+void AUserController::SettingInteraction(ASpaceObject* target) {
+	
+	FColor peerColor;
+	if (ControlledPawn == target)
+		return;
+
+	if (tObj == target)
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIInteraction(tObj, tObj->GetObjectType());
 }
 #pragma endregion

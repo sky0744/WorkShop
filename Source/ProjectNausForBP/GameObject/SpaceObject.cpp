@@ -32,8 +32,19 @@ ASpaceObject::ASpaceObject()
 void ASpaceObject::BeginPlay()
 {
 	Super::BeginPlay();
-
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(false);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->AddToObjectList(this);
+	}
 	lengthToLongAsix = 0.0f;
+
+	float tempX = FMath::FRandRange(0.001f, 0.01f);
+	if (FMath::RandBool())
+		tempX *= -1.0f;
+	float tempY = FMath::FRandRange(0.001f, 0.01f);
+	if (FMath::RandBool())
+		tempY *= -1.0f;
+	AddActorWorldOffset(FVector(tempX, tempY, 0.0f));
 }
 
 void ASpaceObject::Tick( float DeltaTime )
@@ -65,6 +76,11 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 }
 
 void ASpaceObject::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
@@ -73,6 +89,10 @@ void ASpaceObject::BeginDestroy() {
 #pragma region SpaceObject Inheritance
 int ASpaceObject::GetObjectID() {
 	return 0;
+}
+
+void ASpaceObject::GetObjectName(FText& spaceObjectName) {
+	spaceObjectName = objectName;
 }
 
 ObjectType ASpaceObject::GetObjectType() {
