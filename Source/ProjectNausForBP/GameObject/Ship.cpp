@@ -1,6 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
+
 #include "ProjectNausForBP.h"
 #include "Ship.h"
 
@@ -29,6 +30,7 @@ AShip::AShip()
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+	npcShipID = -1;
 }
 
 #pragma region Event Calls
@@ -56,10 +58,6 @@ void AShip::Tick(float DeltaTime)
 
 		CheckPath();
 		ModuleCheck();
-
-		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::White, "MaxSpeed : " + FString::SanitizeFloat(maxSpeed) + ", TargetSpeed : " + FString::SanitizeFloat(targetSpeed) + ", CurrentSpeed : " + FString::SanitizeFloat(currentSpeed));
-		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::White, "MaxAcceleration : " + FString::SanitizeFloat(maxAcceleration) + ", MinAcceleration : " + FString::SanitizeFloat(minAcceleration));
-		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::White, "MaxRotateRate : " + FString::SanitizeFloat(maxRotateRate) + ", TargetRotateRate : " + FString::SanitizeFloat(targetRotateRateFactor) + ", CurrentRotateRate : " + FString::SanitizeFloat(realRotateRateFactor));
 	}
 
 	switch (behaviorState) {
@@ -91,7 +89,13 @@ void AShip::Tick(float DeltaTime)
 }
 
 float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
 	
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
@@ -107,8 +111,6 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	hitDirect = hitResult.ImpactPoint - GetActorLocation();
 	hitDirect.Normalize();
 
-	ASpaceObject* aObj = Cast<ASpaceObject>(DamageCauser);
-
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %f %f %f"), currentShield, currentArmor, currentHull);
 	if (FVector::DotProduct(GetActorForwardVector(), hitDirect) > 0.95f) {
 		remainDamage *= 2.0f;
@@ -117,6 +119,10 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	else if (FVector::DotProduct(GetActorForwardVector(), hitDirect) < -0.95f) {
 		remainDamage *= 3.0f;
 		isCritical = true;
+	}
+
+	if (dealingFaction == Faction::Player) {
+
 	}
 
 	//remainDamage = sDefShield.GetValue();
@@ -150,13 +156,16 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	else {
 		effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
-		Destroy();
-
-		if (aObj->GetFaction() == Faction::Player && bounty > 0.0f)
-			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->ChangeCredit(bounty);
 		
-		/*Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->factionRelation[(uint8)faction * 12 + (uint8)aObj->GetFaction()] -= strategyPoint * 0.00005f;
+
+		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+
+		if (dealingFaction == Faction::Player && bounty > 0.0f)
+			_userState->ChangeCredit(bounty);
+		//_userState
+
+		/*
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->factionRelation[(uint8)faction * 12 + (uint8)aObj->GetFaction()] -= strategyPoint * 0.00005f;
 		
 		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 		if (_tempInstance == nullptr)
@@ -175,6 +184,8 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		}
 		cargo.Shrink();
 		*/
+
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectShieldDamage, effectArmorDamage, effectHullDamage, isCritical ? TEXT("Critical") : TEXT("Non Critical"));
@@ -359,6 +370,7 @@ bool AShip::InitObject(int npcID) {
 							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
 						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamRange)
 							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						slotTargetModule[index].ammoLifeSpanBonus = FMath::Clamp(slotTargetModule[index].ammoLifeSpanBonus, 0.0f, slotTargetModule[index].maxCooltime);
 						break;
 					case ModuleType::Cannon:
 						if (bonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
@@ -501,7 +513,7 @@ float AShip::GetValue(GetStatType statType) {
 		_value = maxRotateRate;
 		break;
 	default:
-		_value = -1;
+		_value = 0.0f;
 		break;
 	}
 	return _value;
@@ -567,10 +579,8 @@ bool AShip::CommandAttack(ASpaceObject* target) {
 		targetObject = target;
 		behaviorState = BehaviorState::Battle;
 
-		for (FTargetModule& module : slotTargetModule) {
+		for (FTargetModule& module : slotTargetModule) 
 			module.moduleState = ModuleState::Activate;
-		}
-
 		return true;
 	}
 	else return false;
@@ -777,23 +787,23 @@ void AShip::ModuleCheck() {
 	moduleConsumptPower = 0.0f;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
-		//¿¡³ÊÁö°¡ ºÎÁ·ÇÒ °æ¿ì ¸ğµç ¸ğµâÀÇ µ¿ÀÛÀ» ÁßÁö ¿¹¾à.
+		//ì—ë„ˆì§€ê°€ ë¶€ì¡±í•  ê²½ìš° ëª¨ë“  ëª¨ë“ˆì˜ ë™ì‘ì„ ì¤‘ì§€ ì˜ˆì•½.
 		if (currentPower < 5.0f)
 			slotTargetModule[index].isBookedForOff = true;
 
-		//¸ğµâÀÌ ÄÑÁ®ÀÖÀ» °æ¿ì power ¼Ò¸ğ·® Áõ°¡ ¹× ÄğÅ¸ÀÓ Áö¼Ó °¨¼Ò
+		//ëª¨ë“ˆì´ ì¼œì ¸ìˆì„ ê²½ìš° power ì†Œëª¨ëŸ‰ ì¦ê°€ ë° ì¿¨íƒ€ì„ ì§€ì† ê°ì†Œ
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
 			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
-			//ÄğÅ¸ÀÓ ¿Ï·á½Ã Çàµ¿ ½Ç½Ã
+			//ì¿¨íƒ€ì„ ì™„ë£Œì‹œ í–‰ë™ ì‹¤ì‹œ
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
 					if (targetObject != nullptr && targetObject != this) {
-						//¸ñÇ¥ ÁöÁ¡ ¹× ¹æÇâ °è»ê
+						//ëª©í‘œ ì§€ì  ë° ë°©í–¥ ê³„ì‚°
 						FVector _targetedLocation = targetObject->GetActorLocation();
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
@@ -803,7 +813,7 @@ void AShip::ModuleCheck() {
 							+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
 						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 
-						//ºö°è¿­ ¸ğµâÀÇ °æ¿ì
+						//ë¹”ê³„ì—´ ëª¨ë“ˆì˜ ê²½ìš°
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
 							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
 
@@ -813,14 +823,12 @@ void AShip::ModuleCheck() {
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
 
-							if (slotTargetModule[index].moduleType == ModuleType::Beam)
-								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
-									true, slotTargetModule[index].damageMultiple, 1.0f);
-							else
-								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
-									true, slotTargetModule[index].damageMultiple, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+							if (targetObject->IsA(ASpaceObject::StaticClass()))
+								_beam->SetBeamProperty(this, targetObject, slotTargetModule[index].launchSpeedMultiple,
+									slotTargetModule[index].moduleType, slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+							else slotTargetModule[index].moduleState = ModuleState::NotActivate;
 						}
-						//Åºµµ ¹«±â·ùÀÇ °æ¿ì
+						//íƒ„ë„ ë¬´ê¸°ë¥˜ì˜ ê²½ìš°
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
 							slotTargetModule[index].moduleType == ModuleType::Railgun ||
 							slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
@@ -864,7 +872,7 @@ void AShip::ModuleCheck() {
 						slotTargetModule[index].moduleType == ModuleType::Railgun ||
 						slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
 
-						//ÀçÀåÀü ½Ç½Ã. ¸ğµâ µ¿ÀÛÀº ÀçÀåÀüÀÌ ¿Ï·áµÇ¸é ÀÚµ¿À¸·Î ½ÃÀÛ.
+						//ì¬ì¥ì „ ì‹¤ì‹œ. ëª¨ë“ˆ ë™ì‘ì€ ì¬ì¥ì „ì´ ì™„ë£Œë˜ë©´ ìë™ìœ¼ë¡œ ì‹œì‘.
 							slotTargetModule[index].ammo.itemAmount = slotTargetModule[index].ammoCapacity;
 							if (targetObject != nullptr)
 								slotTargetModule[index].moduleState = ModuleState::Activate;
@@ -879,7 +887,7 @@ void AShip::ModuleCheck() {
 				}
 
 				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
-				//¸ğµâ µ¿ÀÛ ÁßÁö ¿¹¾àÀÌ È°¼ºÈ­µÇ¾î ÀÖ´Ù¸é µ¿ÀÛ ÁßÁö.
+				//ëª¨ë“ˆ ë™ì‘ ì¤‘ì§€ ì˜ˆì•½ì´ í™œì„±í™”ë˜ì–´ ìˆë‹¤ë©´ ë™ì‘ ì¤‘ì§€.
 				if (slotTargetModule[index].isBookedForOff) {
 					slotTargetModule[index].moduleState = ModuleState::NotActivate;
 					targetObject = nullptr;
@@ -887,7 +895,7 @@ void AShip::ModuleCheck() {
 				}
 			}
 		}
-		//¸ğµâÀÌ ²¨Á®ÀÖÀ» °æ¿ì power ¼Ò¸ğ·® °¨¼Ò
+		//ëª¨ë“ˆì´ êº¼ì ¸ìˆì„ ê²½ìš° power ì†Œëª¨ëŸ‰ ê°ì†Œ
 		else
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
@@ -1020,30 +1028,30 @@ void AShip::Movement() {
 void AShip::ModuleCheck() {
 	/*
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
-		//¿¡³ÊÁö°¡ ºÎÁ·ÇÒ °æ¿ì ¸ğµç ¸ğµâÀÇ µ¿ÀÛÀ» ÁßÁö ¿¹¾à.
+		//ì—ë„ˆì§€ê°€ ë¶€ì¡±í•  ê²½ìš° ëª¨ë“  ëª¨ë“ˆì˜ ë™ì‘ì„ ì¤‘ì§€ ì˜ˆì•½.
 		if (sCurrentPower < 5.0f)
 			slotTargetModule[index].isBookedForOff = true;
 
-		//¸ğµâÀÌ ÄÑÁ®ÀÖÀ» °æ¿ì power ¼Ò¸ğ·® Áõ°¡ ¹× ÄğÅ¸ÀÓ Áö¼Ó °¨¼Ò
+		//ëª¨ë“ˆì´ ì¼œì ¸ìˆì„ ê²½ìš° power ì†Œëª¨ëŸ‰ ì¦ê°€ ë° ì¿¨íƒ€ì„ ì§€ì† ê°ì†Œ
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
 			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
-			//ÄğÅ¸ÀÓ ¿Ï·á½Ã Çàµ¿ ½Ç½Ã
+			//ì¿¨íƒ€ì„ ì™„ë£Œì‹œ í–‰ë™ ì‹¤ì‹œ
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
 					if (targetingObject[index] != nullptr && targetingObject[index] != this) {
-						//¸ñÇ¥ ÁöÁ¡ ¹× ¹æÇâ °è»ê
+						//ëª©í‘œ ì§€ì  ë° ë°©í–¥ ê³„ì‚°
 						FVector _targetedLocation = targetingObject[index]->GetActorLocation();
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
 						FTransform _spawnedTransform = FTransform(_targetedRotation, GetActorLocation() + _targetedDirect * lengthToLongAsix);
 
-						//ºö°è¿­ ¸ğµâÀÇ °æ¿ì
+						//ë¹”ê³„ì—´ ëª¨ë“ˆì˜ ê²½ìš°
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
 							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
 
@@ -1060,7 +1068,7 @@ void AShip::ModuleCheck() {
 								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
 									true, slotTargetModule[index].damageMultiple, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 						}
-						//Åºµµ ¹«±â·ùÀÇ °æ¿ì
+						//íƒ„ë„ ë¬´ê¸°ë¥˜ì˜ ê²½ìš°
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
 							slotTargetModule[index].moduleType == ModuleType::Railgun ||
 							slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
@@ -1120,11 +1128,11 @@ void AShip::ModuleCheck() {
 						_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
 
 
-						//ammo¸¦ Ã£Áö ¸øÇÏ¿´À½. ÀçÀåÀü ¹× ¸ğµâ µ¿ÀÛ ½Ç½ÃÇÏÁö ¾ÊÀ½.
+						//ammoë¥¼ ì°¾ì§€ ëª»í•˜ì˜€ìŒ. ì¬ì¥ì „ ë° ëª¨ë“ˆ ë™ì‘ ì‹¤ì‹œí•˜ì§€ ì•ŠìŒ.
 						if (_findSlot < 0)
 							slotTargetModule[index].moduleState = ModuleState::NotActivate;
 
-						//ammo¸¦ Ã£À½. ÀçÀåÀü ½Ç½Ã. ¸ğµâ µ¿ÀÛÀº ÀçÀåÀüÀÌ ¿Ï·áµÇ¸é ÀÚµ¿À¸·Î ½ÃÀÛ.
+						//ammoë¥¼ ì°¾ìŒ. ì¬ì¥ì „ ì‹¤ì‹œ. ëª¨ë“ˆ ë™ì‘ì€ ì¬ì¥ì „ì´ ì™„ë£Œë˜ë©´ ìë™ìœ¼ë¡œ ì‹œì‘.
 						else {
 							_reloadedAmount = FMath::Min(_tempItemSlot[_findSlot].itemAmount, slotTargetModule[index].ammoCapacity - slotTargetModule[index].ammo.itemAmount);
 							if (userState->DropPlayerCargo(FItem(_tempItemSlot[_findSlot].itemID, _reloadedAmount))) {
@@ -1140,7 +1148,7 @@ void AShip::ModuleCheck() {
 								}
 							}
 							else {
-								//ammo¸¦ Ã£¾ÒÀ¸³ª ÀåÀü¿¡ ½ÇÆĞ.
+								//ammoë¥¼ ì°¾ì•˜ìœ¼ë‚˜ ì¥ì „ì— ì‹¤íŒ¨.
 								UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Reload Fail!"));
 								slotTargetModule[index].moduleState = ModuleState::NotActivate;
 							}
@@ -1154,7 +1162,7 @@ void AShip::ModuleCheck() {
 				}
 
 				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
-				//¸ğµâ µ¿ÀÛ ÁßÁö ¿¹¾àÀÌ È°¼ºÈ­µÇ¾î ÀÖ´Ù¸é µ¿ÀÛ ÁßÁö.
+				//ëª¨ë“ˆ ë™ì‘ ì¤‘ì§€ ì˜ˆì•½ì´ í™œì„±í™”ë˜ì–´ ìˆë‹¤ë©´ ë™ì‘ ì¤‘ì§€.
 				if (slotTargetModule[index].isBookedForOff) {
 					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Target Module %d - Off."), index);
 					slotTargetModule[index].moduleState = ModuleState::NotActivate;
@@ -1162,7 +1170,7 @@ void AShip::ModuleCheck() {
 				}
 			}
 		}
-		//¸ğµâÀÌ ²¨Á®ÀÖÀ» °æ¿ì power ¼Ò¸ğ·® °¨¼Ò
+		//ëª¨ë“ˆì´ êº¼ì ¸ìˆì„ ê²½ìš° power ì†Œëª¨ëŸ‰ ê°ì†Œ
 		else
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);

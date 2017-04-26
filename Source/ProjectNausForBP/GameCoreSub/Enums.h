@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 /**
@@ -320,7 +320,24 @@ enum class ModuleState : uint8 {
 	ReloadAmmo				UMETA(DisplayName = "ReloadAmmo")
 };
 
+UENUM(BlueprintType)
+enum class Region : uint8 {
+	UnknownRegionArea_Unclassified		UMETA(DisplayName = "Unknown Region Area Unclassified"),
+	Aldir							UMETA(DisplayName = "Aldir"),
+	Debrak							UMETA(DisplayName = "Debrak"),
+	Cannide							UMETA(DisplayName = "Cannide"),
+	Centaur							UMETA(DisplayName = "Centaur"),
+	Tashima							UMETA(DisplayName = "Tashima"),
 
+	ElgishShima					UMETA(DisplayName = "Elgish Shima"),
+	Hansmit							UMETA(DisplayName = "Hansmit"),
+	DomainOfWorld					UMETA(DisplayName = "Domain Of World"),
+	CenterOfWorld				UMETA(DisplayName = "Center Of World"),
+
+	UnknownRegionArea_A			UMETA(DisplayName = "Unknown Region Area A"),
+	UnknownRegionArea_B			UMETA(DisplayName = "Unknown Region Area B"),
+	UnknownRegionArea_C			UMETA(DisplayName = "Unknown Region Area C")
+};
 UENUM(BlueprintType)
 enum class SectorState : uint8 {
 	Normal				UMETA(DisplayName = "Normal"),

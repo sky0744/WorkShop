@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 #include "ProjectNausForBP.h"
@@ -21,66 +21,66 @@ class PROJECTNAUSFORBP_API ICommandable
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** Á¤Áö ¸í·É
+		/** ì •ì§€ ëª…ë ¹
 		*/
 		virtual void CommandStop();
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** µµÅ·À» ¿äÃ»
-		*	@param position - ¸ñÇ¥ À§Ä¡
-		*	@return - ÀÌµ¿ °¡´É ¿©ºÎ
+		/** ë„í‚¹ì„ ìš”ì²­
+		*	@param position - ëª©í‘œ ìœ„ì¹˜
+		*	@return - ì´ë™ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandMoveToPosition(FVector position);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** ÃßÀû ¸í·É
-		*	@param target - ÃßÀû ´ë»ó
-		*	@return - ÀÌµ¿ °¡´É ¿©ºÎ
+		/** ì¶”ì  ëª…ë ¹
+		*	@param target - ì¶”ì  ëŒ€ìƒ
+		*	@return - ì´ë™ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandMoveToTarget(ASpaceObject* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** °ø°İ ¸í·É
-		*	@param target - °ø°İ ´ë»ó
-		*	@return - °ø°İ °¡´É ¿©ºÎ
+		/** ê³µê²© ëª…ë ¹
+		*	@param target - ê³µê²© ëŒ€ìƒ
+		*	@return - ê³µê²© ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandAttack(ASpaceObject* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** Ã¤±¤ ¸í·É
-		*	@param target - Ã¤±¤ ´ë»ó
-		*	@return - Ã¤±¤ °¡´É ¿©ºÎ
+		/** ì±„ê´‘ ëª…ë ¹
+		*	@param target - ì±„ê´‘ ëŒ€ìƒ
+		*	@return - ì±„ê´‘ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandMining(AResource* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** ¼ö¸® ¸í·É
-		*	@param target - ¼ö¸® ´ë»ó
-		*	@return - ¼ö¸® °¡´É ¿©ºÎ
+		/** ìˆ˜ë¦¬ ëª…ë ¹
+		*	@param target - ìˆ˜ë¦¬ ëŒ€ìƒ
+		*	@return - ìˆ˜ë¦¬ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandRepair(ASpaceObject* target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** Á¡ÇÁ ¸í·É
-		*	@param target - Á¡ÇÁ¸¦ ½ÃµµÇÒ ±¸Á¶¹°
-		*	@return - Á¡ÇÁ °¡´É ¿©ºÎ
+		/** ì í”„ ëª…ë ¹
+		*	@param target - ì í”„ë¥¼ ì‹œë„í•  êµ¬ì¡°ë¬¼
+		*	@return - ì í”„ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandJump(TScriptInterface<IStructureable> target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** ¿öÇÁ ¸í·É
-		*	@param location - ¿öÇÁ¸¦ ½ÃµµÇÒ ¸ñÇ¥ ÁöÁ¡
-		*	@return - ¿öÇÁ °¡´É ¿©ºÎ
+		/** ì›Œí”„ ëª…ë ¹
+		*	@param location - ì›Œí”„ë¥¼ ì‹œë„í•  ëª©í‘œ ì§€ì 
+		*	@return - ì›Œí”„ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandWarp(FVector location);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** µµÅ· ¸í·É
-		*	@param target - µµÅ·À» ½ÃµµÇÒ ±¸Á¶¹°
-		*	@return - µµÅ· °¡´É ¿©ºÎ
+		/** ë„í‚¹ ëª…ë ¹
+		*	@param target - ë„í‚¹ì„ ì‹œë„í•  êµ¬ì¡°ë¬¼
+		*	@return - ë„í‚¹ ê°€ëŠ¥ ì—¬ë¶€
 		*/
 		virtual bool CommandDock(TScriptInterface<IStructureable> target);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** ¾ğµµÅ· ¸í·É
-		*	@return - ¾ğµµÅ· ¼º°ø ¿©ºÎ
+		/** ì–¸ë„í‚¹ ëª…ë ¹
+		*	@return - ì–¸ë„í‚¹ ì„±ê³µ ì—¬ë¶€
 		*/
 		virtual bool CommandUndock();
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Command")
-		/** µµÅ·À» ¿äÃ»
-		*	@param baySlot - ·±ÄªÇÒ ½½·Ô ÀÎµ¦½ºÀÇ ¹è¿­
-		*	@return - ·±Äª ¼º°ø ¿©ºÎ
+		/** ë„í‚¹ì„ ìš”ì²­
+		*	@param baySlot - ëŸ°ì¹­í•  ìŠ¬ë¡¯ ì¸ë±ìŠ¤ì˜ ë°°ì—´
+		*	@return - ëŸ°ì¹­ ì„±ê³µ ì—¬ë¶€
 		*/
 		virtual bool CommandLaunch(TArray<int> baySlot);
 };

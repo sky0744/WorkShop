@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 #include "ProjectNausForBP.h"
@@ -21,37 +21,37 @@ class PROJECTNAUSFORBP_API IStructureable
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** Á¡ÇÁ ¸µÅ©µÈ ¼½ÅÍÀÇ ÀÌ¸§À» È¹µæ
-		*	@return - Á¡ÇÁ ¸µÅ©µÈ ¼½ÅÍ
+		/** ì í”„ ë§í¬ëœ ì„¹í„°ì˜ ì´ë¦„ì„ íšë“
+		*	@return - ì í”„ ë§í¬ëœ ì„¹í„°
 		*/
 		virtual FString GetDestinationName();
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** ±¸Á¶¹° µ¥ÀÌÅÍ È¹µæ
-		*	@return - ±¸Á¶¹°ÀÇ µ¥ÀÌÅÍ
+		/** êµ¬ì¡°ë¬¼ ë°ì´í„° íšë“
+		*	@return - êµ¬ì¡°ë¬¼ì˜ ë°ì´í„°
 		*/
 		virtual StructureType GetStationType();
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** µµÅ·À» ¿äÃ»
-		*	@param requestFaction - µµÅ·À» ¿äÃ»ÇÑ ÆÑ¼Ç
-		*	@return - µµÅ· Çã°¡ ¿©ºÎ
+		/** ë„í‚¹ì„ ìš”ì²­
+		*	@param requestFaction - ë„í‚¹ì„ ìš”ì²­í•œ íŒ©ì…˜
+		*	@return - ë„í‚¹ í—ˆê°€ ì—¬ë¶€
 		*/
 		virtual bool RequestedDock(Faction requestFaction);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** Á¡ÇÁ¸¦ ¿äÃ»
-		*	@param requestFaction - Á¡ÇÁ¸¦ ¿äÃ»ÇÑ ÆÑ¼Ç
-		*	@return - Á¡ÇÁ Çã°¡ ¿©ºÎ
+		/** ì í”„ë¥¼ ìš”ì²­
+		*	@param requestFaction - ì í”„ë¥¼ ìš”ì²­í•œ íŒ©ì…˜
+		*	@return - ì í”„ í—ˆê°€ ì—¬ë¶€
 		*/
 		virtual bool RequestedJump(Faction requestFaction);
 
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** ±¸Á¶¹° µ¥ÀÌÅÍ¸¦ ÃÊ±âÈ­
-		*	@param structureData - ÃÊ±âÈ­ ÇÒ ±¸Á¶¹° µ¥ÀÌÅÍ
-		*	@return - ±¸Á¶¹° ÃÊ±âÈ­ °á°ú
+		/** êµ¬ì¡°ë¬¼ ë°ì´í„°ë¥¼ ì´ˆê¸°í™”
+		*	@param structureData - ì´ˆê¸°í™” í•  êµ¬ì¡°ë¬¼ ë°ì´í„°
+		*	@return - êµ¬ì¡°ë¬¼ ì´ˆê¸°í™” ê²°ê³¼
 		*/
 		virtual bool SetStructureData(FStructureInfo& structureData);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** ±¸Á¶¹° µ¥ÀÌÅÍ¸¦ È¹µæ
-		*	@param structureData - È¹µæÇÒ ±¸Á¶¹° µ¥ÀÌÅÍ(out)
+		/** êµ¬ì¡°ë¬¼ ë°ì´í„°ë¥¼ íšë“
+		*	@param structureData - íšë“í•  êµ¬ì¡°ë¬¼ ë°ì´í„°(out)
 		*/
 		virtual void GetStructureData(FStructureInfo& structureData);
 };

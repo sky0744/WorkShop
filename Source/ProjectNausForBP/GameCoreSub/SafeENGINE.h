@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 #include "ProjectNausForBP.h"
@@ -40,7 +40,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drop Data")
 		int dropAmountMax;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drop Data")
-		int dropChance;
+		float dropChance;
 
 	FNPCDropData() {}
 };
@@ -92,6 +92,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
 		float bonusStat;
 };
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FFactionRelationship {
+	GENERATED_USTRUCT_BODY()
+public:
+	FFactionRelationship()
+		: targetFaction(Faction::Neutral)
+		, factionRelation(TArray<float>()) {
+	}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Faction Relationship")
+		Faction targetFaction;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Faction Relationship")
+		TArray<float> factionRelation;
+};
 #pragma endregion
 
 #pragma region Usage Data Struct in Actor Instance
@@ -132,7 +146,7 @@ public:
 		, accaucy(0.0f)
 		, ammoLifeSpanBonus(0.0f)
 		
-		, ammo(FItem(0, 0))
+		, ammo(FItem(-1, 0))
 		, compatibleAmmo(TArray<int>())
 		, ammoCapacity(0) {}
 
@@ -160,12 +174,13 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		float damageMultiple;
-	//∫ˆ∞Ëø≠, ¡ÔΩ√»ø∑¬«¸ ∏µ‚¿« ∞ÊøÏ π¸¿ß.
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
+		//ÎπîÍ≥ÑÏó¥, ÏßÄÏÜçÌö®Î†•Ìòï Î™®ÎìàÏùò Í≤ΩÏö∞ Ïú†Ìö®ÏÇ¨Í±∞Î¶¨
 		float launchSpeedMultiple;
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		float accaucy;
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
+		//ÎπîÍ≥ÑÏó¥, ÏßÄÏÜçÌö®Î†•Ìòï Î™®ÎìàÏùò Í≤ΩÏö∞ Ìö®Í≥ºÏùò lifeSpan
 		float ammoLifeSpanBonus;
 
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
@@ -240,7 +255,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		float skillLearning;
 };
-
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FProductProcess {
 	GENERATED_USTRUCT_BODY()
@@ -258,7 +272,7 @@ public:
 		float maxProductTime;
 };
 
-USTRUCT(BlueprintType)		//¿Œµ¶Ω∫ ¿⁄√º∞° ID(¡ﬂ∫π X)
+USTRUCT(BlueprintType)		//Ïù∏Îç±Ïä§ ÏûêÏ≤¥Í∞Ä ID(Ï§ëÎ≥µ X)
 struct PROJECTNAUSFORBP_API FStructureInfo
 {
 	GENERATED_USTRUCT_BODY()
@@ -531,18 +545,14 @@ public:
 		float lengthToLongAsix;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float DurabilityMin;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float DurabilityMax;
+		FVector2D DurabilityRange;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		float DurabilityDef;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float ResourceID;
+		int ResourceItemID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float ResourceAmountMin;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float ResourceAmountMax;
+		FVector2D OreAmountRange;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		float RichOreChance;
@@ -620,13 +630,9 @@ public:
 		bool isCanReprocess;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		float PointCredit1;
+		FVector2D valuePointRange;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		int PointAmount1;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		float PointCredit2;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		int PointAmount2;
+		FVector2D amountPointRange;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
 		float BuyValueMultiple;
 
@@ -722,6 +728,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		Region LocatedRegion;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		FVector2D LocatedInWorldMap;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		Faction SectorFaction;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		SectorType Type;
@@ -752,8 +762,6 @@ public:
 		int ShipRegenTotal;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		TArray<FObjectPlacement> ResourceInitedData;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
-		int ResourceRegenTotal;
 
 	FSectorData() {}
 };
@@ -779,7 +787,7 @@ public:
 		TArray<FItem> StartItemList;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		TArray<float> StartFactionRelation;
+		TArray<FFactionRelationship> StartFactionRelation;
 	FNewStartPlayerData() {}
 };
 #pragma endregion
@@ -821,6 +829,8 @@ public:
 #pragma endregion
 
 #pragma region GamePlay - Static
+	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
+		static bool IsValid(UObject* Obj);
 	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
 		static int FindItemSlot(UPARAM(ref) TArray<FItem>& itemList, FItem items);
 	UFUNCTION(BlueprintCallable, Category = "Call To Manager")

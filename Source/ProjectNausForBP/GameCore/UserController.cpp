@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "UserController.h"
@@ -285,7 +285,7 @@ bool AUserController::ToggleActiveModule(int slotIndex) {
 }
 
 ASpaceObject* AUserController::GetTargetInfo() {
-	if(tObj != ControlledPawn)
+	if(USafeENGINE::IsValid(tObj) && tObj != ControlledPawn)
 		return tObj;
 	else return nullptr;
 }
@@ -298,7 +298,7 @@ void AUserController::SetTarget(ASpaceObject* target) {
 		if (ControlledPawn == target)
 			return;
 
-		if (tObj == nullptr || tObj != target) {
+		if (!USafeENGINE::IsValid(tObj) || tObj != target) {
 			tObj = target;
 			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction())) {
 			case Peer::Neutral:
@@ -330,7 +330,6 @@ void AUserController::SettingInteraction(ASpaceObject* target) {
 	FColor peerColor;
 	if (ControlledPawn == target)
 		return;
-
 	if (tObj == target)
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIInteraction(tObj, tObj->GetObjectType());
 }

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -97,8 +97,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
 		virtual bool ToggleTargetModule(int slotIndex, ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
-		virtual void SettingAmmo(int slotIndex, int selectedAmmoID);
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		virtual void SettingAmmo(int selectedAmmoID);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
 		virtual bool ToggleActiveModule(int slotIndex);
 #pragma endregion

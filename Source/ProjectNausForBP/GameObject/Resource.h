@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -50,7 +50,7 @@ public:
 #pragma region Resource Functions
 public:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
-		void SetResource(float durability, FItem ore);
+		void SetResource(int resourceId, float durability, int amount);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
 		float GetResourceAmount();
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")

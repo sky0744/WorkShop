@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Resource.h"
@@ -21,6 +21,7 @@ AResource::AResource()
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+	resourceID = -1;
 }
 
 #pragma region Event Calls
@@ -37,8 +38,6 @@ void AResource::Tick( float DeltaTime )
 }
 
 float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
-		return 0.0f;
 
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
 	float effectDamage = 0.0f;
@@ -52,6 +51,7 @@ float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 	else {
 		effectDamage = currentDurability;
 		currentDurability = 0.0f;
+		Destroy();
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][Resource][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectDamage);
 
@@ -94,30 +94,34 @@ bool AResource::InitObject(int objectId) {
 	if (objectId < 0)
 		return false;
 
-	USafeENGINE* tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FResourceData tempData = tempInstance->GetResourceData(objectId);
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	FResourceData _tempResourceData = _tempInstance->GetResourceData(objectId);
+	bool _isRich = false;
+	if (FMath::FRandRange(0.0f, 1.0f) > 1.0f - _tempResourceData.RichOreChance) 
+		_isRich = true;
 
 	if (resourceID != objectId) {
 		resourceID = objectId;
-		objectName = tempData.Name;
+		if(_isRich)
+			objectName = FText::Format(NSLOCTEXT("FTextField", "FTextField", "Rich {name}"), _tempResourceData.Name);
+		else objectName = _tempResourceData.Name;
 
-		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempData.MeshPath.ToString()));
+		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath.ToString()));
 		objectMesh->SetStaticMesh(newMesh);
-		lengthToLongAsix = tempData.lengthToLongAsix;
+		lengthToLongAsix = _tempResourceData.lengthToLongAsix;
+
+		resourceType = _tempResourceData.Type;
+		lengthToLongAsix = _tempResourceData.lengthToLongAsix;
+
+		maxDurability = FMath::FRandRange(_tempResourceData.DurabilityRange.X, _tempResourceData.DurabilityRange.Y);
+		currentDurability = maxDurability;
+		currentResource = FItem(_tempResourceData.ResourceItemID, FMath::FloorToInt(FMath::FRandRange(_tempResourceData.OreAmountRange.X, _tempResourceData.OreAmountRange.Y)));
+		defResource = _tempResourceData.DurabilityDef;
+		if (_isRich) {
+			currentDurability *= FMath::FRandRange(2.0f, 3.0f);
+			currentResource.itemAmount *= FMath::FRandRange(2.0f, 3.0f);
+		}
 	}
-
-	resourceType = tempData.Type;
-	lengthToLongAsix = tempData.lengthToLongAsix;
-
-	currentDurability = maxDurability = FMath::FRandRange(tempData.DurabilityMin, tempData.DurabilityMax);
-	currentResource = FItem(tempData.ResourceID, FMath::FRandRange(tempData.ResourceAmountMin, tempData.ResourceAmountMax));
-	defResource = tempData.DurabilityDef;
-	if (FMath::FRandRange(0.0f, 1.0f) > 1.0f - tempData.RichOreChance) {
-		currentDurability *= 2.0f;
-		currentResource.itemAmount *= 2.0f;
-		defResource *= 2.0f;
-	}
-
 	return true;
 }
 
@@ -126,26 +130,36 @@ bool AResource::LoadBaseObject(float shield, float armor, float hull, float powe
 }
 
 float AResource::GetValue(GetStatType statType) {
-	float value;
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
+		break;
+	case GetStatType::maxHull:
+		_value = maxDurability;
+		break;
+	case GetStatType::currentHull:
+		_value = currentDurability;
+		break;
+	case GetStatType::defHull:
+		_value = defResource;
 		break;
 	default:
-		value = -1.0f;
+		_value = 0.0f;
 		break;
 	}
-	return value;
+	return _value;
 }
 #pragma endregion
 
 #pragma region Resource Functions
-void AResource::SetResource(float durability, FItem ore) {
+void AResource::SetResource(int resourceId, float durability, int amount) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	FResourceData _tempResourceData = _tempInstance->GetResourceData(resourceId);
 
-	currentDurability = FMath::Clamp(durability, 0.0f, _tempInstance->GetResourceData(resourceID).DurabilityMax);
-	currentResource.itemAmount = FMath::Clamp((float)ore.itemAmount, 0.0f, _tempInstance->GetResourceData(resourceID).ResourceAmountMax);
+	currentDurability = FMath::Clamp(durability, 0.0f, maxDurability);
+	currentResource = FItem(_tempResourceData.ResourceItemID, FMath::Clamp(amount, 0, FMath::FloorToInt(FMath::Max(_tempResourceData.OreAmountRange.X, _tempResourceData.OreAmountRange.Y))));
 }
 
 float AResource::GetResourceAmount() {
@@ -161,12 +175,12 @@ float AResource::GetResourceDef() {
 }
 
 FItem AResource::CollectResource(float miningPerfomance) {
-	float _collectedAmount = FMath::Clamp(FMath::Max(miningPerfomance * (1000.0f - defResource / 1000.0f), 1.0f), 0.0f, (float)currentResource.itemAmount);
+
+	int _collectedAmount = FMath::Clamp(FMath::FloorToInt(miningPerfomance * (1.0f - defResource / 1000.0f)), 0, currentResource.itemAmount);
 	currentResource.itemAmount -= _collectedAmount;
 
-	if (currentResource.itemAmount <= 0.0f)
+	if (currentResource.itemAmount <= 0)
 		Destroy();
-
 	return FItem(currentResource.itemID, _collectedAmount);
 }
 #pragma endregion

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -125,6 +125,6 @@ private:
 	float currentHull;
 	float defHull;
 
-	//Drone Property Ãß°¡ ÇÊ¿ä...
+	//Drone Property ì¶”ê°€ í•„ìš”...
 #pragma endregion
 };

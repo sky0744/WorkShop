@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -46,18 +46,22 @@ public:
 #pragma endregion
 
 #pragma region ObjectTMap
-protected:
+private:
 	UPROPERTY()
 		TArray<FSectorData> sectorInfo;
 	FSectorData* currentSectorInfo;
-public:
 	UPROPERTY()
-		TArray<float> factionRelation;
+		UEnum* factionEnumPtr;
+	UPROPERTY()
+		TArray<FFactionRelationship> realFactionRelationship;
+	UPROPERTY()
+		TArray<FFactionRelationship> tempFactionRelationship;
 #pragma endregion
 
 #pragma region Respawn Ship
+public:
 	void AccumulateToShipCapacity(bool isDestroying);
-
+private:
 	int shipRegenLimit;
 	int currentShipCapacity;
 	bool skipingFirstTick;

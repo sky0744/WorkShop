@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 #include "ProjectNausForBP.h"
@@ -29,6 +29,7 @@ ADrone::ADrone() {
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+	droneID = -1;
 }
 
 #pragma region Event Calls
@@ -44,8 +45,15 @@ void ADrone::Tick(float DeltaSeconds) {
 }
 
 float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass())) 
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass())) 
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else 
 		return 0.0f;
+	
 
 	FHitResult _hitResult;
 	FVector _hitDirect;
@@ -99,7 +107,7 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	else {
 		_effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][Drone][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),
@@ -246,10 +254,10 @@ float ADrone::GetValue(GetStatType statType) {
 		_value = defHull;
 		break;
 	default:
-		_value = -1.0f;
+		_value = 0.0f;
 		break;
 	}
-	return 0.0f;
+	return _value = 0.0f;
 }
 
 void ADrone::GetRepaired(GetStatType statType, float repairValue) {

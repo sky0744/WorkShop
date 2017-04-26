@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -75,7 +75,7 @@ public:
 
 #pragma region Sector Data
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<float> relation;
+		TArray<FFactionRelationship> relation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		TArray<FSectorData> sectorInfo;
 
@@ -95,15 +95,15 @@ public:
 		TArray<float> npcShipPower;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<int> resourceID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		TArray<FVector> resourceLocation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		TArray<FRotator> resourceRotation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+		TArray<int> resourceID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		TArray<float> resourceDurability;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<float> resourceAmount;
+		TArray<int> resourceAmount;
 
 #pragma endregion
 

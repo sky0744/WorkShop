@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -21,35 +21,38 @@ public:
 	virtual void Tick( float DeltaSeconds ) override;
 
 	UFUNCTION()
-		/** ¿¢ÅÍ¿Í Ãæµ¹½Ã È£Ãâ
-		*	@param HitResult - Ãæµ¹ °á°ú
+		/** ì—‘í„°ì™€ ì¶©ëŒì‹œ í˜¸ì¶œ
+		*	@param HitResult - ì¶©ëŒ ê²°ê³¼
 		*/
 		void OnCollisionActor(const FHitResult& hitResult);
 
 	UFUNCTION()
-		/** ÇÁ·ÎÁ§Å¸ÀÏ ¼Ó¼ºÀ» ¼¼ÆÃ
+		/** í”„ë¡œì íƒ€ì¼ ì†ì„±ì„ ì„¸íŒ…
 		*	@param ammoID - ID
-		*	@param launchActor - ¹ß»çÇÑ ¿¢ÅÍ
-		*	@param damageMultiple - ¹ß»çÇÑ ¿¢ÅÍÀÇ µ¥¹ÌÁö º¸³Ê½º ¼öÄ¡
-		*	@param maxSpeedMultiple - ¹ß»çÇÑ ¿¢ÅÍÀÇ ¹ß»ç¼Óµµ º¸³Ê½º ¼öÄ¡
-		*	@param lifetimeMultiple - ÇÁ·ÎÁ§Å¸ÀÏÀÇ À¯È¿½Ã°£
-		*	@param targetObject - ¸ñÇ¥ ¼³Á¤. ¹Ì»çÀÏ Å¸ÀÔÀÇ ÇÁ·ÎÁ§Å¸ÀÏ¿¡ Àû¿ë
+		*	@param launchActor - ë°œì‚¬í•œ ì—‘í„°
+		*	@param damageMultiple - ë°œì‚¬í•œ ì—‘í„°ì˜ ë°ë¯¸ì§€ ë³´ë„ˆìŠ¤ ìˆ˜ì¹˜
+		*	@param maxSpeedMultiple - ë°œì‚¬í•œ ì—‘í„°ì˜ ë°œì‚¬ì†ë„ ë³´ë„ˆìŠ¤ ìˆ˜ì¹˜
+		*	@param lifetimeMultiple - í”„ë¡œì íƒ€ì¼ì˜ ìœ íš¨ì‹œê°„
+		*	@param targetObject - ëª©í‘œ ì„¤ì •. ë¯¸ì‚¬ì¼ íƒ€ì…ì˜ í”„ë¡œì íƒ€ì¼ì— ì ìš©
 		*/
 		void SetProjectileProperty(int ammoID, ASpaceObject* launchActor, float damageMultiple, float maxSpeedMultiple,
 			float lifetimeMultiple, ASpaceObject* targetObject = nullptr);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Projectile Data")
+		Faction GetLaunchingFaction();
 #pragma region Projectile Property
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Projectile Data")
+private:
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UStaticMeshComponent* projectileMesh;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Projectile Data")
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UProjectileMovementComponent* projectileMovement;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Projectile Data")
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UParticleSystemComponent* projectileParticle;
 
 	UPROPERTY()
-		ASpaceObject* projectileOwner;
-	UPROPERTY()
 		ASpaceObject* target;
+
+	Faction launchedFaction;
 	bool isHoming;
 
 	float setedDamage;

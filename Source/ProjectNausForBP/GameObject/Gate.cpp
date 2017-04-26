@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Gate.h"
@@ -41,7 +41,13 @@ void AGate::Tick( float DeltaTime )
 }
 
 float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
 
 	FHitResult _hitResult;
@@ -96,7 +102,7 @@ float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	else {
 		_effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][Drone][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectShieldDamage, _effectArmorDamage, _effectHullDamage, _isCritical ? TEXT("Critical") : TEXT("Non Critical"));
@@ -153,56 +159,56 @@ bool AGate::LoadBaseObject(float shield, float armor, float hull, float power) {
 }
 
 float AGate::GetValue(GetStatType statType) {
-	float value;
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::maxShield:
-		value = maxShield;
+		_value = maxShield;
 		break;
 	case GetStatType::rechargeShield:
-		value = rechargeShield;
+		_value = rechargeShield;
 		break;
 	case GetStatType::currentShield:
-		value = currentShield;
+		_value = currentShield;
 		break;
 	case GetStatType::defShield:
-		value = defShield;
+		_value = defShield;
 		break;
 
 	case GetStatType::maxArmor:
-		value = maxArmor;
+		_value = maxArmor;
 		break;
 	case GetStatType::repaireArmor:
-		value = repairArmor;
+		_value = repairArmor;
 		break;
 	case GetStatType::currentArmor:
-		value = currentArmor;
+		_value = currentArmor;
 		break;
 	case GetStatType::defArmor:
-		value = defArmor;
+		_value = defArmor;
 		break;
 
 	case GetStatType::maxHull:
-		value = maxHull;
+		_value = maxHull;
 		break;
 	case GetStatType::repaireHull:
-		value = repairHull;
+		_value = repairHull;
 		break;
 	case GetStatType::currentHull:
-		value = currentHull;
+		_value = currentHull;
 		break;
 	case GetStatType::defHull:
-		value = defHull;
+		_value = defHull;
 		break;
 	default:
-		value = -1;
+		_value = 0.0f;
 		break;
 	}
 
-	return value;
+	return _value;
 }
 
 void AGate::GetRepaired(GetStatType statType, float repairValue) {
@@ -251,29 +257,30 @@ bool AGate::SetStructureData(FStructureInfo& structureData) {
 		return false;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FStationData _tempData;
+	FStationData _tempStationData;
 	
 	structureInfo = &structureData;
-	_tempData = _tempInstance->GetStationData(structureInfo->structureID);
+	_tempStationData = _tempInstance->GetStationData(structureInfo->structureID);
+	objectName = _tempStationData.Name;
 
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempData.MeshPath.ToString()));
+	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempStationData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
-	lengthToLongAsix = _tempData.lengthToLongAsix;
+	lengthToLongAsix = _tempStationData.lengthToLongAsix;
 
-	maxShield = _tempData.Shield;
+	maxShield = _tempStationData.Shield;
 	currentShield = structureInfo->structureShieldRate * maxShield;
-	rechargeShield = _tempData.RechargeShield;
-	defShield = _tempData.DefShield;
+	rechargeShield = _tempStationData.RechargeShield;
+	defShield = _tempStationData.DefShield;
 
-	maxArmor = _tempData.Armor;
+	maxArmor = _tempStationData.Armor;
 	currentArmor = structureInfo->structureArmorRate * maxArmor;
-	repairArmor = _tempData.RepairArmor;
-	defArmor = _tempData.DefArmor;
+	repairArmor = _tempStationData.RepairArmor;
+	defArmor = _tempStationData.DefArmor;
 
-	maxHull = _tempData.Hull;
+	maxHull = _tempStationData.Hull;
 	currentHull = structureInfo->structureHullRate * maxHull;
-	repairHull = _tempData.RepairHull;
-	defHull = _tempData.DefHull;
+	repairHull = _tempStationData.RepairHull;
+	defHull = _tempStationData.DefHull;
 
 	isInited = true;
 	return true;

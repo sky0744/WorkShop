@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,16 +19,36 @@ public:
 	virtual void Tick( float DeltaSeconds ) override;
 
 	UFUNCTION()
-	/** ÇÁ·ÎÁ§Å¸ÀÏ ¼Ó¼ºÀ» ¼¼ÆÃ
-	*	@param launchActor - ¹ß»çÇÑ ¿¢ÅÍ
-	*	@param targetedLocation - ¸ñÇ¥ ÁöÁ¡
-	*	@param isWeapon - ºöÀÇ Å¸ÀÔ
-	*	@param setedDamage - ºöÀÇ °­µµ
-	*	@param aliveTime - ºö ÀÌÆåÆ® ½Ã°£
+	/** í”„ë¡œì íƒ€ì¼ ì†ì„±ì„ ì„¸íŒ…
+	*	@param launchActor - ë°œì‚¬í•œ ì—‘í„°
+	*	@param targetActor - ëª©í‘œ ëŒ€ìƒ
+	*	@param range - ìµœëŒ€ ê±°ë¦¬
+	*	@param beamType - ë¹”ì˜ íƒ€ì…(ë¹”ê³„ì—´ ì´ì™¸ - ë¬´íš¨)
+	*	@param setedDamage - ë¹”ì˜ ê°•ë„
+	*	@param aliveTime - ë¹” ì´í™íŠ¸ ì‹œê°„
 	*/
-	void SetBeamProperty(ASpaceObject* launchActor, FVector targetedLocation, bool isWeapon, float setedDamage, float aliveTime = 1.0f);
+	void SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime = 1.0f);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Beam Data")
+		Faction GetLaunchingFaction();
 #pragma region Beam Property
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Beam Data")
+private:
+	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
 		UParticleSystemComponent* beamParticle;
+	ModuleType beamType;
+
+	FCollisionObjectQueryParams _traceObjectParams;
+	FCollisionQueryParams _traceParams;
+	FHitResult _beamHitresult;
+
+	UPROPERTY()
+		ASpaceObject* beamOwner;
+	UPROPERTY()
+		ASpaceObject* target;
+
+	Faction launchedFaction;
+	float beamRange;
+	float beamDamage;
+	FVector resultLocation;
 #pragma endregion
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 #pragma once
 
 #include "ProjectNausForBP.h"
@@ -124,6 +124,17 @@ FNewStartPlayerData USafeENGINE::GetStartProfileData(int id) {
 #pragma endregion
 
 #pragma region GamePlay
+bool USafeENGINE::IsValid(UObject* Obj)
+{
+	if (!Obj) 
+		return false;
+	if (!Obj->IsValidLowLevel()) 
+		return false;
+	if (Obj->IsPendingKill()) 
+		return false;
+	return true;
+}
+
 int USafeENGINE::FindItemSlot(UPARAM(ref) TArray<FItem>& itemList, FItem items) {
 	for (int index = 0; index < itemList.Num(); index++) {
 		if (itemList[index].itemID == items.itemID) {
@@ -271,10 +282,10 @@ float USafeENGINE::CalculateCreditForTrade(int itemID, int lowerAmount, int uppe
 	float _SellValueMax;			float _SellValueMin;
 	FItemData _itemData = this->GetItemData(itemID);
 
-	_SellValueMaxAmount = FMath::Max(_itemData.PointAmount1, _itemData.PointAmount2);
-	_SellValueMinAmount = FMath::Min(_itemData.PointAmount1, _itemData.PointAmount2);
-	_SellValueMax = FMath::Max(_itemData.PointCredit1, _itemData.PointCredit2);
-	_SellValueMin = FMath::Min(_itemData.PointCredit1, _itemData.PointCredit2);
+	_SellValueMaxAmount = FMath::Max(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
+	_SellValueMinAmount = FMath::Min(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
+	_SellValueMax = FMath::Max(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
+	_SellValueMin = FMath::Min(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
 
 	_tempValue = FMath::Min(lowerAmount, upperAmount);
 	upperAmount = FMath::Max(lowerAmount, upperAmount);
@@ -298,18 +309,17 @@ float USafeENGINE::CalculateCreditForTrade(int itemID, int lowerAmount, int uppe
 }
 
 float USafeENGINE::CalculateCredit(int itemID, int Amount, bool isBuy) {
-	FItemData _itemData = this->GetItemData(itemID);
 	float _result;
 	int _SellValueMaxAmount;		int _SellValueMinAmount;
 	float _SellValueMax;			float _SellValueMin;
+	FItemData _itemData = this->GetItemData(itemID);
 
-	_SellValueMaxAmount = FMath::Max(_itemData.PointAmount1, _itemData.PointAmount2);
-	_SellValueMinAmount = FMath::Min(_itemData.PointAmount1, _itemData.PointAmount2);
-	_SellValueMax = FMath::Max(_itemData.PointCredit1, _itemData.PointCredit2);
-	_SellValueMin = FMath::Min(_itemData.PointCredit1, _itemData.PointCredit2);
+	_SellValueMaxAmount = FMath::Max(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
+	_SellValueMinAmount = FMath::Min(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
+	_SellValueMax = FMath::Max(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
+	_SellValueMin = FMath::Min(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
 
 	_result = _SellValueMin + (_SellValueMax - _SellValueMin) * FMath::Clamp((_SellValueMaxAmount - Amount) / (float)(_SellValueMaxAmount - _SellValueMinAmount), .0f, 1.0f);
-	
 	if (isBuy)
 		_result *= FMath::Clamp(_itemData.BuyValueMultiple, 1.1f, 2.0f);
 	return _result;

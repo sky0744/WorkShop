@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "SpaceState.h"
@@ -13,6 +13,7 @@ ASpaceState::ASpaceState() {
 void ASpaceState::BeginPlay() {
 	Super::BeginPlay();
 
+	factionEnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
 	skipingFirstTick = true;
 	currentShipCapacity = 0;
 }
@@ -70,18 +71,17 @@ void ASpaceState::Tick(float DeltaSecondes) {
 		}
 	}
 
-	//±∏¡∂π∞ ∏Æ¡® π◊ ∏Æº¬ √≥∏Æ
+	//Íµ¨Ï°∞Î¨º Î¶¨Ï†† Î∞è Î¶¨ÏÖã Ï≤òÎ¶¨
 	for (FStructureInfo& stationData : currentSectorInfo->StationList) {
 		if (stationData.isDestroyed) {
 			if (stationData.remainRespawnTime <= 0.0f && stationData.isRespawnable) {
 				AStation* _regenStation = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
 					FTransform(stationData.structureRotation, FVector(stationData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-				if (_regenStation != nullptr) {
+				if (USafeENGINE::IsValid(_regenStation)) {
 					_regenStructure = Cast<IStructureable>(_regenStation);
 					_regenStructure->SetStructureData(stationData);
 					UGameplayStatics::FinishSpawningActor(_regenStation, _regenStation->GetActorTransform());
-					_regenStation->AddActorWorldOffset(USafeENGINE::GetRandomLocation(true) * 0.01f);
 				}
 			}
 		} else {
@@ -154,11 +154,10 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				AGate* _regenGate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(),
 					FTransform(gateData.structureRotation, FVector(gateData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-				if (_regenGate != nullptr) {
+				if (USafeENGINE::IsValid(_regenGate)) {
 					_regenStructure = Cast<IStructureable>(_regenGate);
 					_regenStructure->SetStructureData(gateData);
 					UGameplayStatics::FinishSpawningActor(_regenGate, _regenGate->GetActorTransform());
-					_regenGate->AddActorWorldOffset(USafeENGINE::GetRandomLocation(true) * 0.01f);
 				}
 			}
 		} else if (gateData.remainItemListRefreshTime <= 0.0f) {
@@ -189,18 +188,18 @@ void ASpaceState::Tick(float DeltaSecondes) {
 	}
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOverTime();
 
-	//ºΩ≈Õ ≥ª «‘º± √÷¥Î ºˆ √º≈©
+	//ÏÑπÌÑ∞ ÎÇ¥ Ìï®ÏÑ† ÏµúÎåÄ Ïàò Ï≤¥ÌÅ¨
 	if (currentShipCapacity < shipRegenLimit) {
 		shipRegenAmount = FMath::RoundToInt((shipRegenLimit - objectInSector.Num()) * 0.05f);
-		//∏Æ¡® Ω√¿€
+		//Î¶¨Ï†† ÏãúÏûë
 		for (int index = 0; index < shipRegenAmount; index++) {
 			randomResultForRegen = FMath::RandRange(0, totalChanceFactor);
-			//∏Æ¡® »Æ∑¸ ∞°¡ﬂƒ° ∞ËªÍ
+			//Î¶¨Ï†† ÌôïÎ•† Í∞ÄÏ§ëÏπò Í≥ÑÏÇ∞
 			for (int index1 = 0; index1 < currentSectorInfo->ShipRegenData.Num(); index1++) {
 
 				_totalFactorInTick -= FMath::Max(currentSectorInfo->ShipRegenData[index1].regenChanceFactor, 0);
 				if (_totalFactorInTick < 1) {
-					//∞‘¿Ã∆Æ∑Œ∫Œ≈Õ √‚«ˆ«œ¥¬ «‘º± ª˝º∫ π◊ ø¨√‚
+					//Í≤åÏù¥Ìä∏Î°úÎ∂ÄÌÑ∞ Ï∂úÌòÑÌïòÎäî Ìï®ÏÑ† ÏÉùÏÑ± Î∞è Ïó∞Ï∂ú
 					if (currentSectorInfo->ShipRegenData[index1].isPlacementToGate && currentSectorInfo->GateList.Num() > 0) {
 						randomGateForRegenLocation = FMath::RandRange(0, currentSectorInfo->GateList.Num() - 1);
 
@@ -219,7 +218,6 @@ void ASpaceState::Tick(float DeltaSecondes) {
 						if (_regenShip != nullptr) {
 							_regenShip->InitObject(currentSectorInfo->ShipRegenData[index1].objectID);
 							UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
-							_regenShip->AddActorWorldOffset(USafeENGINE::GetRandomLocation(true) * 0.01f);
 						}
 						break;
 					} else if (!currentSectorInfo->ShipRegenData[index1].isPlacementToGate) {
@@ -231,7 +229,6 @@ void ASpaceState::Tick(float DeltaSecondes) {
 						if (_regenShip != nullptr) {
 							_regenShip->InitObject(currentSectorInfo->ShipRegenData[index1].objectID);
 							UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
-							_regenShip->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 						}
 						break;
 					}
@@ -327,7 +324,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				break;
 			}
 		}
-		saver->relation = factionRelation;
+		saver->relation = realFactionRelationship;
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] GameSave Create Finish!"));
 		return true;
 	}
@@ -335,7 +332,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		//Just Save Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By Warp!"));
 		saver->sectorInfo = sectorInfo;
-		saver->relation = factionRelation;
+		saver->relation = realFactionRelationship;
 
 		saver->position = FVector(0.0f, 0.0f, 0.0f);
 		saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
@@ -377,17 +374,13 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 	FNPCData _tempNPCData;
 	FShipData _tempShipData;
 	FResourceData _tempResourceData;
+	FNewStartPlayerData _tempNewStartData;
 
 	AActor* _obj;
 	AShip* _ship;
 	AResource* _resource;
 	IStructureable* _sObj;
 	sectorInfo = loader->sectorInfo;
-
-	UEnum* _EnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
-	factionRelation = loader->relation;
-	if (factionRelation.Num() != _EnumPtr->NumEnums())
-		factionRelation.SetNum(_EnumPtr->NumEnums());
 
 	for (int index = 0; index < sectorInfo.Num(); index++) {
 		if (loader->sectorInfo[index].nSectorName.ToString().Equals(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase)) {
@@ -420,7 +413,6 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
 					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 				}
-				_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 			}
 		}
 		for (int index = 0; index < currentSectorInfo->GateList.Num(); index++) {
@@ -434,7 +426,6 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
 					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 				}
-				_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 			}
 		}
 
@@ -448,7 +439,6 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 				Cast<ASpaceObject>(_obj)->LoadBaseObject(loader->npcShipShield[index], loader->npcShipArmor[index], loader->npcShipHull[index], loader->npcShipPower[index]);
 				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 			}
-			_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 		}
 
 		//Load Resources
@@ -460,16 +450,13 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			if (_obj != nullptr) {
 				Cast<ASpaceObject>(_obj)->InitObject(loader->resourceID[index]);
 				_resource = Cast<AResource>(_obj);
-				_resource->SetResource(loader->resourceDurability[index], loader->resourceAmount[index]);
+				_resource->SetResource(loader->resourceID[index], loader->resourceDurability[index], loader->resourceAmount[index]);
 				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 			}
-			_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 		}
-		
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
-		return true;
 	}
-	else if (loader->saveState == SaveState::BeforeWarp || loader->saveState == SaveState::NewGameCreate)
+	//saveState == BeforeWarp or saveState == NewGameCreate
+	else
 	{
 		//Just Load Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Start Load File Create By Warp to Next Sector!"));
@@ -484,7 +471,6 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					_sObj = Cast<IStructureable>(_obj);
 					_sObj->SetStructureData(currentSectorInfo->StationList[index]);
 					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-					_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 				} 
 			}
 		}
@@ -497,45 +483,66 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					_sObj = Cast<IStructureable>(_obj);
 					_sObj->SetStructureData(currentSectorInfo->GateList[index]);
 					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-					_obj->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 				}
 			}
 		}
 
 		//Generate Inited Ship
 		for (int index = 0; index < currentSectorInfo->ShipInitedData.Num(); index++) {
+			if (FMath::RandRange(0, 100) < 100 - FMath::Clamp(currentSectorInfo->ShipInitedData[index].regenChanceFactor, 0, 100))
+				continue;
+
 			_ship = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(currentSectorInfo->ShipInitedData[index].rotation,
 				FVector(currentSectorInfo->ShipInitedData[index].location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 			if (_ship != nullptr) {
 				_ship->InitObject(currentSectorInfo->ShipInitedData[index].objectID);
 				UGameplayStatics::FinishSpawningActor(_ship, _ship->GetActorTransform());
-				_ship->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 			} 
 		}
 
 		//Generate Inited Resources
 		for (int index = 0; index < currentSectorInfo->ResourceInitedData.Num(); index++) {
+			if (FMath::RandRange(0, 100) < 100 - FMath::Clamp(currentSectorInfo->ResourceInitedData[index].regenChanceFactor, 0, 100))
+				continue;
 
 			_resource = Cast<AResource>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(currentSectorInfo->ResourceInitedData[index].rotation,
 				FVector(currentSectorInfo->ResourceInitedData[index].location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 			if (_resource != nullptr) {
 				_resource->InitObject(currentSectorInfo->ResourceInitedData[index].objectID);
 				UGameplayStatics::FinishSpawningActor(_resource, _resource->GetActorTransform());
-				_resource->AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 			}
 		}
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
-		return true;
+		
 	}
+	/*
+	tempFactionRelationship = loader->relation;
+	if (!USafeENGINE::IsValid(factionEnumPtr))
+		factionEnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
+	
+	if (tempFactionRelationship.Num() != factionEnumPtr->NumEnums()) {
+		UE_LOG(LogClass, Log, TEXT("[Warning][SpaceState][LoadSpaceState] There is a discrepancy between the save file and system faction relationship. Try expanding..."));
+		UE_LOG(LogClass, Log, TEXT("[Warning][SpaceState][LoadSpaceState] Relationship In save file : %d, Relationship In system : %d"), realFactionRelationship.Num(), factionEnumPtr->NumEnums());
 
-	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Load File Fail!"));
-	return false;
+		realFactionRelationship.Init(FFactionRelationship(), factionEnumPtr->NumEnums());
+		for (FFactionRelationship& relation : realFactionRelationship) {
+			relation;
+			factionEnumPtr->
+		}
+			
+
+		_tempNewStartData = _tempInstance->GetStartProfileData(0);
+		tempFactionRelationship.Init(FFactionRelationship(), factionEnumPtr->NumEnums());
+		
+	}
+	*/
+	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
+	return true;
 }
 
 Peer ASpaceState::PeerIdentify(Faction requestor, Faction target) {
 	Peer _result = Peer::Neutral;
-	float _relation;
-
+	float _relation = 0.0f;
+	/*
 	if (target == Faction::Neutral)
 		return Peer::Neutral;
 
@@ -545,67 +552,30 @@ Peer ASpaceState::PeerIdentify(Faction requestor, Faction target) {
 	if (target == Faction::Pirate || requestor == Faction::Pirate) {
 		return Peer::EnemyStrong;
 	}
+	for (FFactionRelationship& relation : tempFactionRelationship) {
+		if (relation.targetFaction == requestor) {
 
-	if (target == Faction::Player) {
-		_relation = factionRelation[(uint8)(requestor)];
-		if (_relation >= 50.0f)
-			return Peer::AllyStrong;
-		else if (_relation >= 50.0f && _relation < 80.0f)
-			return Peer::Ally;
-		else if (_relation >= 20.0f && _relation < 50.0f)
-			return Peer::Friendship;
-		else if (_relation <= -20.0f && _relation > -50.0f)
-			return Peer::Boundary;
-		else if (_relation <= -50.0f && _relation > -80.0f)
-			return Peer::Enemy;
-		else if (_relation <= -80.0f)
-			return Peer::EnemyStrong;
-		else return Peer::Neutral;
-	}
-	else {
-		_relation = factionRelation[(uint8)(target)];
-		switch (requestor) {
-		case Faction::Player:
-			if (_relation >= 50.0f)
-				_result = Peer::AllyStrong;
-			else if (_relation >= 50.0f && _relation < 80.0f)
-				_result = Peer::Ally;
-			else if (_relation >= 20.0f && _relation < 50.0f)
-				_result = Peer::Friendship;
-			else if (_relation <= -20.0f && _relation > -50.0f)
-				_result = Peer::Boundary;
-			else if (_relation <= -50.0f && _relation > -80.0f)
-				_result = Peer::Enemy;
-			else if (_relation <= -80.0f)
-				_result = Peer::EnemyStrong;
-			else _result = Peer::Neutral;
-			break;
+			  relation.factionRelation.Num()
 
-		case Faction::PrimusEmpire:
-			if (target == Faction::ValenciaProtectorate)
-				_result = Peer::Ally;
-			else _result = Peer::Enemy;
-			break;
-		case Faction::FlorenceTradeCoalition:
-			if (target == Faction::FreeCitizenFederation)
-				_result = Peer::Ally;
-			else _result = Peer::Enemy;
-			break;
-		case Faction::FreeCitizenFederation:
-			if (target == Faction::FlorenceTradeCoalition)
-				_result = Peer::Ally;
-			else _result = Peer::Enemy;
-			break;
-		case Faction::ValenciaProtectorate:
-			if (target == Faction::PrimusEmpire)
-				_result = Peer::Ally;
-			else _result = Peer::Enemy;
-			break;
-		default:
-			_result = Peer::TempHold;
-			break;
+			return _result;
 		}
 	}
+
+	_relation = realFactionRelationship[(uint8)(requestor)];
+	if (_relation >= 50.0f)
+		return Peer::AllyStrong;
+	else if (_relation >= 50.0f && _relation < 80.0f)
+		return Peer::Ally;
+	else if (_relation >= 20.0f && _relation < 50.0f)
+		return Peer::Friendship;
+	else if (_relation <= -20.0f && _relation > -50.0f)
+		return Peer::Boundary;
+	else if (_relation <= -50.0f && _relation > -80.0f)
+		return Peer::Enemy;
+	else if (_relation <= -80.0f)
+		return Peer::EnemyStrong;
+	else return Peer::Neutral;
+	*/
 	return _result;
 }
 

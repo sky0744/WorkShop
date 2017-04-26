@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Projectiles.h"
@@ -36,10 +36,7 @@ void AProjectiles::Tick( float DeltaTime )
 }
 
 void AProjectiles::OnCollisionActor(const FHitResult& hitResult) {
-	AActor* _actor = projectileOwner;
-	UGameplayStatics::ApplyPointDamage(hitResult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f), hitResult, _actor->GetInstigatorController(), _actor, UDamageType::StaticClass());
-
-	UE_LOG(LogClass, Log, TEXT("[Warning][Ship][Begin] Caboom!"));
+	UGameplayStatics::ApplyPointDamage(hitResult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f), hitResult, nullptr, this, UDamageType::StaticClass());
 	Destroy();
 }
 
@@ -54,7 +51,7 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	if(newMesh)
 		projectileMesh->SetStaticMesh(newMesh);
 
-	projectileOwner = launchActor;
+	launchedFaction = launchActor->GetFaction();
 	setedDamage = _tempItemData.Damage * damageMultiple;
 	setedMaxSpeed = _tempItemData.LaunchSpeed * maxSpeedMultiple;
 
@@ -67,4 +64,8 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	else projectileMovement->InitialSpeed = setedMaxSpeed;
 
 	this->SetLifeSpan(_tempItemData.LifeTime * (1.0f + lifetimeMultiple));
+}
+
+Faction AProjectiles::GetLaunchingFaction() {
+	return launchedFaction;
 }

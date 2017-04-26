@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Beam.h"
@@ -15,10 +15,12 @@ ABeam::ABeam()
 	if (particleSystem.Succeeded())
 		beamParticle->SetTemplate(particleSystem.Object);
 
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0;
+
+	_traceParams = FCollisionQueryParams(FName("Beam"), true, this);
 }
 
 // Called when the game starts or when spawned
@@ -29,51 +31,121 @@ void ABeam::BeginPlay()
 }
 
 // Called every frame
-void ABeam::Tick( float DeltaTime )
-{
-	Super::Tick( DeltaTime );
+void ABeam::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
 
-}
+	if (!USafeENGINE::IsValid(target) || !target->IsA(ASpaceObject::StaticClass()))
+		return;
 
-//¹ß»ç Àü¿¡ ºöÀÇ ¼Ó¼ºÀ» ÁöÁ¤.
-void ABeam::SetBeamProperty(ASpaceObject* launchActor, FVector targetedLocation, bool isWeapon, float setedDamage, float aliveTime) {
-
-	FCollisionObjectQueryParams _traceObjectParams;
-	FCollisionQueryParams _traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
-	FHitResult _beamHitresult;
+	resultLocation = target->GetActorLocation() - GetActorLocation();
+	resultLocation.Normalize();
+	SetActorLocation(beamOwner->GetActorLocation() + resultLocation * beamOwner->GetValue(GetStatType::halfLength));
+	resultLocation *= beamRange;
 
 	this->GetWorld()->LineTraceSingleByObjectType(_beamHitresult
 		, this->GetActorLocation()
-		, targetedLocation
+		, this->GetActorLocation() + resultLocation
 		, _traceObjectParams
 		, _traceParams);
 
-	DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, aliveTime);
-	//ºöÀÌ ºí·°µÇ¾úÀ» ¶§
-	if (_beamHitresult.bBlockingHit) {
-		DrawDebugPoint(GetWorld(), _beamHitresult.Location, 20, FColor(255, 255, 255), false, aliveTime);
-		DrawDebugLine(GetWorld(), GetActorLocation(), _beamHitresult.Location, FColor(255, 255, 255), false, 0.1f);
-		//beamParticle->SetBeamTargetPoint(0, _beamHitresult.Location, 0);
+	//beamParticle->SetBeamTargetPoint(0, targetedLocation, 0);
+	switch (beamType) {
+	case ModuleType::MinerLaser:
+		DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, DeltaTime);
+		//ë¹”ì´ ë¸”ëŸ­ë˜ì—ˆì„ ë•Œ
+		if (_beamHitresult.bBlockingHit) {
+			if (_beamHitresult.Actor->IsA(AResource::StaticClass())) {
+				FItem _collectedOre = Cast<AResource>(_beamHitresult.Actor.Get())->CollectResource(beamDamage);
+				if (beamOwner->GetInstigatorController()->GetClass() == AUserController::StaticClass())
+					Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_collectedOre);
+			}
+			resultLocation = _beamHitresult.ImpactPoint;
+		}
+		//ë¹”ì´ ë¸”ëŸ­ë˜ì§€ ì•Šì€ ê²½ìš° ìµœëŒ€ê±°ë¦¬ê¹Œì§€ ì§„í–‰
+		DrawDebugPoint(GetWorld(), resultLocation, 20, FColor(255, 255, 255), false, DeltaTime);
+		DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
+		break;
+	case ModuleType::TractorBeam:
+		DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, DeltaTime);
+		//ë¹”ì´ ë¸”ëŸ­ë˜ì—ˆì„ ë•Œ
+		if (_beamHitresult.bBlockingHit) {
+			if (_beamHitresult.Actor->IsA(ACargoContainer::StaticClass())) {
+				resultLocation = (target->GetActorLocation() - beamOwner->GetActorLocation());
+				resultLocation.Normalize();
+				_beamHitresult.Actor->AddActorWorldOffset(resultLocation * beamDamage);
+			}
+			resultLocation = _beamHitresult.ImpactPoint;
+		}
+		DrawDebugPoint(GetWorld(), resultLocation, 20, FColor(255, 255, 255), false, DeltaTime);
+		DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
+		//ë¹”ì´ ë¸”ëŸ­ë˜ì§€ ì•Šì€ ê²½ìš° ìµœëŒ€ê±°ë¦¬ê¹Œì§€ ì§„í–‰
+		break;
+	default:
+		break;
+	}
+}
 
-		if (_beamHitresult.Actor->IsA(ASpaceObject::StaticClass())) {
-			if (isWeapon)
+//ë°œì‚¬ ì „ì— ë¹”ì˜ ì†ì„±ì„ ì§€ì •.
+void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime) {
+
+	if (!USafeENGINE::IsValid(targetActor) || !targetActor->IsA(ASpaceObject::StaticClass()))
+		return;
+	beamType = setedbeamType;
+
+	//beamParticle->SetBeamTargetPoint(0, _beamHitresult.Location, 0);
+	switch (beamType) {
+	case ModuleType::Beam:
+		resultLocation = targetActor->GetActorLocation() - GetActorLocation();
+		resultLocation.Normalize();
+		resultLocation *= setedrange;
+		DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, aliveTime);
+
+		this->GetWorld()->LineTraceSingleByObjectType(_beamHitresult
+			, this->GetActorLocation()
+			, this->GetActorLocation() + resultLocation
+			, _traceObjectParams
+			, _traceParams);
+		//ë¹”ì´ ë¸”ëŸ­ë˜ì—ˆì„ ë•Œ
+		if (_beamHitresult.bBlockingHit) {
+			resultLocation = _beamHitresult.ImpactPoint;
+			launchedFaction = launchActor->GetFaction();
+			if (_beamHitresult.Actor->IsA(ASpaceObject::StaticClass()))
 				UGameplayStatics::ApplyPointDamage(_beamHitresult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f),
-					_beamHitresult, launchActor->GetInstigatorController(), launchActor, UDamageType::StaticClass());
+					_beamHitresult, nullptr, this, UDamageType::StaticClass());
+			//ë¹”ì´ ë¸”ëŸ­ë˜ì§€ ì•Šê³  ìµœëŒ€ê±°ë¦¬ê¹Œì§€ ì§„í–‰
 			else {
-				if (_beamHitresult.Actor->IsA(AResource::StaticClass()) == true) {
-					FItem _collectedOre = Cast<AResource>(_beamHitresult.Actor.Get())->CollectResource(setedDamage);
-					if(launchActor->GetInstigatorController()->GetClass() == AUserController::StaticClass())
-						Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_collectedOre);
-				}
+				DrawDebugPoint(GetWorld(), resultLocation, 20, FColor(255, 255, 255), false, aliveTime);
+				DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, aliveTime, 0, 5.0f);
+				//beamParticle->SetBeamTargetPoint(0, targetedLocation, 0);
 			}
 		}
+		DrawDebugPoint(GetWorld(), _beamHitresult.Location, 20, FColor(255, 255, 255), false, aliveTime);
+		DrawDebugLine(GetWorld(), GetActorLocation(), _beamHitresult.Location, FColor(255, 255, 255), false, 0.1f);
+		break;
+	case ModuleType::MinerLaser:
+		if (targetActor->IsA(AResource::StaticClass())) {
+			beamOwner = launchActor;
+			target = targetActor;
+			beamRange = setedrange;
+			beamDamage = setedDamage;
+			PrimaryActorTick.TickInterval = 0.333333f;
+		}
+		break;
+	case ModuleType::TractorBeam:
+		if (targetActor->IsA(ACargoContainer::StaticClass())) {
+			beamOwner = launchActor;
+			target = targetActor;
+			beamRange = setedrange;
+			beamDamage = FMath::Clamp(setedDamage, -250.0f, 250.0f);
+			PrimaryActorTick.TickInterval = 0.0f;
+		}
+		break;
+	default:
+		break;
 	}
-	//ºöÀÌ ºí·°µÇÁö ¾Ê°í ÃÖ´ë°Å¸®±îÁö ÁøÇà
-	else {
-		DrawDebugPoint(GetWorld(), targetedLocation, 20, FColor(255, 255, 255), false, aliveTime);
-		DrawDebugLine(GetWorld(), GetActorLocation(), targetedLocation, FColor(255, 255, 255), false, aliveTime, 0, 5.0f);
-		//beamParticle->SetBeamTargetPoint(0, targetedLocation, 0);
-	}
-
 	this->SetLifeSpan(aliveTime);
+}
+
+Faction ABeam::GetLaunchingFaction() {
+	return launchedFaction;
 }

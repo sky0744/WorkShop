@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -116,7 +116,13 @@ void APlayerShip::Tick(float DeltaTime)
 }
 
 float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
 
 	FHitResult _hitResult;
@@ -131,7 +137,7 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	float _effectHullDamage = 0.0f;
 	bool _isCritical = false;
 
-	//HitedµÈ ¹æÇâÀ¸·Î Å©¸®Æ¼ÄÃ °è»ê.
+	//Hitedëœ ë°©í–¥ìœ¼ë¡œ í¬ë¦¬í‹°ì»¬ ê³„ì‚°.
 	//Front : multiply x2
 	//back : multiply x3
 	if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) > 0.95f) {
@@ -143,7 +149,7 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 		_isCritical = true;
 	}
 
-	//¹æ¾î ¹× µ¥¹ÌÁö °è»ê. ¹æ¾îÃ¼°è ¼ÒÁø½Ã ³²Àº µ¥¹ÌÁö·®Àº ´ÙÀ½ ¹æ¾îÃ¼°è·Î.
+	//ë°©ì–´ ë° ë°ë¯¸ì§€ ê³„ì‚°. ë°©ì–´ì²´ê³„ ì†Œì§„ì‹œ ë‚¨ì€ ë°ë¯¸ì§€ëŸ‰ì€ ë‹¤ìŒ ë°©ì–´ì²´ê³„ë¡œ.
 	//remainDamage = sDefShield;
 	if (sCurrentShield > _remainDamage) {
 		_effectShieldDamage = _remainDamage;
@@ -175,7 +181,6 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	else {
 		_effectHullDamage = sCurrentHull;
 		sCurrentHull = 0.0f;
-		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, "Die!");
 		UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 	}
 
@@ -412,7 +417,7 @@ float APlayerShip::GetValue(GetStatType statType) {
 		_value = bonusDroneControl;
 		break;
 	default:
-		_value = -1;
+		_value = 0.0f;
 		break;
 	}
 	return _value;
@@ -442,7 +447,7 @@ bool APlayerShip::TotalStatsUpdate() {
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	AUserState* _tempUserState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-	if (_tempInstance == nullptr || _tempUserState == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance) || !USafeENGINE::IsValid(_tempUserState))
 		return false;
 	FShipData _tempShipData = _tempInstance->GetShipData(sShipID);
 	
@@ -633,6 +638,7 @@ void APlayerShip::CheckBonusStat(BonusStatType type, float value) {
 						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
 					else if (type == BonusStatType::BonusBeamRange)
 						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
+					slotTargetModule[index].ammoLifeSpanBonus = FMath::Clamp(slotTargetModule[index].ammoLifeSpanBonus, 0.0f, slotTargetModule[index].maxCooltime);
 					break;
 				case ModuleType::Cannon:
 					if (type == BonusStatType::BonusCannonDamage)
@@ -700,7 +706,7 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 		sCurrentPower = FMath::Clamp(loader->power, 0.0f, sMaxPower);
 
 		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-		if (_tempInstance == nullptr)
+		if (!USafeENGINE::IsValid(_tempInstance))
 			return false;
 
 		FItemData _tempModuleData;
@@ -720,8 +726,9 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 				slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
 				slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
 				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
-				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];
 				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
+				slotTargetModule[index].compatibleAmmo = _tempModuleData.UsageAmmo;
+				slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
 			}
 			else slotTargetModule[index] = FTargetModule();
 		}
@@ -743,6 +750,12 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 			}
 			else slotActiveModule[index] = FActiveModule();
 		}
+		int _tempMaxIndex = FMath::Min(loader->targetModuleAmmo.Num(), slotTargetModule.Num());
+		for (int index = 0; index < slotTargetModule.Num(); index++) {
+			if (index < _tempMaxIndex)
+				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];
+			else slotTargetModule[index].ammo = FItem();
+		}
 
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][LoadModuleInit] Currnet Passive Module List : %d, Load Module List : %d"), slotPassiveModule.Num(), loader->slotPassiveModule.Num());
 		_tempIndex = loader->slotPassiveModule.Num();
@@ -760,16 +773,8 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 			else slotSystemModule[index] = 0;
 		}
 
-		int _tempMaxIndex = FMath::Min(loader->targetModuleAmmo.Num(), slotTargetModule.Num());
-		for (int index = 0; index < slotTargetModule.Num(); index++) {
-			if (index < _tempMaxIndex)
-				slotTargetModule[index].ammo = loader->targetModuleAmmo[index];
-			else slotTargetModule[index].ammo = FItem();
-		}
-
 		TotalStatsUpdate();
 		sIsInited = true;
-
 	}
 	else return false;
 	return true;
@@ -777,8 +782,8 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 
 bool APlayerShip::EquipModule(int moduleID) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FItemData _tempModuleData;
-	if (_tempInstance == nullptr)
+	FItemData _tempModuleData = _tempInstance->GetItemData(moduleID);
+	if (USafeENGINE::IsValid(_tempInstance))
 		return false;
 
 	if (behaviorState != BehaviorState::Docked) {
@@ -1032,15 +1037,15 @@ void APlayerShip::SetRotateRate(float value) {
 }
 
 /*
-* Å¸°ÔÆÃ ¸ğµâÀÇ µ¿ÀÛÀ» Á¦¾î. ÇÃ·¹ÀÌ¾î Àü¿ë.
-* @param slotIndex - Å¸°ÔÆÃ ¸ğµâ ½½·Ô ¹øÈ£.
-* @return Ã³¸® ÈÄÀÇ ¸ğµâ µ¿ÀÛ »óÅÂ.
+* íƒ€ê²ŒíŒ… ëª¨ë“ˆì˜ ë™ì‘ì„ ì œì–´. í”Œë ˆì´ì–´ ì „ìš©.
+* @param slotIndex - íƒ€ê²ŒíŒ… ëª¨ë“ˆ ìŠ¬ë¡¯ ë²ˆí˜¸.
+* @return ì²˜ë¦¬ í›„ì˜ ëª¨ë“ˆ ë™ì‘ ìƒíƒœ.
 */
 bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 
-	//Å¸°ÔÆÃ ¸ğµâ¿¡ ÇÑÇØ¼­¸¸( < ModuleType::ShieldGenerator ) ÇÔ¼ö Ã³¸®
+	//íƒ€ê²ŒíŒ… ëª¨ë“ˆì— í•œí•´ì„œë§Œ( < ModuleType::ShieldGenerator ) í•¨ìˆ˜ ì²˜ë¦¬
 	if (slotIndex < slotTargetModule.Num() && slotIndex < targetingObject.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
-		//ÇöÀç ¸ğµâÀÌ È°¼ºÈ­µÇ¾î ÀÖÀ» °æ¿ì -> ÀÛµ¿ ÁßÁö ¿¹¾à, ÇöÀç ÄÑÁ®ÀÖ´Â »óÅÂÀÓÀ» ¸®ÅÏ
+		//í˜„ì¬ ëª¨ë“ˆì´ í™œì„±í™”ë˜ì–´ ìˆì„ ê²½ìš° -> ì‘ë™ ì¤‘ì§€ ì˜ˆì•½, í˜„ì¬ ì¼œì ¸ìˆëŠ” ìƒíƒœì„ì„ ë¦¬í„´
 		if (slotTargetModule[slotIndex].moduleState != ModuleState::NotActivate) {
 			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Request Off."), slotIndex);
 			slotTargetModule[slotIndex].isBookedForOff = true;
@@ -1048,18 +1053,18 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 		}
 
 		else {
-			if (target == nullptr || target == this) {
+			if (!USafeENGINE::IsValid(target) || target == this) {
 				UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Can't find target"));
 				return false;
 			}
 
-			//ÇöÀç ²¨Á®ÀÖ´Â »óÅÂ
+			//í˜„ì¬ êº¼ì ¸ìˆëŠ” ìƒíƒœ
 			switch (slotTargetModule[slotIndex].moduleType) {
 			case ModuleType::Beam:
 			case ModuleType::TractorBeam:
 			case ModuleType::MinerLaser:
-				//¸ğµâÀÌ ºö °è¿­ÀÎ °æ¿ì
-				if (target == nullptr)
+				//ëª¨ë“ˆì´ ë¹” ê³„ì—´ì¸ ê²½ìš°
+				if (!USafeENGINE::IsValid(target))
 					return false;
 				slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
 				slotTargetModule[slotIndex].isBookedForOff = false;
@@ -1071,7 +1076,7 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 			case ModuleType::Cannon:
 			case ModuleType::Railgun:
 			case ModuleType::MissileLauncher:
-				//¸ğµâÀÌ ½ÇÅº °è¿­ÀÎ °æ¿ì, ¸ğµâÀ» È°¼ºÈ­ÇÏ±â ÀÌÀü¿¡ ammo »óÅÂ¸¦ È®ÀÎ
+				//ëª¨ë“ˆì´ ì‹¤íƒ„ ê³„ì—´ì¸ ê²½ìš°, ëª¨ë“ˆì„ í™œì„±í™”í•˜ê¸° ì´ì „ì— ammo ìƒíƒœë¥¼ í™•ì¸
 				if (slotTargetModule[slotIndex].ammo.itemAmount < 1) {
 					AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 					TArray<FItem> _tempItemSlot;
@@ -1080,7 +1085,7 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 					userState->GetUserDataItem(_tempItemSlot);
 					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, slotTargetModule[slotIndex].ammo);
 
-					//ammo¸¦ Ä«°í ¸®½ºÆ®¿¡¼­ Ã£¾ÒÀ½.
+					//ammoë¥¼ ì¹´ê³  ë¦¬ìŠ¤íŠ¸ì—ì„œ ì°¾ì•˜ìŒ.
 					if (_findSlot > -1) {
 						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - reload : On."), slotIndex);
 						slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
@@ -1088,7 +1093,7 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 						slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
 					} else
 						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Not On. Ammo not enoght."), slotIndex);
-				} else if (target != nullptr) {
+				} else if (USafeENGINE::IsValid(target)) {
 					slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
 					targetingObject[slotIndex] = target;
 
@@ -1112,50 +1117,43 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 }
 
 /*
-* Å¸°ÔÆÃ ¸ğµâÀÇ ÅºÀ» º¯°æ. ÇÃ·¹ÀÌ¾î Àü¿ë.
-* @param slotIndex - Å¸°ÔÆÃ ¸ğµâ ½½·Ô ¹øÈ£.
-* @param selectedAmmoID - º¯°æÇÒ ÅºÀÇ ID.
+* íƒ€ê²ŒíŒ… ëª¨ë“ˆì˜ íƒ„ì„ ë³€ê²½. í”Œë ˆì´ì–´ ì „ìš©.
+* @param slotIndex - íƒ€ê²ŒíŒ… ëª¨ë“ˆ ìŠ¬ë¡¯ ë²ˆí˜¸.
+* @param selectedAmmoID - ë³€ê²½í•  íƒ„ì˜ ID.
 */
-void APlayerShip::SettingAmmo(int slotIndex, int selectedAmmoID) {
-
-	//Åº ¹× ÀÎµ¦½º À¯È¿¼º, ¼ÒÀ¯ °Ë»ç
-	if (slotIndex >= slotTargetModule.Num() || slotIndex < 0)
-		return;
-
-	bool isCompatibleAmmoFound = false;
-	for (int& id : slotTargetModule[slotIndex].compatibleAmmo) {
-		if (id == selectedAmmoID) {
-			isCompatibleAmmoFound = true;
-			break;
-		}
-	}
-	if (isCompatibleAmmoFound == false)
-		return;
+void APlayerShip::SettingAmmo(int selectedAmmoID) {
 
 	AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 	TArray<FItem> _itemList;
 	int _findSlot;
 
-	if (_userState == nullptr)
+	if (!USafeENGINE::IsValid(_userState))
 		return;
 
 	_userState->GetUserDataItem(_itemList);
 	_findSlot = USafeENGINE::FindItemSlot(_itemList, FItem(selectedAmmoID, 0));
 	if (_findSlot < 0)
 		return;
-	if (!_userState->AddPlayerCargo(slotTargetModule[slotIndex].ammo))
-		return;
-	//°Ë»ç ¿Ï·á
-	slotTargetModule[slotIndex].ammo = FItem(selectedAmmoID, 0);
-	slotTargetModule[slotIndex].remainCooltime = slotTargetModule[slotIndex].maxCooltime;
-	slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
-	return;
+
+	for (FTargetModule& targetModule : slotTargetModule) {
+		for (int& id : targetModule.compatibleAmmo) {
+			if (id == selectedAmmoID) {
+				if (!_userState->AddPlayerCargo(targetModule.ammo))
+					return;
+
+				targetModule.ammo = FItem(selectedAmmoID, 0);
+				targetModule.isBookedForOff = true;
+				break;
+			}
+			
+		}
+	}
 }
 
 /*
-* ¾×Æ¼ºê ¸ğµâÀÇ µ¿ÀÛÀ» Á¦¾î.
-* @param slotIndex - Å¸°ÔÆÃ ¸ğµâ ½½·Ô ¹øÈ£.
-* @return Ã³¸® ÈÄÀÇ ¸ğµâ µ¿ÀÛ »óÅÂ.
+* ì•¡í‹°ë¸Œ ëª¨ë“ˆì˜ ë™ì‘ì„ ì œì–´.
+* @param slotIndex - íƒ€ê²ŒíŒ… ëª¨ë“ˆ ìŠ¬ë¡¯ ë²ˆí˜¸.
+* @return ì²˜ë¦¬ í›„ì˜ ëª¨ë“ˆ ë™ì‘ ìƒíƒœ.
 */
 bool APlayerShip::ToggleActiveModule(int slotIndex) {
 	if (slotIndex < slotActiveModule.Num() && slotActiveModule[slotIndex].moduleType > ModuleType::HullRepairLaser && slotActiveModule[slotIndex].moduleType < ModuleType::PassiveModule) {
@@ -1330,7 +1328,7 @@ bool APlayerShip::MoveDistanceCheck() {
 		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
 	}
 	else {
-		if (targetObject != nullptr) 
+		if (USafeENGINE::IsValid(targetObject))
 			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
  
 		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
@@ -1466,50 +1464,47 @@ void APlayerShip::ModuleCheck() {
 	moduleConsumptPower = 0.0f;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
-		//¿¡³ÊÁö°¡ ºÎÁ·ÇÒ °æ¿ì ¸ğµç ¸ğµâÀÇ µ¿ÀÛÀ» ÁßÁö ¿¹¾à.
+		//ì—ë„ˆì§€ê°€ ë¶€ì¡±í•  ê²½ìš° ëª¨ë“  ëª¨ë“ˆì˜ ë™ì‘ì„ ì¤‘ì§€ ì˜ˆì•½.
 		if (sCurrentPower < 5.0f)
 			slotTargetModule[index].isBookedForOff = true;
 
-		//¸ğµâÀÌ ÄÑÁ®ÀÖÀ» °æ¿ì power ¼Ò¸ğ·® Áõ°¡ ¹× ÄğÅ¸ÀÓ Áö¼Ó °¨¼Ò
+		//ëª¨ë“ˆì´ ì¼œì ¸ìˆì„ ê²½ìš° power ì†Œëª¨ëŸ‰ ì¦ê°€ ë° ì¿¨íƒ€ì„ ì§€ì† ê°ì†Œ
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
 			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
-			//ÄğÅ¸ÀÓ ¿Ï·á½Ã Çàµ¿ ½Ç½Ã
+			//ì¿¨íƒ€ì„ ì™„ë£Œì‹œ í–‰ë™ ì‹¤ì‹œ
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
-					if (targetingObject[index] != nullptr && targetingObject[index] != this) {
-						//¸ñÇ¥ ÁöÁ¡ ¹× ¹æÇâ °è»ê
+					if (USafeENGINE::IsValid(targetingObject[index]) && targetingObject[index] != this && targetingObject[index]->IsA(ASpaceObject::StaticClass())) {
+						//ëª©í‘œ ì§€ì  ë° ë°©í–¥ ê³„ì‚°
 						FVector _targetedLocation = targetingObject[index]->GetActorLocation();
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
 						
-						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix 
-							+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix;
+							//+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
 						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 
-						//ºö°è¿­ ¸ğµâÀÇ °æ¿ì
+						//ë¹”ê³„ì—´ ëª¨ë“ˆì˜ ê²½ìš°
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
-							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
+							slotTargetModule[index].moduleType == ModuleType::MinerLaser || 
+							slotTargetModule[index].moduleType == ModuleType::TractorBeam ) {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
 								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-							if (_beam == nullptr)
+							if (!USafeENGINE::IsValid(_beam))
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
 
-							if (slotTargetModule[index].moduleType == ModuleType::Beam)
-								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
-									true, slotTargetModule[index].damageMultiple, 1.0f);
-							else
-								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
-									true, slotTargetModule[index].damageMultiple, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+							_beam->SetBeamProperty(this, targetingObject[index], slotTargetModule[index].launchSpeedMultiple,
+								slotTargetModule[index].moduleType, slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus);
 						}
-						//Åºµµ ¹«±â·ùÀÇ °æ¿ì
+						//íƒ„ë„ ë¬´ê¸°ë¥˜ì˜ ê²½ìš°
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
 							slotTargetModule[index].moduleType == ModuleType::Railgun ||
 							slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
@@ -1523,7 +1518,7 @@ void APlayerShip::ModuleCheck() {
 
 								AProjectiles* _projectile = Cast<AProjectiles>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AProjectiles::StaticClass(),
 									_spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-								if (_projectile == nullptr)
+								if (  !USafeENGINE::IsValid(_projectile))
 									return;
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
 
@@ -1564,16 +1559,16 @@ void APlayerShip::ModuleCheck() {
 						userState->GetUserDataItem(_tempItemSlot);
 						_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, slotTargetModule[index].ammo);
 						
-						//ammo¸¦ Ã£Áö ¸øÇÏ¿´À½. ÀçÀåÀü ¹× ¸ğµâ µ¿ÀÛ ½Ç½ÃÇÏÁö ¾ÊÀ½.
-						if (_findSlot < 0)
+						//ammoë¥¼ ì°¾ì§€ ëª»í•˜ì˜€ìŒ. ì¬ì¥ì „ ë° ëª¨ë“ˆ ë™ì‘ ì‹¤ì‹œí•˜ì§€ ì•ŠìŒ.
+						if (slotTargetModule[index].ammo.itemID < 0 || _findSlot < 0)
 							slotTargetModule[index].moduleState = ModuleState::NotActivate;
-						//ammo¸¦ Ã£À½. ÀçÀåÀü ½Ç½Ã. ¸ğµâ µ¿ÀÛÀº ÀçÀåÀüÀÌ ¿Ï·áµÇ¸é ÀÚµ¿À¸·Î ½ÃÀÛ.
+						//ammoë¥¼ ì°¾ìŒ. ì¬ì¥ì „ ì‹¤ì‹œ. ëª¨ë“ˆ ë™ì‘ì€ ì¬ì¥ì „ì´ ì™„ë£Œë˜ë©´ ìë™ìœ¼ë¡œ ì‹œì‘.
 						else {
 							_reloadedAmount = FMath::Min(_tempItemSlot[_findSlot].itemAmount, slotTargetModule[index].ammoCapacity - slotTargetModule[index].ammo.itemAmount);
 							if (userState->DropPlayerCargo(FItem(_tempItemSlot[_findSlot].itemID, _reloadedAmount))) {
 								UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Reload Start!"));
 								slotTargetModule[index].ammo.itemAmount = _reloadedAmount;
-								if (targetingObject[index] != nullptr) {
+								if (USafeENGINE::IsValid(targetingObject[index])) {
 									slotTargetModule[index].moduleState = ModuleState::Activate;
 									UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Reload Finish! and Target On!"));
 								}
@@ -1583,7 +1578,7 @@ void APlayerShip::ModuleCheck() {
 								}
 							}
 							else {
-								//ammo¸¦ Ã£¾ÒÀ¸³ª ÀåÀü¿¡ ½ÇÆĞ.
+								//ammoë¥¼ ì°¾ì•˜ìœ¼ë‚˜ ì¥ì „ì— ì‹¤íŒ¨.
 								UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Reload Fail!"));
 								slotTargetModule[index].moduleState = ModuleState::NotActivate;
 							}
@@ -1597,7 +1592,7 @@ void APlayerShip::ModuleCheck() {
 				}
 
 				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
-				//¸ğµâ µ¿ÀÛ ÁßÁö ¿¹¾àÀÌ È°¼ºÈ­µÇ¾î ÀÖ´Ù¸é µ¿ÀÛ ÁßÁö.
+				//ëª¨ë“ˆ ë™ì‘ ì¤‘ì§€ ì˜ˆì•½ì´ í™œì„±í™”ë˜ì–´ ìˆë‹¤ë©´ ë™ì‘ ì¤‘ì§€.
 				if (slotTargetModule[index].isBookedForOff) {
 					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Target Module %d - Off."), index);
 					slotTargetModule[index].moduleState = ModuleState::NotActivate;
@@ -1606,7 +1601,7 @@ void APlayerShip::ModuleCheck() {
 				}
 			}
 		}
-		//¸ğµâÀÌ ²¨Á®ÀÖÀ» °æ¿ì power ¼Ò¸ğ·® °¨¼Ò
+		//ëª¨ë“ˆì´ êº¼ì ¸ìˆì„ ê²½ìš° power ì†Œëª¨ëŸ‰ ê°ì†Œ
 		else
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
@@ -1655,7 +1650,7 @@ float APlayerShip::CalculateCompute() {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData;
 	float _result = 0;
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return _result;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++)
@@ -1685,7 +1680,7 @@ float APlayerShip::CalculatePowerGrid() {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData;
 	float _result = 0;
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return _result;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++)
@@ -1714,9 +1709,9 @@ float APlayerShip::CalculatePowerGrid() {
 
 #pragma region Path Finder
 /*
-* Check 1 : Àü¹æ Àå¾Ö¹° °Ë»ç. ±æÀÌ : ¿ÀºêÁ§Æ®ÀÇ ÀåÃà * 2.0f + 1000.0f. 
-* Check 2 : ¸ñÇ¥ ÁöÁ¡±îÁöÀÇ Àå¾Ö¹° °Ë»ç. °Å¸® : ¸ñÇ¥ ÁöÁ¡±îÁö
-* Check 1 ¶Ç´Â Check 2°¡ trueÀÏ ¶§, RequestPathUpdate()¸¦ È£ÃâÇÏ¿© °æ·Î ÀçÅ½»ö.
+* Check 1 : ì „ë°© ì¥ì• ë¬¼ ê²€ì‚¬. ê¸¸ì´ : ì˜¤ë¸Œì íŠ¸ì˜ ì¥ì¶• * 2.0f + 1000.0f. 
+* Check 2 : ëª©í‘œ ì§€ì ê¹Œì§€ì˜ ì¥ì• ë¬¼ ê²€ì‚¬. ê±°ë¦¬ : ëª©í‘œ ì§€ì ê¹Œì§€
+* Check 1 ë˜ëŠ” Check 2ê°€ trueì¼ ë•Œ, RequestPathUpdate()ë¥¼ í˜¸ì¶œí•˜ì—¬ ê²½ë¡œ ì¬íƒìƒ‰.
 */
 void APlayerShip::CheckPath() {
 	FVector _forTargetDirectionVector = moveTargetVector - GetActorLocation();
@@ -1738,12 +1733,12 @@ void APlayerShip::CheckPath() {
 }
 
 /*
-* ÀÌµ¿ ¸í·É ¹× Àü¹æÀÇ Àå¾Ö¹°ÀÌ È®ÀÎµÇ¾úÀ» ¶§ È£Ãâ.
-* NavMesh ±â¹İ °æ·Î ¿äÃ».
+* ì´ë™ ëª…ë ¹ ë° ì „ë°©ì˜ ì¥ì• ë¬¼ì´ í™•ì¸ë˜ì—ˆì„ ë•Œ í˜¸ì¶œ.
+* NavMesh ê¸°ë°˜ ê²½ë¡œ ìš”ì²­.
 */
 void APlayerShip::RequestPathUpdate() {
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
-	if (targetObject != nullptr) {
+	if (USafeENGINE::IsValid(targetObject)) {
 		moveTargetVector = targetObject->GetActorLocation();
 		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
 		moveTargetVector.Normalize();

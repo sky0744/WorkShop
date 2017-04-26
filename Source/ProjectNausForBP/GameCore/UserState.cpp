@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "UserState.h"
@@ -82,7 +82,7 @@ bool AUserState::NewGameSetting(Faction selectedFaction, FText userName) {
 bool AUserState::Jump(FString jumpToSector) {
 
 	ASpaceState* _sectorState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (_sectorState == nullptr)
+	if (!USafeENGINE::IsValid(_sectorState))
 		return false;
 	if (!_sectorState->isValidSector(jumpToSector))
 		return false;
@@ -132,7 +132,7 @@ bool AUserState::TotalSave(bool isBeforeWarp) {
 bool AUserState::TotalLoad() {
 
 	USaveLoader* loader = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
-	if (loader == nullptr) {
+	if (!USafeENGINE::IsValid(loader)) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Can't Find Save Files or casting SaveLoader"));
 		return false;
 	}
@@ -144,7 +144,7 @@ bool AUserState::TotalLoad() {
 	}
 
 	ASpaceState* spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (spaceState == nullptr)
+	if (!USafeENGINE::IsValid(spaceState))
 		return false;
 
 	if (spaceState->LoadSpaceState(loader) != true) {
@@ -165,7 +165,7 @@ bool AUserState::TotalLoad() {
 
 bool AUserState::PlayerSave(USaveLoader* _saver) {
 
-	if (UGameplayStatics::GetPlayerPawn(GetWorld(), 0) == nullptr) {
+	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerSave] Can't Find Player's Pawn."));
 		return false;
 	}
@@ -202,7 +202,7 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 	return true;
 }
 bool AUserState::PlayerLoad(USaveLoader* loader) {
-	if (UGameplayStatics::GetPlayerPawn(GetWorld(), 0) == nullptr) {
+	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerLoad] Can't Find Player's Pawn."));
 		return false;
 	}
@@ -212,12 +212,10 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	}
 
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	if (_obj == nullptr) {
+	if (!USafeENGINE::IsValid(_obj)) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerLoad] Fail to Get Player Unit's Infomation!"));
 		return false;
 	}
-
-
 	sUserName = loader->name;
 	sShipID = loader->shipID;
 	sCredit = loader->credit;
@@ -253,7 +251,7 @@ bool AUserState::ShipBuy(int newShipID) {
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	if (_tempInstance == nullptr || _obj == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance) || !USafeENGINE::IsValid(_obj))
 		return false;
 
 	FShipData _tempShipData = _tempInstance->GetShipData(newShipID);
@@ -393,7 +391,7 @@ bool AUserState::DropPlayerCargo(FItem dropItem) {
 
 bool AUserState::BuyItem(FItem buyItems) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 
 	FStructureInfo* _structureInfo;
@@ -444,7 +442,7 @@ bool AUserState::BuyItem(FItem buyItems) {
 
 bool AUserState::SellItem(FItem sellItems) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 
 	FStructureInfo* _structureInfo;
@@ -551,7 +549,7 @@ bool AUserState::TransferItem(FItem transferItems, bool isToStationDirection) {
 bool AUserState::EquipModule(int itemSlotIndex) {
 	
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
 		return false;
@@ -654,7 +652,7 @@ bool AUserState::EquipModule(int itemSlotIndex) {
 
 bool AUserState::UnEquipModule(ItemType moduleType, int slotIndex) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
 		return false;
@@ -747,7 +745,7 @@ bool AUserState::CheckSkill(TArray<int>& skillID, TArray<int>& skillLevel) {
 
 float AUserState::CheckCargoValue() {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return -1.0f;
 
 	FItemData _tempItemData;
@@ -762,7 +760,7 @@ float AUserState::CheckCargoValue() {
 
 float AUserState::CheckAddItemValue(FItem item) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return -1.0f;
 
 	FItemData _tempItemData = _tempInstance->GetItemData(item.itemID);

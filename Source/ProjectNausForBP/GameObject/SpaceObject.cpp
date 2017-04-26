@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -25,6 +25,7 @@ ASpaceObject::ASpaceObject()
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
 
+	objectID = -1;
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 }
 
@@ -53,8 +54,6 @@ void ASpaceObject::Tick( float DeltaTime )
 }
 
 float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
-		return 0.0f;
 
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
 	float effectDamage = 0.0f;
@@ -67,6 +66,7 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 	else {
 		effectDamage = currentDurability;
 		currentDurability = 0.0f;
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceObject][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"), 
@@ -123,23 +123,23 @@ bool ASpaceObject::LoadBaseObject(float shield, float armor, float hull, float p
 }
 
 float ASpaceObject::GetValue(GetStatType statType) {
-	float value;
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::maxHull:
-		value = maxDurability;
+		_value = maxDurability;
 		break;
 	case GetStatType::currentHull:
-		value = currentDurability;
+		_value = currentDurability;
 		break;
 	default:
-		value = -1.0;
+		_value = 0.0f;
 		break;
 	}
-	return value;
+	return _value;
 }
 
 void ASpaceObject::GetRepaired(GetStatType statType, float repairValue) {

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Station.h"
@@ -37,7 +37,13 @@ void AStation::Tick(float DeltaSeconds) {
 }
 
 float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
 
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
@@ -93,7 +99,7 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 	else {
 		effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectShieldDamage, effectArmorDamage, effectHullDamage, isCritical ? TEXT("Critical") : TEXT("Non Critical"));
@@ -150,55 +156,55 @@ bool AStation::LoadBaseObject(float shield, float armor, float hull, float power
 }
 
 float AStation::GetValue(GetStatType statType) {
-	float value;
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::maxShield:
-		value = maxShield;
+		_value = maxShield;
 		break;
 	case GetStatType::rechargeShield:
-		value = rechargeShield;
+		_value = rechargeShield;
 		break;
 	case GetStatType::currentShield:
-		value = currentShield;
+		_value = currentShield;
 		break;
 	case GetStatType::defShield:
-		value = defShield;
+		_value = defShield;
 		break;
 
 	case GetStatType::maxArmor:
-		value = maxArmor;
+		_value = maxArmor;
 		break;
 	case GetStatType::repaireArmor:
-		value = repairArmor;
+		_value = repairArmor;
 		break;
 	case GetStatType::currentArmor:
-		value = currentArmor;
+		_value = currentArmor;
 		break;
 	case GetStatType::defArmor:
-		value = defArmor;
+		_value = defArmor;
 		break;
 
 	case GetStatType::maxHull:
-		value = maxHull;
+		_value = maxHull;
 		break;
 	case GetStatType::repaireHull:
-		value = repairHull;
+		_value = repairHull;
 		break;
 	case GetStatType::currentHull:
-		value = currentHull;
+		_value = currentHull;
 		break;
 	case GetStatType::defHull:
-		value = defHull;
+		_value = defHull;
 		break;
 	default:
-		value = -1;
+		_value = 0.0f;
 		break;
 	}
-	return value;
+	return _value;
 }
 
 void AStation::GetRepaired(GetStatType statType, float repairValue) {
