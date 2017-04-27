@@ -26,38 +26,34 @@ protected:
 
 #pragma region SpaceObject Inheritance
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual int GetObjectID() override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual ObjectType GetObjectType() override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual int GetObjectID() const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual ObjectType GetObjectType() const override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual Faction GetFaction() override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual void SetFaction(Faction setFaction) override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual BehaviorState GetBehaviorState() override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual Faction GetFaction() const override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual void SetFaction(const Faction setFaction) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual BehaviorState GetBehaviorState() const override;
 
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual bool InitObject(int objectId) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual bool InitObject(const int objectId) override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual bool LoadBaseObject(const float shield, const float armor, const float hull, const float power) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual float GetValue(GetStatType statType) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual float GetValue(const GetStatType statType) const override;
 #pragma endregion
 
 #pragma region Resource Functions
 public:
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
-		void SetResource(int resourceId, float durability, int amount);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
-		float GetResourceAmount();
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
-		float GetResourceDurability();
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
-		float GetResourceDef();
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Resource")
+	UFUNCTION(BlueprintCallable, Category = "Call to Resource")
+		void SetResource(const int resourceId, float durability, int amount);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Resource")
+		float GetResourceAmount() const;
+	UFUNCTION(BlueprintCallable, Category = "Call to Resource")
 		FItem CollectResource(float miningPerfomance);
 #pragma endregion
 

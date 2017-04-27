@@ -123,39 +123,39 @@ void AStation::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int AStation::GetObjectID() {
+int AStation::GetObjectID() const {
 	if(structureInfo != nullptr)
 		return structureInfo->structureID; 
 	else return -1;
 }
 
-ObjectType AStation::GetObjectType() {
+ObjectType AStation::GetObjectType() const {
 	return ObjectType::Station;
 }
 
-Faction AStation::GetFaction() {
+Faction AStation::GetFaction() const {
 	if (structureInfo != nullptr)
 		return structureInfo->structureFaction; 
 	else return Faction::Neutral;
 }
 
-void AStation::SetFaction(Faction setFaction) {
+void AStation::SetFaction(const Faction setFaction) {
 	return;
 }
 
-BehaviorState AStation::GetBehaviorState() {
+BehaviorState AStation::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool AStation::InitObject(int objectId) {
+bool AStation::InitObject(const int objectId) {
 	return false;
 }
 
-bool AStation::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool AStation::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float AStation::GetValue(GetStatType statType) {
+float AStation::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -207,7 +207,7 @@ float AStation::GetValue(GetStatType statType) {
 	return _value;
 }
 
-void AStation::GetRepaired(GetStatType statType, float repairValue) {
+void AStation::GetRepaired(const GetStatType statType, float repairValue) {
 
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -227,27 +227,27 @@ void AStation::GetRepaired(GetStatType statType, float repairValue) {
 #pragma endregion
 
 #pragma region Interface Implementation : IStructureable
-FString AStation::GetDestinationName() {
+const FString AStation::GetDestinationName() const {
 	return "";
 }
 
-StructureType AStation::GetStationType() {
+StructureType AStation::GetStationType() const {
 	if(structureInfo != nullptr)
 		return structureInfo->structureType;
 	else return StructureType::TradingCenter;
 }
 
-bool AStation::RequestedDock(Faction requestFaction) {
+bool AStation::RequestedDock(const  Faction requestFaction) const {
 	if(structureInfo != nullptr)
 		return true;
 	else return false;
 }
 
-bool AStation::RequestedJump(Faction requestFaction) {
+bool AStation::RequestedJump(const Faction requestFaction) const {
 	return false;
 }
 
-bool AStation::SetStructureData(FStructureInfo& structureData) {
+bool AStation::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	if (isInited)
 		return false;
 
@@ -281,14 +281,14 @@ bool AStation::SetStructureData(FStructureInfo& structureData) {
 	return true;
 }
 
-void AStation::GetStructureData(FStructureInfo& structureData) {
+void AStation::GetStructureData(FStructureInfo& structureData) const {
 	structureData = *structureInfo;
 	return;
 }
 #pragma endregion
 
 #pragma region Functions
-FStructureInfo* AStation::GetStructureDataPointer() {
+FStructureInfo* AStation::GetStructureDataPointer() const {
 	return structureInfo;
 }
 

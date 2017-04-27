@@ -29,17 +29,13 @@ public:
 	*/
 	void SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime = 1.0f);
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Beam Data")
-		Faction GetLaunchingFaction();
+	UFUNCTION(BlueprintCallable, BlueprintPure, BlueprintPure, Category = "Beam Data")
+		Faction GetLaunchingFaction() const;
 #pragma region Beam Property
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
 		UParticleSystemComponent* beamParticle;
 	ModuleType beamType;
-
-	FCollisionObjectQueryParams _traceObjectParams;
-	FCollisionQueryParams _traceParams;
-	FHitResult _beamHitresult;
 
 	UPROPERTY()
 		ASpaceObject* beamOwner;
@@ -50,5 +46,6 @@ private:
 	float beamRange;
 	float beamDamage;
 	FVector resultLocation;
+	bool isHited;
 #pragma endregion
 };

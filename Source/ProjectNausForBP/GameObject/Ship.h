@@ -27,26 +27,26 @@ protected:
 #pragma region SpaceObject Inheritance
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual int GetObjectID() override;
+		virtual int GetObjectID() const override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual ObjectType GetObjectType() override;
+		virtual ObjectType GetObjectType() const override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual Faction GetFaction() override;
+		virtual Faction GetFaction() const override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual void SetFaction(Faction setFaction) override;
+		virtual void SetFaction(const Faction setFaction) override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual BehaviorState GetBehaviorState() override;
+		virtual BehaviorState GetBehaviorState() const override;
 
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual bool InitObject(int objectId) override;
+		virtual bool InitObject(const int objectId) override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
+		virtual bool LoadBaseObject(const float shield, const float armor, const float hull, const float power) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual float GetValue(GetStatType statType) override;
+		virtual float GetValue(const GetStatType statType) const override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual void GetRepaired(GetStatType statType, float repairValue) override;
+		virtual void GetRepaired(const GetStatType statType, float repairValue) override;
 #pragma endregion
 
 #pragma region Interface Implementation : ICommandable
@@ -72,17 +72,17 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandUndock() override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandLaunch(TArray<int> baySlot) override;
+		virtual bool CommandLaunch(const TArray<int>& baySlot) override;
 #pragma endregion
 
 #pragma region Functions
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Ship")
-		BehaviorType GetBehaviorType();
+		BehaviorType GetBehaviorType() const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Ship")
-		ShipClass GetShipClass();
+		ShipClass GetShipClass() const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Ship")
-		void GetDockedStructure(TScriptInterface<IStructureable>& getStructure);
+		void GetDockedStructure(TScriptInterface<IStructureable>& getStructure) const;
 	
 private:
 	bool MoveDistanceCheck();
@@ -90,7 +90,7 @@ private:
 	void Movement();
 	void ModuleCheck();
 
-	bool CheckCanBehavior();
+	bool CheckCanBehavior() const;
 #pragma endregion
 
 #pragma region Path Finder
@@ -99,10 +99,11 @@ private:
 	void RequestPathUpdate();
 
 	UPROPERTY()
-		UNavigationPath* waypointData;
-	UPROPERTY()
 		TArray<FVector> wayPoint;
 
+	//성능 테스트를 위해 전역변수 <-> 지역변수 스트레스 테스트 할 것임
+	UPROPERTY()
+		UNavigationPath* waypointData;
 	FCollisionObjectQueryParams traceObjectParams;
 	FCollisionQueryParams traceParams;
 	FHitResult pathFindTraceResult;
@@ -122,19 +123,13 @@ private:
 	bool bIsFirstCheckStraight;
 	float nextPointDistance;
 	float nextPointOuter;
+	//여기까지
 #pragma endregion
 
 #pragma region Components
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
 		UFloatingPawnMovement* objectMovement;
-public:
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Ship Data")
-		class UBehaviorTree* aiBehaviorTree;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Ship Data")
-		UBlackboardComponent* compAIBlackboard;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Ship Data")
-		class UBlackboardData* aiBlackboard;
 #pragma endregion
 
 #pragma region Variables

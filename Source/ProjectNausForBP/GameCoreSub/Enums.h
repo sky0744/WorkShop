@@ -8,9 +8,10 @@
 #pragma region Game Data
 UENUM(BlueprintType)
 enum class Faction : uint8 {
-	Neutral			UMETA(DisplayName = "Neutral"),
-	Player			UMETA(DisplayName = "Player"),
-	PrimusEmpire		UMETA(DisplayName = "Primus Empire"),
+	Neutral					UMETA(DisplayName = "Neutral"),
+	Player					UMETA(DisplayName = "Player"),
+	PlayerFoundingFaction		UMETA(DisplayName = "Founded Faction By Player"),
+	PrimusEmpire			UMETA(DisplayName = "Primus Empire"),
 	FlorenceTradeCoalition	UMETA(DisplayName = "Florence Trade Coalition"),
 	FreeCitizenFederation	UMETA(DisplayName = "Free Citizen Federation"),
 	ValenciaProtectorate	UMETA(DisplayName = "Valencia Protectorate"),

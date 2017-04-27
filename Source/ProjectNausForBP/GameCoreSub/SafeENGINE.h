@@ -567,9 +567,7 @@ public:
 		FItem ProductItem;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
-		TArray<int> RequireSkill;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
-		TArray<int> RequireSkillLevel;
+		TArray<FSkill> RequireSkill;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		TArray<FItem> requireItems;
@@ -598,9 +596,7 @@ public:
 		int LearningMultiple;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		TArray<int> RequireSkill;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		TArray<int> RequireSkillLevel;
+		TArray<FSkill> RequireSkill;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		BonusStatType BonusType;
@@ -653,9 +649,7 @@ public:
 		float UsagePowerGrid;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Module In Item Data")
-		TArray<int> RequireSkill;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Module In Item Data")
-		TArray<int> RequireSkillLevel;
+		TArray<FSkill> RequireSkill;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Active or Passive In Item Data")
 		BonusStatType StatType;
@@ -777,6 +771,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
 		float StartCredit;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
+		float StartRenown;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
 		FString StartSector;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
 		FVector StartPosition;
@@ -805,63 +801,67 @@ public:
 	* @param id - The id of the ship.
 	* @return Ship Data.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FShipData GetShipData(int id);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FNPCData GetNPCData(int id);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FStationData GetStationData(int id);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FResourceData GetResourceData(int id);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FShipData& GetShipData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FNPCData& GetNPCData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FStationData& GetStationData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FResourceData& GetResourceData(const int& id) const;
 
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FSkillData GetSkillData(int id);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FItemData GetItemData(int id);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FProjectileData GetProjectileData(int id);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FSectorData GetSectorData(FString SectorName);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		void GetAllSectorNameData(TArray<FString>& sectorNameArray);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		struct FNewStartPlayerData GetStartProfileData(int id);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FSkillData& GetSkillData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FItemData& GetItemData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FProjectileData& GetProjectileData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FSectorData& GetSectorData(const FString& SectorName) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		void GetAllSectorNameData(TArray<FString>& sectorNameArray) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		const struct FNewStartPlayerData& GetStartProfileData(const int& id) const;
 #pragma endregion
 
 #pragma region GamePlay - Static
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static bool IsValid(UObject* Obj);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static int FindItemSlot(UPARAM(ref) TArray<FItem>& itemList, FItem items);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static bool AddCargo(UPARAM(ref) TArray<FItem>& itemList, FItem addItem);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static bool DropCargo(UPARAM(ref) TArray<FItem>& itemList, FItem dropItem);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/** Nullptr, PendingKill, LowValid의 통합 유효성 검사를 실시합니다.
+		*	@param obj - 유효성을 검사할 UObject 개체.
+		*	@return 검사한 개체의 유효성입니다.
+		*/
+		static bool IsValid(const UObject* obj);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static int FindItemSlot(const TArray<FItem>& itemList, const FItem items);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static bool AddCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem addItem);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static bool DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dropItem);
 
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static bool CheckSkill(UPARAM(ref) TArray<FSkill>& skillList, UPARAM(ref) TArray<FSkill>& requsetCheckSkillList);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static bool CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkill>& requsetCheckSkillList);
 
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static float CheckDistacneConsiderSize(ASpaceObject* actor1, ASpaceObject* actor2);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static FVector CheckLocationMovetoTarget(ASpaceObject* requestor, ASpaceObject* target, float distance);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
-		static FVector GetRandomLocationToTarget(ASpaceObject* requestor, ASpaceObject* target, float distance);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static float CheckDistanceConsiderSize(const ASpaceObject* actor1, const ASpaceObject* actor2);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static FVector CheckLocationMovetoTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		static FVector GetRandomLocationToTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocationToLocation(FVector location, float distance);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocation(bool requestNormalizedVector);
-	UFUNCTION(BlueprintCallable, Category = "Call To Manager")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetLocationLimitedSector(FVector location);
 
 #pragma endregion
 
 #pragma region GamePlay - Non Static
 public:
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		float CalculateCreditForTrade(int itemID, int lowerAmount, int upperAmount, bool isBuy);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		float CalculateCredit(int itemID, int Amount, bool isBuy);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		float CalculateCreditForTrade(int itemID, int lowerAmount, int upperAmount, bool isBuy) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		float CalculateCredit(int itemID, int Amount, bool isBuy) const;
 #pragma endregion
 
 private:

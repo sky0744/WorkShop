@@ -70,27 +70,27 @@ void AResource::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int AResource::GetObjectID() {
+int AResource::GetObjectID() const {
 	return resourceID;
 }
 
-ObjectType AResource::GetObjectType() {
+ObjectType AResource::GetObjectType() const {
 	return ObjectType::Resource;
 }
 
-Faction AResource::GetFaction() {
+Faction AResource::GetFaction() const {
 	return Faction::Neutral;
 }
 
-void AResource::SetFaction(Faction setFaction) {
+void AResource::SetFaction(const Faction setFaction) {
 	return;
 }
 
-BehaviorState AResource::GetBehaviorState() {
+BehaviorState AResource::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool AResource::InitObject(int objectId) {
+bool AResource::InitObject(const int objectId) {
 	if (objectId < 0)
 		return false;
 
@@ -125,11 +125,11 @@ bool AResource::InitObject(int objectId) {
 	return true;
 }
 
-bool AResource::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool AResource::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float AResource::GetValue(GetStatType statType) {
+float AResource::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -154,7 +154,7 @@ float AResource::GetValue(GetStatType statType) {
 #pragma endregion
 
 #pragma region Resource Functions
-void AResource::SetResource(int resourceId, float durability, int amount) {
+void AResource::SetResource(const int resourceId, float durability, int amount) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FResourceData _tempResourceData = _tempInstance->GetResourceData(resourceId);
 
@@ -162,16 +162,8 @@ void AResource::SetResource(int resourceId, float durability, int amount) {
 	currentResource = FItem(_tempResourceData.ResourceItemID, FMath::Clamp(amount, 0, FMath::FloorToInt(FMath::Max(_tempResourceData.OreAmountRange.X, _tempResourceData.OreAmountRange.Y))));
 }
 
-float AResource::GetResourceAmount() {
+float AResource::GetResourceAmount() const {
 	return currentResource.itemAmount;
-}
-
-float AResource::GetResourceDurability() {
-	return currentDurability;
-}
-
-float AResource::GetResourceDef() {
-	return defResource;
 }
 
 FItem AResource::CollectResource(float miningPerfomance) {

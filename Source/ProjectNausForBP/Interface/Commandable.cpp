@@ -61,7 +61,7 @@ bool ICommandable::CommandUndock() {
 	return false;
 }
 
-bool ICommandable::CommandLaunch(TArray<int> baySlot) {
+bool ICommandable::CommandLaunch(const TArray<int>& baySlot) {
 	unimplemented();
 	return false;
 }

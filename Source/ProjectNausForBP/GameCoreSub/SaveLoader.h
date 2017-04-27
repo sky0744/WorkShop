@@ -25,6 +25,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		FString sectorName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+		FText playerFactionName;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		float credit;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)

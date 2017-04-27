@@ -36,8 +36,10 @@ void AProjectiles::Tick( float DeltaTime )
 }
 
 void AProjectiles::OnCollisionActor(const FHitResult& hitResult) {
-	UGameplayStatics::ApplyPointDamage(hitResult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f), hitResult, nullptr, this, UDamageType::StaticClass());
-	Destroy();
+	if (hitResult.Actor.Get() == target) {
+		UGameplayStatics::ApplyPointDamage(hitResult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f), hitResult, nullptr, this, UDamageType::StaticClass());
+		Destroy();
+	}
 }
 
 void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, float damageMultiple,
@@ -55,6 +57,7 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	setedDamage = _tempItemData.Damage * damageMultiple;
 	setedMaxSpeed = _tempItemData.LaunchSpeed * maxSpeedMultiple;
 
+	target = targetObject;
 	if (_tempItemData.Type == ItemType::Ammo_Missile && targetObject) {
 		projectileMovement->bIsHomingProjectile = true;
 		projectileMovement->HomingTargetComponent = targetObject->GetRootComponent();
@@ -66,6 +69,6 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	this->SetLifeSpan(_tempItemData.LifeTime * (1.0f + lifetimeMultiple));
 }
 
-Faction AProjectiles::GetLaunchingFaction() {
+Faction AProjectiles::GetLaunchingFaction() const{
 	return launchedFaction;
 }

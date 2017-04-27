@@ -249,7 +249,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 	if (saver->saveState == SaveState::NewGameCreate) {
 		//All inited Sector's Data Save
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By New Game!"));
-		
+
 		TArray<FString> _sectorNameData;
 		_tempInstance->GetAllSectorNameData(_sectorNameData);
 
@@ -263,13 +263,11 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		if (saver->sectorInfo.Num() == _sectorNameData.Num()) {
 			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] New GameSave Create Finish!"));
 			return true;
-		}
-		else {
+		} else {
 			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] New GameSave Create Fail!"));
 			return false;
 		}
-	}
-	else if (saver->saveState == SaveState::UserRequest) {
+	} else if (saver->saveState == SaveState::UserRequest) {
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By User Request!"));
 		saver->sectorInfo = sectorInfo;
 		TArray<AActor*> _getAllObj;
@@ -314,7 +312,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				saver->resourceID.Emplace(_resource->GetObjectID());
 				saver->resourceLocation.Emplace(_resource->GetActorLocation());
 				saver->resourceRotation.Emplace(_resource->GetActorRotation());
-				saver->resourceDurability.Emplace(_resource->GetResourceDurability());
+				saver->resourceDurability.Emplace(_resource->GetValue(GetStatType::currentHull));
 				saver->resourceAmount.Emplace(_resource->GetResourceAmount());
 				break;
 			case ObjectType::Gate:
@@ -325,22 +323,22 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 			}
 		}
 		saver->relation = realFactionRelationship;
+		saver->playerFactionName = playerFactionName;
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] GameSave Create Finish!"));
 		return true;
-	}
-	else if (saver->saveState == SaveState::BeforeWarp) {
+	} else if (saver->saveState == SaveState::BeforeWarp) {
 		//Just Save Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By Warp!"));
 		saver->sectorInfo = sectorInfo;
 		saver->relation = realFactionRelationship;
+		saver->playerFactionName = playerFactionName;
 
 		saver->position = FVector(0.0f, 0.0f, 0.0f);
 		saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
 		FSectorData* _nextSectorInfo = nullptr;
 
 		for (int index = 0; index < sectorInfo.Num(); index++) {
-			if (saver->sectorInfo[index].nSectorName.ToString().Equals(saver->sectorName), ESearchCase::IgnoreCase)
-			{
+			if (saver->sectorInfo[index].nSectorName.ToString().Equals(saver->sectorName), ESearchCase::IgnoreCase) {
 				_nextSectorInfo = &saver->sectorInfo[index];
 				break;
 			}
@@ -388,7 +386,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			_sectorDataFind = true;
 			shipRegenLimit = FMath::Min(300, currentSectorInfo->ShipRegenTotal);
 
-			for (int index1 = 0; index1 < currentSectorInfo->ShipRegenData.Num(); index1++) 
+			for (int index1 = 0; index1 < currentSectorInfo->ShipRegenData.Num(); index1++)
 				totalChanceFactor += currentSectorInfo->ShipRegenData[index1].regenChanceFactor;
 			break;
 		}
@@ -456,11 +454,10 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		}
 	}
 	//saveState == BeforeWarp or saveState == NewGameCreate
-	else
-	{
+	else {
 		//Just Load Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Start Load File Create By Warp to Next Sector!"));
-		
+
 		//Load Structure
 		for (int index = 0; index < currentSectorInfo->StationList.Num(); index++) {
 			if (!currentSectorInfo->StationList[index].isDestroyed) {
@@ -471,7 +468,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					_sObj = Cast<IStructureable>(_obj);
 					_sObj->SetStructureData(currentSectorInfo->StationList[index]);
 					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				} 
+				}
 			}
 		}
 		for (int index = 0; index < currentSectorInfo->GateList.Num(); index++) {
@@ -497,7 +494,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 			if (_ship != nullptr) {
 				_ship->InitObject(currentSectorInfo->ShipInitedData[index].objectID);
 				UGameplayStatics::FinishSpawningActor(_ship, _ship->GetActorTransform());
-			} 
+			}
 		}
 
 		//Generate Inited Resources
@@ -512,37 +509,50 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 				UGameplayStatics::FinishSpawningActor(_resource, _resource->GetActorTransform());
 			}
 		}
-		
+
 	}
-	/*
+
+	playerFactionName = loader->playerFactionName;
 	tempFactionRelationship = loader->relation;
 	if (!USafeENGINE::IsValid(factionEnumPtr))
 		factionEnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
-	
-	if (tempFactionRelationship.Num() != factionEnumPtr->NumEnums()) {
-		UE_LOG(LogClass, Log, TEXT("[Warning][SpaceState][LoadSpaceState] There is a discrepancy between the save file and system faction relationship. Try expanding..."));
+
+	if (tempFactionRelationship.Num() < factionEnumPtr->NumEnums()) {
+		UE_LOG(LogClass, Log, TEXT("[Warning][SpaceState][LoadSpaceState] There is a discrepancy between the save file and system faction relationship. The lost information will be initialized.."));
 		UE_LOG(LogClass, Log, TEXT("[Warning][SpaceState][LoadSpaceState] Relationship In save file : %d, Relationship In system : %d"), realFactionRelationship.Num(), factionEnumPtr->NumEnums());
-
-		realFactionRelationship.Init(FFactionRelationship(), factionEnumPtr->NumEnums());
-		for (FFactionRelationship& relation : realFactionRelationship) {
-			relation;
-			factionEnumPtr->
-		}
-			
-
-		_tempNewStartData = _tempInstance->GetStartProfileData(0);
-		tempFactionRelationship.Init(FFactionRelationship(), factionEnumPtr->NumEnums());
-		
+		tempFactionRelationship.AddDefaulted(factionEnumPtr->NumEnums() - tempFactionRelationship.Num());
 	}
-	*/
+	realFactionRelationship = tempFactionRelationship;
+
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
 	return true;
 }
 
-Peer ASpaceState::PeerIdentify(Faction requestor, Faction target) {
+void ASpaceState::GetCurrentSectorInfo(FSectorData& getSectorInfo) {
+	getSectorInfo = *currentSectorInfo;
+}
+
+bool ASpaceState::isValidSector(const FString& checkSectorName) const {
+	for (int index = 0; index < sectorInfo.Num(); index++) {
+		if (sectorInfo[index].nSectorName.ToString().Equals(checkSectorName))
+			return true;
+	}
+	return false;
+}
+
+void ASpaceState::AccumulateToShipCapacity(const bool isDestroying) {
+	if (isDestroying)
+		currentShipCapacity--;
+	else currentShipCapacity++;
+
+	return;
+}
+
+Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, const bool isRealRelation) const {
+	const TArray<FFactionRelationship>* _selectedRelationship;
 	Peer _result = Peer::Neutral;
 	float _relation = 0.0f;
-	/*
+
 	if (target == Faction::Neutral)
 		return Peer::Neutral;
 
@@ -552,49 +562,54 @@ Peer ASpaceState::PeerIdentify(Faction requestor, Faction target) {
 	if (target == Faction::Pirate || requestor == Faction::Pirate) {
 		return Peer::EnemyStrong;
 	}
-	for (FFactionRelationship& relation : tempFactionRelationship) {
+
+	if (isRealRelation)
+		_selectedRelationship = &tempFactionRelationship;
+	else 
+		_selectedRelationship = &realFactionRelationship;
+
+	for (const FFactionRelationship& relation : *_selectedRelationship) {
 		if (relation.targetFaction == requestor) {
 
-			  relation.factionRelation.Num()
-
-			return _result;
+			_relation = relation.factionRelation[FMath::Min(relation.factionRelation.Max() - 1, (int)(target))];
+			if (_relation >= 50.0f)
+				_result = Peer::AllyStrong;
+			else if (_relation >= 50.0f && _relation < 80.0f)
+				_result = Peer::Ally;
+			else if (_relation >= 20.0f && _relation < 50.0f)
+				_result = Peer::Friendship;
+			else if (_relation <= -20.0f && _relation > -50.0f)
+				_result = Peer::Boundary;
+			else if (_relation <= -50.0f && _relation > -80.0f)
+				_result = Peer::Enemy;
+			else if (_relation <= -80.0f)
+				_result = Peer::EnemyStrong;
+			break;
 		}
 	}
-
-	_relation = realFactionRelationship[(uint8)(requestor)];
-	if (_relation >= 50.0f)
-		return Peer::AllyStrong;
-	else if (_relation >= 50.0f && _relation < 80.0f)
-		return Peer::Ally;
-	else if (_relation >= 20.0f && _relation < 50.0f)
-		return Peer::Friendship;
-	else if (_relation <= -20.0f && _relation > -50.0f)
-		return Peer::Boundary;
-	else if (_relation <= -50.0f && _relation > -80.0f)
-		return Peer::Enemy;
-	else if (_relation <= -80.0f)
-		return Peer::EnemyStrong;
-	else return Peer::Neutral;
-	*/
 	return _result;
 }
 
-void ASpaceState::GetCurrentSectorInfo(FSectorData& getSectorInfo) {
-	getSectorInfo = *currentSectorInfo;
-}
+void ASpaceState::ChangeRelationship(const Faction requestor, const Faction target, const bool isRealRelation, const float varianceValue){
+	float _relationship;
 
-bool ASpaceState::isValidSector(FString& checkSectorName) {
-	for (int index = 0; index < sectorInfo.Num(); index++) {
-		if (sectorInfo[index].nSectorName.ToString().Equals(checkSectorName))
-			return true;
-	}
-	return false;
-}
+	TArray<FFactionRelationship>* _selectedRelationship;
 
-void ASpaceState::AccumulateToShipCapacity(bool isDestroying) {
-	if (isDestroying)
-		currentShipCapacity--;
-	else currentShipCapacity++;
+	if (isRealRelation)
+		_selectedRelationship = &tempFactionRelationship;
+	else
+		_selectedRelationship = &realFactionRelationship;
+	if(requestor == target)
+		_relationship = 100.0f;
 
+	for (FFactionRelationship& relation : *_selectedRelationship) 
+		if (relation.targetFaction == requestor) {
+			if (requestor != target){
+				_relationship = relation.factionRelation[FMath::Min(relation.factionRelation.Max() - 1, (int)(target))];
+				_relationship = FMath::Clamp(_relationship + varianceValue, -100.0f, 100.0f);
+				relation.factionRelation[FMath::Min(relation.factionRelation.Max() - 1, (int)(target))] = _relationship;
+			}
+			break;
+		}
 	return;
 }

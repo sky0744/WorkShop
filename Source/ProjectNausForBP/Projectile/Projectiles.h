@@ -39,7 +39,7 @@ public:
 			float lifetimeMultiple, ASpaceObject* targetObject = nullptr);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Projectile Data")
-		Faction GetLaunchingFaction();
+		Faction GetLaunchingFaction() const;
 #pragma region Projectile Property
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")

@@ -77,8 +77,6 @@ void AUserController::SetupInputComponent() {
 }
 #pragma endregion
 
-
-#pragma region Input Binding
 #pragma region Input Binding - Action
 void AUserController::ControlCamReset() {
 	//GEngine->AddOnScreenDebugMessage(-1, 0.0333f, FColor::Yellow, "Control Roll : " + FString::SanitizeFloat(value));
@@ -214,7 +212,7 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 #pragma endregion
 
 #pragma region player flow control
-void AUserController::PlayerInterAction(InteractionType interaction) {
+void AUserController::PlayerInterAction(const InteractionType interaction) {
 
 	ICommandable* _pObj;
 	if (!ControlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
@@ -267,7 +265,7 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 	}
 }
 
-bool AUserController::SetWarpLocation(FVector location) {
+bool AUserController::SetWarpLocation(const FVector location) {
 	//if location is invaild / too far(out of normal zone), cancel setting warp location.
 	if (FVector::Dist(FVector::ZeroVector, location) > 500000.0f)
 		return false;
@@ -276,15 +274,16 @@ bool AUserController::SetWarpLocation(FVector location) {
 	return true;
 }
 
-bool AUserController::ToggleTargetModule(int slotIndex) {
+bool AUserController::ToggleTargetModule(const int slotIndex) {
 	return ControlledPawn->ToggleTargetModule(slotIndex, tObj);
 }
 
-bool AUserController::ToggleActiveModule(int slotIndex) {
+bool AUserController::ToggleActiveModule(const int slotIndex) {
 	return ControlledPawn->ToggleActiveModule(slotIndex);
 }
 
-ASpaceObject* AUserController::GetTargetInfo() {
+ASpaceObject* AUserController::GetTargetInfo() const {
+
 	if(USafeENGINE::IsValid(tObj) && tObj != ControlledPawn)
 		return tObj;
 	else return nullptr;
@@ -300,7 +299,7 @@ void AUserController::SetTarget(ASpaceObject* target) {
 
 		if (!USafeENGINE::IsValid(tObj) || tObj != target) {
 			tObj = target;
-			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction())) {
+			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction(), false)) {
 			case Peer::Neutral:
 				_peerColor = FColor::Yellow;
 				break;
@@ -325,7 +324,7 @@ void AUserController::SetTarget(ASpaceObject* target) {
 	}
 }
 
-void AUserController::SettingInteraction(ASpaceObject* target) {
+void AUserController::SettingInteraction(const ASpaceObject* target) const {
 	
 	FColor peerColor;
 	if (ControlledPawn == target)

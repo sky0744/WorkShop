@@ -19,17 +19,10 @@ public:
 
 #pragma region Components & Variables
 protected:
-	UPROPERTY()
-		ASpaceObject* possessObj;
-	UPROPERTY()
-		TScriptInterface<ICommandable> possessCObj;
-
 	UPROPERTY(BlueprintReadOnly, Category = "Space AI")
 		UBehaviorTree* aiBehaviorTree;
 	UPROPERTY(BlueprintReadOnly, Category = "Space AI")
 		UBlackboardComponent* compAIBlackboard;
 	UPROPERTY(BlueprintReadOnly, Category = "Space AI")
 		UBlackboardData* aiBlackboard;
-
-
 };

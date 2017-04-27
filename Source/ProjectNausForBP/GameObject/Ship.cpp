@@ -89,15 +89,15 @@ void AShip::Tick(float DeltaTime)
 }
 
 float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	Faction dealingFaction;
+	Faction _dealingFaction;
 
 	if (DamageCauser->IsA(ABeam::StaticClass()))
-		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+		_dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
 	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
-		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+		_dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
 	else
 		return 0.0f;
-	
+
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
 
 	float effectShieldDamage = 0.0f;
@@ -115,14 +115,15 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	if (FVector::DotProduct(GetActorForwardVector(), hitDirect) > 0.95f) {
 		remainDamage *= 2.0f;
 		isCritical = true;
-	}
-	else if (FVector::DotProduct(GetActorForwardVector(), hitDirect) < -0.95f) {
+	} else if (FVector::DotProduct(GetActorForwardVector(), hitDirect) < -0.95f) {
 		remainDamage *= 3.0f;
 		isCritical = true;
 	}
 
-	if (dealingFaction == Faction::Player) {
-
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (USafeENGINE::IsValid(_spaceState)) {
+		if (_dealingFaction != Faction::Player)
+			_spaceState->ChangeRelationship(faction, _dealingFaction, false, -FMath::Sqrt(DamageAmount) * 0.005f);
 	}
 
 	//remainDamage = sDefShield.GetValue();
@@ -130,64 +131,51 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		effectShieldDamage = remainDamage;
 		currentShield -= remainDamage;
 		remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		effectShieldDamage = currentShield;
 		remainDamage -= effectShieldDamage;
 		currentShield = 0.0f;
 	}
-
+	//remainDamage = sDefArmor.GetValue();
 	if (currentArmor > remainDamage) {
 		effectArmorDamage = remainDamage;
 		currentArmor -= remainDamage;
 		remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		effectArmorDamage = currentArmor;
 		remainDamage -= effectArmorDamage;
 		currentArmor = 0.0f;
 	}
-
+	//remainDamage = sDefHull.GetValue();
 	if (currentHull > remainDamage) {
 		effectHullDamage = remainDamage;
 		currentHull -= remainDamage;
 		remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		
 
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+		if (_dealingFaction == Faction::Player && USafeENGINE::IsValid(_userState)) {
+			if (bounty > 0.0f)
+				_userState->ChangeCredit(bounty);
 
-		if (dealingFaction == Faction::Player && bounty > 0.0f)
-			_userState->ChangeCredit(bounty);
-		//_userState
+			uint8 _peerResult = (uint8)_spaceState->PeerIdentify(faction, _dealingFaction, true);
+			//전략 포인트의 0.1%(적대 오브젝트 파괴) / -0.5%(우호 오브젝트 파괴)를 명성에 반영
+			if (_peerResult < 2)
+				_userState->ChangeRenown(strategyPoint * 0.001f);
+			else if(_peerResult > 4)
+				_userState->ChangeRenown(-strategyPoint * 0.005f);
 
-		/*
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->factionRelation[(uint8)faction * 12 + (uint8)aObj->GetFaction()] -= strategyPoint * 0.00005f;
-		
-		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-		if (_tempInstance == nullptr)
-			return effectShieldDamage + effectArmorDamage + effectHullDamage;
-		FNPCData _tempNpcShipData = _tempInstance->GetNPCData(npcShipID);
-
-		for (int index = 0; index < cargo.Num(); index++) 
-			cargo[index].itemAmount = FMath::TruncToInt(cargo[index].itemAmount * FMath::RandRange(0.0f, 1.0f));
-
-		int temp = FMath::Min3(_tempNpcShipData.dropItems.Num(), _tempNpcShipData.dropChance.Num(), _tempNpcShipData.dropRandomAmount.Num());
-		cargo.Reserve(temp + cargo.Num());
-		for (int index = 0; index < temp; index++) {
-			if (_tempNpcShipData.dropChance[index] < FMath::RandRange(0.0f, 100.0f))
-				continue;
-			cargo.Emplace(FItem(_tempNpcShipData.cargoItems[index].itemID, FMath::Max(0, _tempNpcShipData.cargoItems[index].itemAmount - FMath::RandRange(_tempNpcShipData.havingRandomAmount[index], _tempNpcShipData.havingRandomAmount[index]))));
+			//카고 드랍
+			ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(), 
+				FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			
+			_cargoContanier->SetCargoFromData(ObjectType::Ship, npcShipID);
+			UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
 		}
-		cargo.Shrink();
-		*/
-
 		Destroy();
 	}
-
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectShieldDamage, effectArmorDamage, effectHullDamage, isCritical ? TEXT("Critical") : TEXT("Non Critical"));
 
 	return effectShieldDamage + effectArmorDamage + effectHullDamage;
@@ -205,27 +193,27 @@ void AShip::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int AShip::GetObjectID() {
+int AShip::GetObjectID() const {
 	return npcShipID;
 }
 
-ObjectType AShip::GetObjectType() {
+ObjectType AShip::GetObjectType() const {
 	return ObjectType::Ship;
 }
 
-Faction AShip::GetFaction() {
+Faction AShip::GetFaction() const {
 	return faction;
 }
 
-void AShip::SetFaction(Faction setFaction) {
+void AShip::SetFaction(const Faction setFaction) {
 	faction = setFaction;
 }
 
-BehaviorState AShip::GetBehaviorState() {
+BehaviorState AShip::GetBehaviorState() const {
 	return behaviorState;
 }
 
-bool AShip::InitObject(int npcID) {
+bool AShip::InitObject(const int npcID) {
 	if (isInited == true || npcID < 0)
 		return false;
 
@@ -431,12 +419,12 @@ bool AShip::InitObject(int npcID) {
 	return true;
 }
 
-bool AShip::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool AShip::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	
 	return true;
 }
 
-float AShip::GetValue(GetStatType statType) {
+float AShip::GetValue(const GetStatType statType) const {
 	float _value;
 	
 	switch (statType) {
@@ -519,7 +507,7 @@ float AShip::GetValue(GetStatType statType) {
 	return _value;
 }
 
-void AShip::GetRepaired(GetStatType statType, float repairValue) {
+void AShip::GetRepaired(const GetStatType statType, float repairValue) {
 
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -647,21 +635,21 @@ bool AShip::CommandUndock() {
 	else return false;
 }
 
-bool AShip::CommandLaunch(TArray<int> baySlot) {
+bool AShip::CommandLaunch(const TArray<int>& baySlot) {
 	return false;
 }
 #pragma endregion
 
 #pragma region Functions
-BehaviorType AShip::GetBehaviorType() {
+BehaviorType AShip::GetBehaviorType() const {
 	return behaviorType;
 }
 
-ShipClass AShip::GetShipClass() {
+ShipClass AShip::GetShipClass() const {
 	return shipClass;
 }
 
-void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) {
+void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) const {
 	getStructure = targetStructure;
 }
 
@@ -1178,7 +1166,7 @@ void AShip::ModuleCheck() {
 	}
 }*/
 
-bool AShip::CheckCanBehavior() {
+bool AShip::CheckCanBehavior() const {
 	switch (behaviorState)
 	{
 	case BehaviorState::Docked:

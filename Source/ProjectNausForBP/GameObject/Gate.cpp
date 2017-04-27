@@ -126,39 +126,39 @@ void AGate::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int AGate::GetObjectID() {
+int AGate::GetObjectID() const {
 	if (structureInfo != nullptr)
 		return structureInfo->structureID;
 	else return -1;
 }
 
-ObjectType AGate::GetObjectType() {
+ObjectType AGate::GetObjectType() const {
 	return ObjectType::Gate;
 }
 
-Faction AGate::GetFaction() {
+Faction AGate::GetFaction() const {
 	if (structureInfo != nullptr)
 		return structureInfo->structureFaction;
 	else return Faction::Neutral;
 }
 
-void AGate::SetFaction(Faction setFaction) {
+void AGate::SetFaction(const Faction setFaction) {
 	return;
 }
 
-BehaviorState AGate::GetBehaviorState() {
+BehaviorState AGate::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool AGate::InitObject(int objectId) {
+bool AGate::InitObject(const int objectId) {
 	return false;
 }
 
-bool AGate::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool AGate::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float AGate::GetValue(GetStatType statType) {
+float AGate::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -211,7 +211,7 @@ float AGate::GetValue(GetStatType statType) {
 	return _value;
 }
 
-void AGate::GetRepaired(GetStatType statType, float repairValue) {
+void AGate::GetRepaired(const GetStatType statType, float repairValue) {
 
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -231,28 +231,28 @@ void AGate::GetRepaired(GetStatType statType, float repairValue) {
 #pragma endregion
 
 #pragma region Interface Implementation : IStructureable
-FString AGate::GetDestinationName() {
+const FString AGate::GetDestinationName() const {
 	if (structureInfo != nullptr)
 		return structureInfo->LinkedSector;
 	else return "";
 }
 
-StructureType AGate::GetStationType() {
+StructureType AGate::GetStationType() const {
 	return StructureType::Gate;
 }
 
-bool AGate::RequestedDock(Faction requestFaction) {
+bool AGate::RequestedDock(const Faction requestFaction) const {
 	if (structureInfo != nullptr)
 		return true;
 	else return false;
 }
-bool AGate::RequestedJump(Faction requestFaction) {
+bool AGate::RequestedJump(const Faction requestFaction) const {
 	if(structureInfo != nullptr)
 		return true;
 	else return false;
 }
 
-bool AGate::SetStructureData(FStructureInfo& structureData) {
+bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	if (isInited)
 		return false;
 
@@ -286,14 +286,14 @@ bool AGate::SetStructureData(FStructureInfo& structureData) {
 	return true;
 }
 
-void AGate::GetStructureData(FStructureInfo& structureData) {
+void AGate::GetStructureData(FStructureInfo& structureData) const {
 	structureData = *structureInfo;
 	return;
 }
 #pragma endregion
 
 #pragma region Functions
-FStructureInfo* AGate::GetStructureDataPointer() {
+FStructureInfo* AGate::GetStructureDataPointer() const{
 	return structureInfo;
 }
 

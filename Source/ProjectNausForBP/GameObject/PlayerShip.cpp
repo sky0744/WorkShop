@@ -202,27 +202,27 @@ void APlayerShip::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int APlayerShip::GetObjectID() {
+int APlayerShip::GetObjectID() const {
 	return sShipID;
 }
 
-ObjectType APlayerShip::GetObjectType() {
+ObjectType APlayerShip::GetObjectType() const {
 	return ObjectType::Ship;
 }
 
-Faction APlayerShip::GetFaction() {
+Faction APlayerShip::GetFaction() const {
 	return Faction::Player;
 }
 
-void APlayerShip::SetFaction(Faction setFaction) {
+void APlayerShip::SetFaction(const Faction setFaction) {
 	return;
 }
 
-BehaviorState APlayerShip::GetBehaviorState() {
+BehaviorState APlayerShip::GetBehaviorState() const {
 	return behaviorState;
 }
 
-bool APlayerShip::InitObject(int objectId) {
+bool APlayerShip::InitObject(const int objectId) {
 	if (sIsInited == true && (objectId < 0 || objectId == sShipID))
 		return false;
 
@@ -292,11 +292,11 @@ bool APlayerShip::InitObject(int objectId) {
 	return true;
 }
 
-bool APlayerShip::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool APlayerShip::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float APlayerShip::GetValue(GetStatType statType) {
+float APlayerShip::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -423,7 +423,7 @@ float APlayerShip::GetValue(GetStatType statType) {
 	return _value;
 }
 
-void APlayerShip::GetRepaired(GetStatType statType, float repairValue) {
+void APlayerShip::GetRepaired(const GetStatType statType, float repairValue) {
 
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -522,7 +522,7 @@ bool APlayerShip::TotalStatsUpdate() {
 	return true;
 }
 
-void APlayerShip::CheckPassiveTypeModule(BonusStatType type, float value) {
+void APlayerShip::CheckPassiveTypeModule(const BonusStatType type, float value) {
 	switch (type) {
 	case BonusStatType::BonusMaxShield:				sMaxShield = sMaxShield + value;			break;
 	case BonusStatType::BonusRechargeShield:		sRechargeShield = sRechargeShield + value;	break;
@@ -554,7 +554,7 @@ void APlayerShip::CheckPassiveTypeModule(BonusStatType type, float value) {
 	}
 }
 
-void APlayerShip::CheckBonusStat(BonusStatType type, float value) {
+void APlayerShip::CheckBonusStat(const BonusStatType type, float value) {
 	switch (type) {
 	case BonusStatType::BonusMaxShield:
 		sMaxShield = FMath::Clamp(sMaxShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
@@ -697,7 +697,7 @@ void APlayerShip::CheckBonusStat(BonusStatType type, float value) {
 	}
 }
 
-bool APlayerShip::LoadFromSave(USaveLoader* loader) {
+bool APlayerShip::LoadFromSave(const USaveLoader* loader) {
 
 	if (sIsInited == false) {
 		sCurrentShield = FMath::Clamp(loader->shield, 0.0f, sMaxShield);
@@ -780,7 +780,7 @@ bool APlayerShip::LoadFromSave(USaveLoader* loader) {
 	return true;
 }
 
-bool APlayerShip::EquipModule(int moduleID) {
+bool APlayerShip::EquipModule(const int moduleID) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData = _tempInstance->GetItemData(moduleID);
 	if (USafeENGINE::IsValid(_tempInstance))
@@ -886,7 +886,7 @@ bool APlayerShip::EquipModule(int moduleID) {
 	return false;
 }
 
-bool APlayerShip::UnEquipModule(ItemType moduleItemType, int slotNumber) {
+bool APlayerShip::UnEquipModule(const ItemType moduleItemType, const int slotNumber) {
 	if (behaviorState != BehaviorState::Docked) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][EquipModule] Ship is not docked, so can't unequip module."));
 		return false;
@@ -938,7 +938,7 @@ bool APlayerShip::UnEquipModule(ItemType moduleItemType, int slotNumber) {
 	return true;
 }
 
-void APlayerShip::GetModule(ItemType moduleType, TArray<int>& moduleList) {
+void APlayerShip::GetModule(const ItemType moduleType, TArray<int>& moduleList) const {
 	switch (moduleType) {
 	case ItemType::TargetModule:
 		moduleList.Init(0, slotTargetModule.Num());
@@ -965,7 +965,7 @@ void APlayerShip::GetModule(ItemType moduleType, TArray<int>& moduleList) {
 	}
 }
 
-void APlayerShip::GetModuleActivate(ItemType moduleType, TArray<float>& moduleActivate) {
+void APlayerShip::GetModuleActivate(const ItemType moduleType, TArray<float>& moduleActivate) const {
 
 	switch (moduleType) {
 	case ItemType::TargetModule:
@@ -987,36 +987,32 @@ void APlayerShip::GetModuleActivate(ItemType moduleType, TArray<float>& moduleAc
 	}
 }
 
-void APlayerShip::GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo) {
+void APlayerShip::GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo) const {
 
 	targetModuleAmmo.Init(0, slotTargetModule.Num());
 	for (int index = 0; index < targetModuleAmmo.Num(); index++) 
 		targetModuleAmmo[index] = slotTargetModule[index].ammo;
 }
 
-bool APlayerShip::SetCameraMode() {
-	return false;
-}
-
-void APlayerShip::ControlCamRotateX(float factorX) {
+void APlayerShip::ControlCamRotateX(const float factorX) {
 	playerViewpointArm->AddRelativeRotation(FRotator(0.0f, factorX, 0.0f) * GetWorld()->DeltaTimeSeconds * 5.0f);
 	playerViewpointArm->SetWorldRotation(FRotator(FMath::ClampAngle(playerViewpointArm->GetComponentRotation().Pitch, -75.0f, -10.0f), playerViewpointArm->GetComponentRotation().Yaw, 0.0f));
 }
 
-void APlayerShip::ControlCamRotateY(float factorY) {
+void APlayerShip::ControlCamRotateY(const float factorY) {
 	playerViewpointArm->AddRelativeRotation(FRotator(-factorY, 0.0f, 0.0f) * GetWorld()->DeltaTimeSeconds * 5.0f);
 	playerViewpointArm->SetWorldRotation(FRotator(FMath::ClampAngle(playerViewpointArm->GetComponentRotation().Pitch, -75.0f, -10.0f), playerViewpointArm->GetComponentRotation().Yaw, 0.0f));
 }
 
-void APlayerShip::ControlCamDistance(float value) {
+void APlayerShip::ControlCamDistance(const float value) {
 	SmoothZoomRemain = value * 50.0f;
 }
 
-void APlayerShip::ControlViewPointX(float value) {
+void APlayerShip::ControlViewPointX(const float value) {
 	playerViewpointArm->AddWorldOffset(FVector(0.0f, value, 0.0f));
 }
 
-void APlayerShip::ControlViewPointY(float value) {
+void APlayerShip::ControlViewPointY(const float value) {
 	playerViewpointArm->AddWorldOffset(FVector(-value, 0.0f, 0.0f));
 }
 
@@ -1024,15 +1020,15 @@ void APlayerShip::ControlViewPointOrigin() {
 	playerViewpointArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 }
 
-void APlayerShip::SetTargetSpeed(float value) {
+void APlayerShip::SetTargetSpeed(const float value) {
 	targetSpeed = FMath::Clamp(value, 0.0f, 1.0f);
 }
 
-void APlayerShip::SetAcceleration(float value) {
+void APlayerShip::SetAcceleration(const float value) {
 	accelerationFactor = FMath::Clamp(value, 0.0f, 1.0f);
 }
 
-void APlayerShip::SetRotateRate(float value) {
+void APlayerShip::SetRotateRate(const float value) {
 	rotateRateFactor = FMath::Clamp(value, 0.0f, 1.0f);
 }
 
@@ -1041,7 +1037,7 @@ void APlayerShip::SetRotateRate(float value) {
 * @param slotIndex - 타게팅 모듈 슬롯 번호.
 * @return 처리 후의 모듈 동작 상태.
 */
-bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
+bool APlayerShip::ToggleTargetModule(const int slotIndex, ASpaceObject* target) {
 
 	//타게팅 모듈에 한해서만( < ModuleType::ShieldGenerator ) 함수 처리
 	if (slotIndex < slotTargetModule.Num() && slotIndex < targetingObject.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
@@ -1121,7 +1117,7 @@ bool APlayerShip::ToggleTargetModule(int slotIndex, ASpaceObject* target) {
 * @param slotIndex - 타게팅 모듈 슬롯 번호.
 * @param selectedAmmoID - 변경할 탄의 ID.
 */
-void APlayerShip::SettingAmmo(int selectedAmmoID) {
+void APlayerShip::SettingAmmo(const int selectedAmmoID) {
 
 	AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 	TArray<FItem> _itemList;
@@ -1155,7 +1151,7 @@ void APlayerShip::SettingAmmo(int selectedAmmoID) {
 * @param slotIndex - 타게팅 모듈 슬롯 번호.
 * @return 처리 후의 모듈 동작 상태.
 */
-bool APlayerShip::ToggleActiveModule(int slotIndex) {
+bool APlayerShip::ToggleActiveModule(const int slotIndex) {
 	if (slotIndex < slotActiveModule.Num() && slotActiveModule[slotIndex].moduleType > ModuleType::HullRepairLaser && slotActiveModule[slotIndex].moduleType < ModuleType::PassiveModule) {
 
 		slotActiveModule[slotIndex].moduleState = (slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? ModuleState::NotActivate : ModuleState::Activate);
@@ -1276,7 +1272,7 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
 
-			if (USafeENGINE::CheckDistacneConsiderSize(this, targetObject) < 500.0f) {
+			if (USafeENGINE::CheckDistanceConsiderSize(this, targetObject) < 500.0f) {
 				targetObject = nullptr;
 				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
 				behaviorState = BehaviorState::Docked;
@@ -1310,7 +1306,7 @@ bool APlayerShip::CommandUndock() {
 	else return false;
 }
 
-bool APlayerShip::CommandLaunch(TArray<int> baySlot) {
+bool APlayerShip::CommandLaunch(const TArray<int>& baySlot) {
 	if (CheckCanBehavior() == true) { 
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandLaunch] Receive Command Launch! : %d"), baySlot.Num());
 		return true;
@@ -1635,7 +1631,7 @@ void APlayerShip::ModuleCheck() {
 	}
 }
 
-bool APlayerShip::CheckCanBehavior() {
+bool APlayerShip::CheckCanBehavior() const {
 	switch (behaviorState)
 	{
 	case BehaviorState::Docked:
@@ -1646,7 +1642,7 @@ bool APlayerShip::CheckCanBehavior() {
 	}
 }
 
-float APlayerShip::CalculateCompute() {
+const float APlayerShip::CalculateCompute() const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData;
 	float _result = 0;
@@ -1676,7 +1672,7 @@ float APlayerShip::CalculateCompute() {
 	return _result;
 }
 
-float APlayerShip::CalculatePowerGrid() {
+const float APlayerShip::CalculatePowerGrid() const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData;
 	float _result = 0;

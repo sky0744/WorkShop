@@ -24,48 +24,48 @@ protected:
 #pragma region SpaceObject Inheritance
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual int GetObjectID() override;
+		virtual int GetObjectID() const override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual ObjectType GetObjectType() override;
+		virtual ObjectType GetObjectType() const override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual Faction GetFaction() override;
+		virtual Faction GetFaction() const override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual void SetFaction(Faction setFaction) override;
+		virtual void SetFaction(const Faction setFaction) override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual BehaviorState GetBehaviorState() override;
+		virtual BehaviorState GetBehaviorState() const override;
 
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual bool InitObject(int objectId) override;
+		virtual bool InitObject(const int objectId) override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
+		virtual bool LoadBaseObject(const float shield, const float armor, const float hull, const float power) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual float GetValue(GetStatType statType) override;
+		virtual float GetValue(const GetStatType statType) const override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual void GetRepaired(GetStatType statType, float repairValue) override;
+		virtual void GetRepaired(const GetStatType statType, float repairValue) override;
 #pragma endregion
 
 #pragma region Interface Implementation : IStructureable
 protected:
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual FString GetDestinationName() override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual StructureType GetStationType() override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual bool RequestedDock(Faction requestFaction) override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual bool RequestedJump(Faction requestFaction) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
+		virtual const FString GetDestinationName() const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
+		virtual StructureType GetStationType() const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
+		virtual bool RequestedDock(const Faction requestFaction) const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
+		virtual bool RequestedJump(const Faction requestFaction) const override;
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual bool SetStructureData(FStructureInfo& structureData) override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual void GetStructureData(FStructureInfo& structureData) override;
+		virtual bool SetStructureData(UPARAM(ref) FStructureInfo& structureData) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
+		virtual void GetStructureData(FStructureInfo& structureData) const override;
 #pragma endregion
 
 #pragma region Functions
 public:
-	FStructureInfo* GetStructureDataPointer();
+	FStructureInfo* GetStructureDataPointer() const;
 #pragma endregion
 
 #pragma region Components

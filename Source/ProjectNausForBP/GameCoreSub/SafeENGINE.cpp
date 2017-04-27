@@ -29,32 +29,28 @@ USafeENGINE::USafeENGINE() {
 }
 
 #pragma region Get DataTable
-FShipData USafeENGINE::GetShipData(int id) {
-	id = FMath::Max(id, 0);
+const FShipData& USafeENGINE::GetShipData(const int& id) const {
 	FShipData* _data = ShipData->FindRow<FShipData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ShipData->FindRow<FShipData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
-FNPCData USafeENGINE::GetNPCData(int id) {
-	id = FMath::Max(id, 0);
+const FNPCData& USafeENGINE::GetNPCData(const int& id) const {
 	FNPCData* _data = NPCData->FindRow<FNPCData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *NPCData->FindRow<FNPCData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
-FStationData USafeENGINE::GetStationData(int id) {
-	id = FMath::Max(id, 0);
+const FStationData& USafeENGINE::GetStationData(const int& id) const {
 	FStationData* _data = StationData->FindRow<FStationData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *StationData->FindRow<FStationData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
-FResourceData USafeENGINE::GetResourceData(int id) {
-	id = FMath::Max(id, 0);
+const FResourceData& USafeENGINE::GetResourceData(const int& id) const {
 	FResourceData* _data = ResourceData->FindRow<FResourceData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
@@ -62,31 +58,28 @@ FResourceData USafeENGINE::GetResourceData(int id) {
 }
 
 
-FSkillData USafeENGINE::GetSkillData(int id) {
-	id = FMath::Max(id, 0);
+const FSkillData& USafeENGINE::GetSkillData(const int& id) const {
 	FSkillData* _data = SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
-FItemData USafeENGINE::GetItemData(int id) {
-	id = FMath::Max(id, 0);
+const FItemData& USafeENGINE::GetItemData(const int& id) const {
 	FItemData* _data = ItemData->FindRow<FItemData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ItemData->FindRow<FItemData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
-FProjectileData USafeENGINE::GetProjectileData(int id) {
-	id = FMath::Max(id, 0);
+const FProjectileData& USafeENGINE::GetProjectileData(const int& id) const {
 	FProjectileData* _data = ProjectileData->FindRow<FProjectileData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ProjectileData->FindRow<FProjectileData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
-FSectorData USafeENGINE::GetSectorData(FString SectorName) {
+const FSectorData& USafeENGINE::GetSectorData(const FString& SectorName) const {
 
 	TArray<FString> _sectorNames;
 	int _selectedIndex = -1;
@@ -106,7 +99,7 @@ FSectorData USafeENGINE::GetSectorData(FString SectorName) {
 		return *SectorData->FindRow<FSectorData>("Cansoe", TEXT("DataTableLoadError"));
 }
 
-void USafeENGINE::GetAllSectorNameData(TArray<FString>& sectorNameArray) {
+void USafeENGINE::GetAllSectorNameData(TArray<FString>& sectorNameArray) const {
 	sectorNameArray.Empty();
 	TArray<FName> _sectorNames = SectorData->GetRowNames();
 
@@ -115,7 +108,7 @@ void USafeENGINE::GetAllSectorNameData(TArray<FString>& sectorNameArray) {
 		sectorNameArray.Emplace(_sectorNames[index].ToString());
 }
 
-FNewStartPlayerData USafeENGINE::GetStartProfileData(int id) {
+const FNewStartPlayerData& USafeENGINE::GetStartProfileData(const int& id) const {
 	FNewStartPlayerData* _data = StartPlayerData->FindRow<FNewStartPlayerData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
@@ -124,18 +117,17 @@ FNewStartPlayerData USafeENGINE::GetStartProfileData(int id) {
 #pragma endregion
 
 #pragma region GamePlay
-bool USafeENGINE::IsValid(UObject* Obj)
-{
-	if (!Obj) 
+bool USafeENGINE::IsValid(const UObject* obj) {
+	if (!obj) 
 		return false;
-	if (!Obj->IsValidLowLevel()) 
+	if (!obj->IsValidLowLevel()) 
 		return false;
-	if (Obj->IsPendingKill()) 
+	if (obj->IsPendingKill()) 
 		return false;
 	return true;
 }
 
-int USafeENGINE::FindItemSlot(UPARAM(ref) TArray<FItem>& itemList, FItem items) {
+int USafeENGINE::FindItemSlot(const TArray<FItem>& itemList, const FItem items) {
 	for (int index = 0; index < itemList.Num(); index++) {
 		if (itemList[index].itemID == items.itemID) {
 			return index;
@@ -144,9 +136,9 @@ int USafeENGINE::FindItemSlot(UPARAM(ref) TArray<FItem>& itemList, FItem items) 
 	return -1;
 }
 
-bool USafeENGINE::AddCargo(UPARAM(ref) TArray<FItem>& itemList, FItem addItem) {
+bool USafeENGINE::AddCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem addItem) {
 	int _findItemSlot = -1;
-
+	
 	UE_LOG(LogClass, Log, TEXT("[AddCargo][ref Check] (&)%p"), &itemList);
 	if (addItem.itemAmount < 1)
 		return false;
@@ -164,7 +156,7 @@ bool USafeENGINE::AddCargo(UPARAM(ref) TArray<FItem>& itemList, FItem addItem) {
 	return true;
 }
 
-bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, FItem dropItem) {
+bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dropItem) {
 	int _slotIndex = -1;
 
 	if (dropItem.itemAmount < 1)
@@ -191,7 +183,21 @@ bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, FItem dropItem)
 	return true;
 }
 
-float USafeENGINE::CheckDistacneConsiderSize(ASpaceObject* actor1, ASpaceObject* actor2) {
+bool USafeENGINE::CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkill>& requsetCheckSkillList) {
+	/*bool tempCheckSu
+	for (int index = 0; index < skillList.Num(); index++) {
+	for (int index1 = 0; index1 < requsetCheckSkillList.Num(); index1++) {
+	if (skillList[index].skillID == requsetCheckSkillList[index].skillID) {
+	if (skillList[index].skillLevel >= requsetCheckSkillList[index].skillLevel)
+	return true;
+	else return false;
+	}
+	}
+	}*/
+	return false;
+}
+
+float USafeENGINE::CheckDistanceConsiderSize(const ASpaceObject* actor1, const ASpaceObject* actor2) {
 	if (actor1 == nullptr || actor2 == nullptr)
 		return 0.0f;
 
@@ -202,7 +208,7 @@ float USafeENGINE::CheckDistacneConsiderSize(ASpaceObject* actor1, ASpaceObject*
 	return FMath::Max(0.0f, _realDistance);
 }
 
-FVector USafeENGINE::CheckLocationMovetoTarget(ASpaceObject* requestor, ASpaceObject* target, float distance) {
+FVector USafeENGINE::CheckLocationMovetoTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance) {
 	if (requestor == nullptr || target == nullptr)
 		return FVector::ZeroVector;
 
@@ -221,7 +227,7 @@ FVector USafeENGINE::CheckLocationMovetoTarget(ASpaceObject* requestor, ASpaceOb
 	return _location;
 }
 
-FVector USafeENGINE::GetRandomLocationToTarget(ASpaceObject* requestor, ASpaceObject* target, float distance) {
+FVector USafeENGINE::GetRandomLocationToTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance) {
 	if (requestor == nullptr || target == nullptr)
 		return FVector::ZeroVector;
 
@@ -273,7 +279,10 @@ FVector USafeENGINE::GetLocationLimitedSector(FVector location) {
 	return location;
 }
 
-float USafeENGINE::CalculateCreditForTrade(int itemID, int lowerAmount, int upperAmount, bool isBuy) {
+#pragma endregion
+
+#pragma region GamePlay - Non-Static
+float USafeENGINE::CalculateCreditForTrade(int itemID, int lowerAmount, int upperAmount, bool isBuy) const {
 	float _totalValue;
 	int _tempValue;
 	int _partMaxValueAmount;		int _partMinValueAmount;		int _partDynamicAmount;
@@ -308,7 +317,7 @@ float USafeENGINE::CalculateCreditForTrade(int itemID, int lowerAmount, int uppe
 	return _totalValue;
 }
 
-float USafeENGINE::CalculateCredit(int itemID, int Amount, bool isBuy) {
+float USafeENGINE::CalculateCredit(int itemID, int Amount, bool isBuy) const {
 	float _result;
 	int _SellValueMaxAmount;		int _SellValueMinAmount;
 	float _SellValueMax;			float _SellValueMin;
@@ -324,22 +333,4 @@ float USafeENGINE::CalculateCredit(int itemID, int Amount, bool isBuy) {
 		_result *= FMath::Clamp(_itemData.BuyValueMultiple, 1.1f, 2.0f);
 	return _result;
 }
-
-bool USafeENGINE::CheckSkill(UPARAM(ref) TArray<FSkill>& skillList, UPARAM(ref) TArray<FSkill>& requsetCheckSkillList) {
-	/*bool tempCheckSu
-	for (int index = 0; index < skillList.Num(); index++) {
-		for (int index1 = 0; index1 < requsetCheckSkillList.Num(); index1++) {
-			if (skillList[index].skillID == requsetCheckSkillList[index].skillID) {
-				if (skillList[index].skillLevel >= requsetCheckSkillList[index].skillLevel)
-					return true;
-				else return false;
-			}
-		}
-	}*/
-	return false;
-}
-#pragma endregion
-
-#pragma region GamePlay - Non-Static
-
 #pragma endregion

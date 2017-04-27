@@ -29,11 +29,11 @@ void ASpaceHUDBase::UpdateUIContract_Implementation() {
 	return;
 }
 
-void ASpaceHUDBase::AddToObjectList_Implementation(ASpaceObject* object) {
+void ASpaceHUDBase::AddToObjectList_Implementation(const ASpaceObject* object) {
 	return;
 }
 
-void ASpaceHUDBase::RemoveFromObjectList_Implementation(ASpaceObject* object) {
+void ASpaceHUDBase::RemoveFromObjectList_Implementation(const ASpaceObject* object) {
 	return;
 }
 #pragma endregion
@@ -49,15 +49,15 @@ void ASpaceHUDBase::UpdateUIStationOnRequest_Implementation() {
 #pragma endregion
 
 #pragma region On/Off UI
-void ASpaceHUDBase::OnUITarget_Implementation(ASpaceObject* object, FColor color, float lifeTime) {
+void ASpaceHUDBase::OnUITarget_Implementation(const ASpaceObject* object, const FColor color, const float lifeTime) {
 	return;
 }
 
-void ASpaceHUDBase::OnUIMove_Implementation(FVector location, FColor color, float lifeTime, float size) {
+void ASpaceHUDBase::OnUIMove_Implementation(const FVector location, const FColor color, const float lifeTime, const float size) {
 	return;
 }
 
-void ASpaceHUDBase::OnUIInteraction_Implementation(AActor* actor, ObjectType objectType) {
+void ASpaceHUDBase::OnUIInteraction_Implementation(const AActor* actor, const ObjectType objectType) {
 	return;
 }
 
@@ -75,11 +75,11 @@ void ASpaceHUDBase::OffUIStationButton_Implementation() {
 #pragma endregion
 
 #pragma region Messages
-void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(FText& message, FColor color) {
+void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(FText message, FColor color) {
 	return;
 }
 
-void ASpaceHUDBase::AddUILogMessage_Implementation(FText& message, FColor color) {
+void ASpaceHUDBase::AddUILogMessage_Implementation(FText message, FColor color) {
 	return;
 }
 #pragma endregion

@@ -20,7 +20,7 @@ ABeam::ABeam()
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0;
 
-	_traceParams = FCollisionQueryParams(FName("Beam"), true, this);
+	isHited = false;
 }
 
 // Called when the game starts or when spawned
@@ -39,49 +39,43 @@ void ABeam::Tick(float DeltaTime) {
 
 	resultLocation = target->GetActorLocation() - GetActorLocation();
 	resultLocation.Normalize();
-	SetActorLocation(beamOwner->GetActorLocation() + resultLocation * beamOwner->GetValue(GetStatType::halfLength));
-	resultLocation *= beamRange;
+	DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, DeltaTime);
 
-	this->GetWorld()->LineTraceSingleByObjectType(_beamHitresult
-		, this->GetActorLocation()
-		, this->GetActorLocation() + resultLocation
-		, _traceObjectParams
-		, _traceParams);
+	//거리 판단상 사거리 이내
+	if (beamRange < USafeENGINE::CheckDistanceConsiderSize(beamOwner, target)) {
+		launchedFaction = beamOwner->GetFaction();
+		resultLocation = target->GetActorLocation();
+		isHited = true;
+		//빔이 블럭되지 않고 최대거리까지 진행
+	} else {
+		resultLocation = GetActorLocation() + resultLocation * beamRange;
+		isHited = false;
+	}
+	DrawDebugPoint(GetWorld(), resultLocation, 6, FColor(255, 255, 255), false, DeltaTime);
+	DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
 
-	//beamParticle->SetBeamTargetPoint(0, targetedLocation, 0);
-	switch (beamType) {
-	case ModuleType::MinerLaser:
-		DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, DeltaTime);
-		//빔이 블럭되었을 때
-		if (_beamHitresult.bBlockingHit) {
-			if (_beamHitresult.Actor->IsA(AResource::StaticClass())) {
-				FItem _collectedOre = Cast<AResource>(_beamHitresult.Actor.Get())->CollectResource(beamDamage);
-				if (beamOwner->GetInstigatorController()->GetClass() == AUserController::StaticClass())
-					Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_collectedOre);
-			}
-			resultLocation = _beamHitresult.ImpactPoint;
+	FItem _collectedOre;
+	if (isHited) {
+		switch (beamType) {
+		case ModuleType::MinerLaser:
+			if (!USafeENGINE::IsValid(target) || !target->IsA(AResource::StaticClass()))
+				return;
+
+			_collectedOre = Cast<AResource>(target)->CollectResource(beamDamage);
+			if (beamOwner->GetInstigatorController()->GetClass() == AUserController::StaticClass())
+				Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_collectedOre);
+			break;
+		case ModuleType::TractorBeam:
+			if (!USafeENGINE::IsValid(target) || !target->IsA(ACargoContainer::StaticClass()))
+				return;
+
+			resultLocation = (target->GetActorLocation() - beamOwner->GetActorLocation());
+			resultLocation.Normalize();
+			target->AddActorWorldOffset(resultLocation * beamDamage);
+			break;
+		default:
+			break;
 		}
-		//빔이 블럭되지 않은 경우 최대거리까지 진행
-		DrawDebugPoint(GetWorld(), resultLocation, 20, FColor(255, 255, 255), false, DeltaTime);
-		DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
-		break;
-	case ModuleType::TractorBeam:
-		DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, DeltaTime);
-		//빔이 블럭되었을 때
-		if (_beamHitresult.bBlockingHit) {
-			if (_beamHitresult.Actor->IsA(ACargoContainer::StaticClass())) {
-				resultLocation = (target->GetActorLocation() - beamOwner->GetActorLocation());
-				resultLocation.Normalize();
-				_beamHitresult.Actor->AddActorWorldOffset(resultLocation * beamDamage);
-			}
-			resultLocation = _beamHitresult.ImpactPoint;
-		}
-		DrawDebugPoint(GetWorld(), resultLocation, 20, FColor(255, 255, 255), false, DeltaTime);
-		DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
-		//빔이 블럭되지 않은 경우 최대거리까지 진행
-		break;
-	default:
-		break;
 	}
 }
 
@@ -97,30 +91,18 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 	case ModuleType::Beam:
 		resultLocation = targetActor->GetActorLocation() - GetActorLocation();
 		resultLocation.Normalize();
-		resultLocation *= setedrange;
-		DrawDebugPoint(GetWorld(), GetActorLocation(), 20, FColor(255, 255, 255), false, aliveTime);
+		DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, aliveTime);
 
-		this->GetWorld()->LineTraceSingleByObjectType(_beamHitresult
-			, this->GetActorLocation()
-			, this->GetActorLocation() + resultLocation
-			, _traceObjectParams
-			, _traceParams);
-		//빔이 블럭되었을 때
-		if (_beamHitresult.bBlockingHit) {
-			resultLocation = _beamHitresult.ImpactPoint;
+		//거리 판단상 사거리 이내
+		if (setedrange < USafeENGINE::CheckDistanceConsiderSize(launchActor, targetActor)) {
 			launchedFaction = launchActor->GetFaction();
-			if (_beamHitresult.Actor->IsA(ASpaceObject::StaticClass()))
-				UGameplayStatics::ApplyPointDamage(_beamHitresult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f),
-					_beamHitresult, nullptr, this, UDamageType::StaticClass());
+			UGameplayStatics::ApplyPointDamage(targetActor, setedDamage, resultLocation, FHitResult(), nullptr, this, UDamageType::StaticClass());
+			resultLocation = targetActor->GetActorLocation();
 			//빔이 블럭되지 않고 최대거리까지 진행
-			else {
-				DrawDebugPoint(GetWorld(), resultLocation, 20, FColor(255, 255, 255), false, aliveTime);
-				DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, aliveTime, 0, 5.0f);
-				//beamParticle->SetBeamTargetPoint(0, targetedLocation, 0);
-			}
-		}
-		DrawDebugPoint(GetWorld(), _beamHitresult.Location, 20, FColor(255, 255, 255), false, aliveTime);
-		DrawDebugLine(GetWorld(), GetActorLocation(), _beamHitresult.Location, FColor(255, 255, 255), false, 0.1f);
+		} else 
+			resultLocation = GetActorLocation() + resultLocation * setedrange;
+		DrawDebugPoint(GetWorld(), resultLocation, 6, FColor(255, 255, 255), false, aliveTime);
+		DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, aliveTime, 0, 5.0f);
 		break;
 	case ModuleType::MinerLaser:
 		if (targetActor->IsA(AResource::StaticClass())) {
@@ -146,6 +128,6 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 	this->SetLifeSpan(aliveTime);
 }
 
-Faction ABeam::GetLaunchingFaction() {
+Faction ABeam::GetLaunchingFaction() const{
 	return launchedFaction;
 }

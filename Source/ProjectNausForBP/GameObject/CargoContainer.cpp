@@ -73,37 +73,35 @@ void ACargoContainer::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int ACargoContainer::GetObjectID() {
+int ACargoContainer::GetObjectID() const {
 	return 0;
 }
 
-ObjectType ACargoContainer::GetObjectType() {
+ObjectType ACargoContainer::GetObjectType() const {
 	return ObjectType::SpaceObject;
 }
 
-Faction ACargoContainer::GetFaction() {
+Faction ACargoContainer::GetFaction() const {
 	return Faction::Neutral;
 }
 
-void ACargoContainer::SetFaction(Faction setFaction) {
-
+void ACargoContainer::SetFaction(const Faction setFaction) {
+	faction = Faction::Neutral;
 }
 
-BehaviorState ACargoContainer::GetBehaviorState() {
+BehaviorState ACargoContainer::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool ACargoContainer::InitObject(int objectId) {
-
+bool ACargoContainer::InitObject(const int objectId) {
 	return false;
 }
 
-bool ACargoContainer::LoadBaseObject(float shield, float armor, float hull, float power) {
-
+bool ACargoContainer::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float ACargoContainer::GetValue(GetStatType statType) {
+float ACargoContainer::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -125,7 +123,7 @@ float ACargoContainer::GetValue(GetStatType statType) {
 #pragma endregion
 
 #pragma region Functions
-void ACargoContainer::SetCargo(ObjectType objectType, int ObjectIDforDrop) {
+void ACargoContainer::SetCargoFromData(const ObjectType objectType, const int ObjectIDforDrop) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!USafeENGINE::IsValid(_tempInstance)) {
 		Destroy();
@@ -154,7 +152,7 @@ void ACargoContainer::SetCargo(ObjectType objectType, int ObjectIDforDrop) {
 	cargo.Shrink();
 }
 
-void ACargoContainer::SetCargo(TArray<FItem>& items, float dropChance) {
+void ACargoContainer::SetCargo(const TArray<FItem>& items, float dropChance) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!USafeENGINE::IsValid(_tempInstance)) {
 		Destroy();
@@ -164,7 +162,7 @@ void ACargoContainer::SetCargo(TArray<FItem>& items, float dropChance) {
 
 	cargo.Reserve(items.Num());
 	dropChance = FMath::Clamp(dropChance, _def_DropChance_MIN, _def_DropChance_MAX);
-	for (FItem& item : items) {
+	for (const FItem& item : items) {
 		if (dropChance > FMath::FRandRange(_def_DropChance_MIN, _def_DropChance_MAX))
 			cargo.Emplace(FItem(item.itemID, FMath::RandRange(minAmount, FMath::Max(minAmount, item.itemAmount))));
 
@@ -172,7 +170,7 @@ void ACargoContainer::SetCargo(TArray<FItem>& items, float dropChance) {
 	}
 }
 
-void ACargoContainer::AddCargo(UPARAM(ref) TArray<FItem>& items) {
+void ACargoContainer::AddCargo(const TArray<FItem>& items) {
 
 	cargo.Append(items);
 }

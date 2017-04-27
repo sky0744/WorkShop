@@ -20,7 +20,7 @@ void AUserState::BeginPlay() {
 }
 
 #pragma region Save/Load
-bool AUserState::NewGameSetting(Faction selectedFaction, FText userName) {
+bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& userName) {
 
 	sUserName = userName;
 	int _select = 4;
@@ -79,7 +79,7 @@ bool AUserState::NewGameSetting(Faction selectedFaction, FText userName) {
 	UGameplayStatics::OpenLevel(GetWorld(), _tempSectorData.nSectorName, TRAVEL_Absolute);
 	return true;
 }
-bool AUserState::Jump(FString jumpToSector) {
+bool AUserState::Jump(const FString& jumpToSector) {
 
 	ASpaceState* _sectorState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (!USafeENGINE::IsValid(_sectorState))
@@ -95,7 +95,7 @@ bool AUserState::Jump(FString jumpToSector) {
 	return true;
 }
 
-bool AUserState::TotalSave(bool isBeforeWarp) {
+bool AUserState::TotalSave(const bool isBeforeWarp) {
 	USaveLoader* _saver = Cast<USaveLoader>(UGameplayStatics::CreateSaveGameObject(USaveLoader::StaticClass()));
 
 	if (isBeforeWarp == true) {
@@ -239,15 +239,15 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 #pragma endregion
 
 #pragma region User Data Access
-FText AUserState::GetName() {
+const FText& AUserState::GetName() const {
 	return sUserName;
 }
 
-Faction AUserState::GetOriginFaction() {
+Faction AUserState::GetOriginFaction() const {
 	return originFaction;
 }
 
-bool AUserState::ShipBuy(int newShipID) {
+bool AUserState::ShipBuy(const int newShipID) {
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
@@ -263,7 +263,7 @@ bool AUserState::ShipBuy(int newShipID) {
 		return false;
 	}
 
-	if (USafeENGINE::CheckSkill(listSkill, _tempShipData.RequireSkills) > false) {
+	if (CheckSkill(_tempShipData.RequireSkills) > false) {
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][ShipBuy] There is not enough skill to operate the ship. Can't buying this ship."));
 		return false;
 	}
@@ -306,32 +306,43 @@ bool AUserState::ShipBuy(int newShipID) {
 	return true;
 }
 
-bool AUserState::ChangeCredit(float credit) {//, FText category, FText contents) {
-	if (sCredit < 0.0f && credit < 0.0f)
+bool AUserState::ChangeCredit(float varianceCredit) {//, FText category, FText contents) {
+	if (sCredit < 0.0f && varianceCredit < 0.0f)
 		return false;
 
-	sCredit = FMath::Clamp(sCredit + credit, -9999999999999999.0f, 9999999999999999.0f);
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeCredit] Credit %s : %.0f."), credit > 0.0f ? TEXT("Get") : TEXT("Lost"), credit);
+	sCredit = FMath::Clamp(sCredit + varianceCredit, -9999999999999999.0f, 9999999999999999.0f);
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeCredit] Credit %s : %.0f."), varianceCredit >= 0.0f ? TEXT("Get") : TEXT("Lost"), varianceCredit);
 	return true;
 }
 
-bool AUserState::ChangeBounty(float _bounty) {//, FText category, FText contents) {
-	if (sBounty + _bounty > 9999999999999999.0f && _bounty > 0.0f) {
-		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][ChangeCredit] Too many bounty! Bounty increment Canceled."));
-		return false;
-	}
+float AUserState::GetCredit()  const {
 
-	sBounty = FMath::Clamp(sBounty + _bounty, 0.0f, 9999999999999999.0f);
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeBounty] Bounty %s : %.0f."), _bounty > 0.0f ? TEXT("Add") : TEXT("Cancellation"), _bounty);
-	return true;
-}
-
-float AUserState::GetCredit() {
 	return sCredit;
 }
 
-float AUserState::GetBounty() {
+bool AUserState::ChangeBounty(float varianceBounty) {//, FText category, FText contents) {
+	if (sBounty + varianceBounty > 9999999999999999.0f && varianceBounty > 0.0f)
+		varianceBounty = 0.0f;
+
+	sBounty = FMath::Clamp(sBounty + varianceBounty, 0.0f, 9999999999999999.0f);
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeBounty] Bounty %s : %.0f."), varianceBounty >= 0.0f ? TEXT("Add") : TEXT("Cancellation"), varianceBounty);
+	return true;
+}
+
+float AUserState::GetBounty() const {
+
 	return sBounty;
+}
+
+void AUserState::ChangeRenown(float varianceRenown) {
+
+	sRenown = FMath::Clamp(sBounty + varianceRenown, -1000.0f, 1000.0f);
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeBounty] Renown %s : %.0f."), varianceRenown > 0.0f ? TEXT("Add") : TEXT("Cancellation"), varianceRenown);
+}
+
+float AUserState::GetRenown() const {
+
+	return sRenown;
 }
 
 bool AUserState::AddPlayerCargo(FItem addItem) {
@@ -462,49 +473,36 @@ bool AUserState::SellItem(FItem sellItems) {
 	_findSlotInBuyer = USafeENGINE::FindItemSlot(_structureInfo->itemList, sellItems);
 	if (_findSlotInSeller < 0)
 		return false;
-	UE_LOG(LogClass, Log, TEXT("Check 0"));
+
 	sellItems.itemAmount = FMath::Max(0, sellItems.itemAmount);
 	if (_findSlotInBuyer < 0) {
-		UE_LOG(LogClass, Log, TEXT("Check 1"));
 		_lowerAmount = 0;
 		_upperAmount = sellItems.itemAmount;
-	}
-	else {
-		UE_LOG(LogClass, Log, TEXT("Check 2"));
+	} else {
 		_upperAmount = _structureInfo->itemList[_findSlotInBuyer].itemAmount + sellItems.itemAmount;
 		_lowerAmount = _structureInfo->itemList[_findSlotInBuyer].itemAmount;
 	}
-	UE_LOG(LogClass, Log, TEXT("Check 3"));
 	totalPaymentCredit = _tempInstance->CalculateCreditForTrade(sellItems.itemID, _lowerAmount, _upperAmount, true);
 	if (ChangeCredit(totalPaymentCredit)) {
-		UE_LOG(LogClass, Log, TEXT("Check 4"));
 		if (USafeENGINE::AddCargo(_structureInfo->itemList, sellItems)) {
-			UE_LOG(LogClass, Log, TEXT("Check 5"));
 			if (USafeENGINE::DropCargo(_structureInfo->playerItemList, sellItems)) {
-				UE_LOG(LogClass, Log, TEXT("Check 6"));
 				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
 				return true;
 			}
-			else {
-				UE_LOG(LogClass, Log, TEXT("Check 7"));
-				USafeENGINE::DropCargo(_structureInfo->itemList, sellItems);
-				ChangeCredit(-totalPaymentCredit);
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-				return false;
-			}
-		}
-		else {
-			UE_LOG(LogClass, Log, TEXT("Check 8"));
+			USafeENGINE::DropCargo(_structureInfo->itemList, sellItems);
 			ChangeCredit(-totalPaymentCredit);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
 			return false;
 		}
+	} else {
+		ChangeCredit(-totalPaymentCredit);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+		return false;
 	}
-	UE_LOG(LogClass, Log, TEXT("Check 9"));
 	return false;
 }
 
-bool AUserState::TransferItem(FItem transferItems, bool isToStationDirection) {
+bool AUserState::TransferItem(const FItem transferItems, const bool isToStationDirection) {
 	int _findSlot = -1;
 
 	FStructureInfo* _structureInfo;
@@ -546,7 +544,7 @@ bool AUserState::TransferItem(FItem transferItems, bool isToStationDirection) {
 	return false;
 }
 
-bool AUserState::EquipModule(int itemSlotIndex) {
+bool AUserState::EquipModule(const int itemSlotIndex) {
 	
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!USafeENGINE::IsValid(_tempInstance))
@@ -568,7 +566,7 @@ bool AUserState::EquipModule(int itemSlotIndex) {
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][EquipModule] This item is not Module."));
 		return false;
 	}
-	if (CheckSkill(_tempItemData.RequireSkill, _tempItemData.RequireSkillLevel) == false) {
+	if (CheckSkill(_tempItemData.RequireSkill) == false) {
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][EquipModule] because of the player's skill state is lower than the skill requirement, It is impossible to wear the module."));
 		return false;
 	}
@@ -650,7 +648,7 @@ bool AUserState::EquipModule(int itemSlotIndex) {
 	}
 }
 
-bool AUserState::UnEquipModule(ItemType moduleType, int slotIndex) {
+bool AUserState::UnEquipModule(const ItemType moduleType, const int slotIndex) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
@@ -692,45 +690,45 @@ bool AUserState::UnEquipModule(ItemType moduleType, int slotIndex) {
 	}
 }
 
-void AUserState::GetUserDataItem(TArray<FItem>& setArray) {
-	setArray = listItem;
-}
-
-void AUserState::GetUserDataSkill(TArray<FSkill>& setArray) {
-	setArray = listSkill;
-}
-
-void AUserState::AddSkillQueue(FSkill addSkill){
-	
-}
-
-void AUserState::DropSkillQueue(FSkill dropSkill) {
-	
-}
-
-void AUserState::SetDockedStructure(TScriptInterface<IStructureable> dockingStructure) {
+void AUserState::SetDockedStructure(const TScriptInterface<IStructureable> dockingStructure) {
 	dockedStructure = dockingStructure;
 }
 
-void AUserState::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) {
+void AUserState::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) const {
 	getStructure = dockedStructure;
 }
 
-TScriptInterface<IStructureable> AUserState::DockedStructure() {
+TScriptInterface<IStructureable> AUserState::DockedStructure() const {
 	return dockedStructure;
 }
 
-void AUserState::GetAchievments(TArray<int>& _achievmentsLevels) {
+void AUserState::GetUserDataItem(TArray<FItem>& setArray) const {
+	setArray = listItem;
+}
+
+void AUserState::GetUserDataSkill(TArray<FSkill>& setArray) const {
+	setArray = listSkill;
+}
+
+void AUserState::AddSkillQueue(const FSkill addSkill){
+	
+}
+
+void AUserState::DropSkillQueue(const FSkill dropSkill) {
+	
+}
+
+void AUserState::GetAchievments(TArray<int>& _achievmentsLevels) const {
 
 }
 
-bool AUserState::CheckSkill(TArray<int>& skillID, TArray<int>& skillLevel) {
+bool AUserState::CheckSkill(const TArray<FSkill>& checkSkill) const {
 	bool _isFind;
-	for (int index1 = 0; index1 < skillID.Num(); index1++) {
+	for (int index1 = 0; index1 < checkSkill.Num(); index1++) {
 		_isFind = false;
 		for (int index2 = 0; index2 < listSkill.Num(); index2++) {
-			if (skillID[index1] == listSkill[index2].skillID) {
-				if (listSkill[index2].skillLevel >= skillLevel[index1])
+			if (listSkill[index2].skillID == checkSkill[index1].skillID) {
+				if (listSkill[index2].skillLevel >= checkSkill[index1].skillLevel)
 					_isFind = true;
 				break;
 			}
@@ -739,11 +737,10 @@ bool AUserState::CheckSkill(TArray<int>& skillID, TArray<int>& skillLevel) {
 			continue;
 		else return false;
 	}
-
 	return true;
 }
 
-float AUserState::CheckCargoValue() {
+float AUserState::CheckCargoValue() const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!USafeENGINE::IsValid(_tempInstance))
 		return -1.0f;
@@ -758,7 +755,7 @@ float AUserState::CheckCargoValue() {
 	return _value;
 }
 
-float AUserState::CheckAddItemValue(FItem item) {
+float AUserState::CheckAddItemValue(const FItem item) const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!USafeENGINE::IsValid(_tempInstance))
 		return -1.0f;

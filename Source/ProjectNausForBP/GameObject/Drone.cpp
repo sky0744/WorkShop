@@ -129,28 +129,28 @@ void ADrone::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int ADrone::GetObjectID() {
+int ADrone::GetObjectID() const {
 	return droneID;
 }
 
-ObjectType ADrone::GetObjectType() {
+ObjectType ADrone::GetObjectType() const {
 	return ObjectType::Ship;
 }
 
-Faction ADrone::GetFaction() {
+Faction ADrone::GetFaction() const {
 	return faction;
 }
 
-void ADrone::SetFaction(Faction setFaction) {
+void ADrone::SetFaction(const Faction setFaction) {
 	faction = setFaction;
 	return;
 }
 
-BehaviorState ADrone::GetBehaviorState() {
+BehaviorState ADrone::GetBehaviorState() const {
 	return behaviorState;
 }
 
-bool ADrone::InitObject(int objectId) {
+bool ADrone::InitObject(const int objectId) {
 	/*
 	if (objectId < 0)
 	return false;
@@ -209,12 +209,12 @@ bool ADrone::InitObject(int objectId) {
 	return true;
 }
 
-bool ADrone::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool ADrone::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 
 	return false;
 }
 
-float ADrone::GetValue(GetStatType statType) {
+float ADrone::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -260,7 +260,7 @@ float ADrone::GetValue(GetStatType statType) {
 	return _value = 0.0f;
 }
 
-void ADrone::GetRepaired(GetStatType statType, float repairValue) {
+void ADrone::GetRepaired(const GetStatType statType, float repairValue) {
 	
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -320,7 +320,7 @@ bool ADrone::CommandUndock() {
 	return false;
 }
 
-bool ADrone::CommandLaunch(TArray<int> BaySlot) {
+bool ADrone::CommandLaunch(const TArray<int>& BaySlot) {
 	return false;
 }
 #pragma endregion

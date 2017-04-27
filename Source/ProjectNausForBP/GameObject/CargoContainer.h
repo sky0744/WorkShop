@@ -7,7 +7,7 @@
 #include "CargoContainer.generated.h"
 
 #define _def_DropChance_MIN 0.0f
-#define _def_DropChance_MAX 1.0f
+#define _def_DropChance_MAX 100.0f
 
 UCLASS()
 class PROJECTNAUSFORBP_API ACargoContainer : public ASpaceObject {
@@ -26,45 +26,47 @@ protected:
 
 #pragma region SpaceObject Inheritance
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual int GetObjectID() override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual ObjectType GetObjectType() override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual int GetObjectID() const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual ObjectType GetObjectType() const override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual Faction GetFaction() override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual void SetFaction(Faction setFaction) override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual BehaviorState GetBehaviorState() override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual Faction GetFaction() const override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual void SetFaction(const Faction setFaction) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual BehaviorState GetBehaviorState() const override;
 
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual bool InitObject(int objectId) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual bool InitObject(const int objectId) override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual bool LoadBaseObject(const float shield, const float armor, const float hull, const float power) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual float GetValue(GetStatType statType) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual float GetValue(const GetStatType statType) const override;
 #pragma endregion
 
 #pragma region Functions
-	/** 카고 컨테이너의 아이템을 설정
-	* @param objectType - 함수를 호출한 오브젝트의 타입
-	* @param ObjectIDforDrop - 함수를 호출한 오브젝트의 ID
-	*/
-	void SetCargo(ObjectType objectType, int ObjectIDforDrop);
-	/** 카고 컨테이너의 아이템을 설정
-	* @param items - 컨테이너에 추가할 아이템
-	* @param dropChance - 개별 아이템의 드롭 찬스.
-	* 참고 : 범위는 0.0f(0%) ~ 1.0f(100%)로 일괄 적용.
-	*/
-	void SetCargo(UPARAM(ref) TArray<FItem>& items, float dropChance);
+	UFUNCTION(BlueprintCallable, Category = "Called For CargoContainer")
+		/** 카고 컨테이너의 아이템을 설정
+		* @param objectType - 함수를 호출한 오브젝트의 타입
+		* @param ObjectIDforDrop - 함수를 호출한 오브젝트의 ID
+		*/
+		void SetCargoFromData(const ObjectType objectType, const int ObjectIDforDrop);
+	UFUNCTION(BlueprintCallable, Category = "Called For CargoContainer")
+		/** 카고 컨테이너의 아이템을 설정
+		* @param items - 컨테이너에 추가할 아이템
+		* @param dropChance - 개별 아이템의 드롭 찬스.
+		* 참고 : 범위는 0.0f(0%) ~ 100.0f(100%)로 일괄 적용.
+		*/
+		void SetCargo(const TArray<FItem>& items, float dropChance);
 
 	UFUNCTION(BlueprintCallable, Category = "Called For CargoContainer")
 		/** 카고 컨테이너의 아이템 추가
 		* @param items - 컨테이너에 추가할 아이템
 		*/
-		void AddCargo(UPARAM(ref) TArray<FItem>& items);
+		void AddCargo(const TArray<FItem>& items);
 
 	UFUNCTION(BlueprintCallable, Category = "Called For CargoContainer")
 		/** 카고 컨테이너로부터 모든 아이템을 획득 시도

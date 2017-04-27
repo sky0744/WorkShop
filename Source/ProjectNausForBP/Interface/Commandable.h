@@ -82,5 +82,5 @@ public:
 		*	@param baySlot - 런칭할 슬롯 인덱스의 배열
 		*	@return - 런칭 성공 여부
 		*/
-		virtual bool CommandLaunch(TArray<int> baySlot);
+		virtual bool CommandLaunch(const TArray<int>& baySlot);
 };

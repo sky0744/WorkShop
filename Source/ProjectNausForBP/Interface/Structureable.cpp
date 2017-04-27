@@ -12,33 +12,33 @@ UStructureable::UStructureable(const class FObjectInitializer& ObjectInitializer
 
 // Add default functionality here for any IStructureable functions that are not pure virtual.
 
-FString IStructureable::GetDestinationName() {
+const FString IStructureable::GetDestinationName() const {
 	unimplemented();
 	return "";
 }
 
-StructureType IStructureable::GetStationType() {
+StructureType IStructureable::GetStationType() const {
 	unimplemented();
 	return StructureType::TradingCenter;
 }
 
-bool IStructureable::RequestedDock(Faction requestFaction) {
+bool IStructureable::RequestedDock(const Faction requestFaction) const {
 	unimplemented();
 	return false;
 }
 
-bool IStructureable::RequestedJump(Faction requestFaction) {
+bool IStructureable::RequestedJump(const Faction requestFaction) const {
 	unimplemented();
 	return false;
 }
 
 
-bool IStructureable::SetStructureData(FStructureInfo& structureData) {
+bool IStructureable::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	unimplemented();
 	return false;
 }
 
-void IStructureable::GetStructureData(FStructureInfo& structureData) {
+void IStructureable::GetStructureData(FStructureInfo& structureData) const {
 	unimplemented();
 	return;
 }

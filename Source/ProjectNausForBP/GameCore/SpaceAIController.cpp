@@ -25,20 +25,11 @@ void ASpaceAIController::Possess(APawn* inPawn) {
 	//Behavior Tree & Blackboard init and Run.
 	//if not Inited or invalid pawn, ai never run.
 	if (aiBehaviorTree && compAIBlackboard && aiBlackboard) {
-		if (inPawn->GetClass() == AShip::StaticClass()) {
-			AShip* aiShip = Cast<AShip>(inPawn);
-			aiShip->aiBehaviorTree = aiBehaviorTree;
-			aiShip->compAIBlackboard = compAIBlackboard;
-			aiShip->aiBlackboard = aiBlackboard;
-		}
-		else return;
+		if (inPawn->GetClass() != AShip::StaticClass())
+			return;
 
 		this->InitializeBlackboard(*compAIBlackboard, *aiBlackboard);
 		this->RunBehaviorTree(aiBehaviorTree);
-		//BrainComponent->StopLogic(TEXT(""));
-		//store Possessed Pawn. this used for order to pawn.
-		possessObj = Cast<ASpaceObject>(inPawn);
-		possessCObj.SetObject(inPawn);
-		possessCObj.SetInterface(Cast<ICommandable>(inPawn));
+		return;
 	}
 }

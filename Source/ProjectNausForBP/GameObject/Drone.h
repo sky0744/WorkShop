@@ -28,26 +28,26 @@ protected:
 #pragma region SpaceObject Inheritance
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual int GetObjectID() override;
+		virtual int GetObjectID() const override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual ObjectType GetObjectType() override;
+		virtual ObjectType GetObjectType() const override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual Faction GetFaction() override;
+		virtual Faction GetFaction() const override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual void SetFaction(Faction setFaction) override;
+		virtual void SetFaction(const Faction setFaction) override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual BehaviorState GetBehaviorState() override;
+		virtual BehaviorState GetBehaviorState() const override;
 
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual bool InitObject(int objectId) override;
+		virtual bool InitObject(const int objectId) override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
+		virtual bool LoadBaseObject(const float shield, const float armor, const float hull, const float power) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
-		virtual float GetValue(GetStatType statType) override;
+		virtual float GetValue(const GetStatType statType) const override;
 	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
-		virtual void GetRepaired(GetStatType statType, float repairValue) override;
+		virtual void GetRepaired(const GetStatType statType, float repairValue) override;
 #pragma endregion
 
 #pragma region Interface Implementation : ICommandable
@@ -73,7 +73,7 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandUndock() override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandLaunch(TArray<int> BaySlot) override;
+		virtual bool CommandLaunch(const TArray<int>& BaySlot) override;
 #pragma endregion
 
 #pragma region Functions
@@ -84,14 +84,6 @@ protected:
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Drone Data")
 		UFloatingPawnMovement* objectMovement;
-
-public:
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Drone Data")
-		class UBehaviorTree* aiBehaviorTree;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Drone Data")
-		UBlackboardComponent* compAIBlackboard;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Drone Data")
-		class UBlackboardData* aiBlackboard;
 #pragma endregion
 
 #pragma region Variables

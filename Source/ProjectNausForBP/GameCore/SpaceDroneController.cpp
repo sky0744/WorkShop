@@ -26,20 +26,12 @@ void ASpaceDroneController::Possess(APawn* inPawn) {
 	//Behavior Tree & Blackboard init and Run.
 	//if not Inited or invalid pawn, ai never run.
 	if (aiBehaviorTree && compAIBlackboard && aiBlackboard) {
-		if (inPawn->GetClass() == ADrone::StaticClass()) {
-			ADrone* aiDrone = Cast<ADrone>(inPawn);
-			aiDrone->aiBehaviorTree = aiBehaviorTree;
-			aiDrone->compAIBlackboard = compAIBlackboard;
-			aiDrone->aiBlackboard = aiBlackboard;
-		}
-		else return;
+		if (inPawn->GetClass() != ADrone::StaticClass())
+			return;
 
 		this->InitializeBlackboard(*compAIBlackboard, *aiBlackboard);
 		this->RunBehaviorTree(aiBehaviorTree);
+		return;
 
-		//store Possessed Pawn. this used for order to pawn.
-		possessObj = Cast<ASpaceObject>(inPawn);
-		possessCObj.SetObject(inPawn);
-		possessCObj.SetInterface(Cast<ICommandable>(inPawn));
 	}
 }

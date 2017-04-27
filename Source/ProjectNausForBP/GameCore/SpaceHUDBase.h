@@ -39,12 +39,12 @@ public:
 	virtual void UpdateUIContract_Implementation();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void AddToObjectList(ASpaceObject* object);
-	virtual void AddToObjectList_Implementation(ASpaceObject* object);
+		void AddToObjectList(const ASpaceObject* object);
+	virtual void AddToObjectList_Implementation(const  ASpaceObject* object);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void RemoveFromObjectList(ASpaceObject* object);
-	virtual void RemoveFromObjectList_Implementation(ASpaceObject* object);
+		void RemoveFromObjectList(const  ASpaceObject* object);
+	virtual void RemoveFromObjectList_Implementation(const  ASpaceObject* object);
 #pragma endregion
 
 #pragma region Docked UI Update
@@ -59,16 +59,16 @@ public:
 
 #pragma region On/Off UI
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void OnUITarget(ASpaceObject* object, FColor color, float lifeTime);
-	virtual void OnUITarget_Implementation(ASpaceObject* object, FColor color, float lifeTime);
+		void OnUITarget(const ASpaceObject* object, const FColor color, const float lifeTime);
+	virtual void OnUITarget_Implementation(const ASpaceObject* object, const FColor color, const float lifeTime);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void OnUIMove(FVector location, FColor color, float lifeTime, float size);
-	virtual void OnUIMove_Implementation(FVector location, FColor color, float lifeTime, float size);
+		void OnUIMove(const FVector location, const FColor color, const float lifeTime, const float size);
+	virtual void OnUIMove_Implementation(const FVector location, const FColor color, const float lifeTime, const float size);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void OnUIInteraction(AActor* object, ObjectType objectType);
-	virtual void OnUIInteraction_Implementation(AActor* object, ObjectType objectType);
+		void OnUIInteraction(const AActor* object, const ObjectType objectType);
+	virtual void OnUIInteraction_Implementation(const AActor* object, const ObjectType objectType);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void OffUIInteraction();
@@ -85,11 +85,11 @@ public:
 
 #pragma region Messages
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void SetUIIOnTopMessage(FText& message, FColor color);
-	virtual void SetUIIOnTopMessage_Implementation(FText& message, FColor color);
+		void SetUIIOnTopMessage(const FText& message, FColor color);
+	virtual void SetUIIOnTopMessage_Implementation(FText message, FColor color);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void AddUILogMessage(FText& message, FColor color);
-	virtual void AddUILogMessage_Implementation(FText& message, FColor color);
+		void AddUILogMessage(const FText& message, FColor color);
+	virtual void AddUILogMessage_Implementation(FText message, FColor color);
 #pragma endregion
 };

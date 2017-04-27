@@ -87,42 +87,41 @@ void ASpaceObject::BeginDestroy() {
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int ASpaceObject::GetObjectID() {
+int ASpaceObject::GetObjectID() const {
 	return 0;
 }
 
-void ASpaceObject::GetObjectName(FText& spaceObjectName) {
+void ASpaceObject::GetObjectName(FText& spaceObjectName) const {
 	spaceObjectName = objectName;
 }
 
-ObjectType ASpaceObject::GetObjectType() {
+ObjectType ASpaceObject::GetObjectType() const {
 	return ObjectType::SpaceObject;
 }
 
-Faction ASpaceObject::GetFaction() {
+Faction ASpaceObject::GetFaction() const {
 	return Faction::Neutral;
 }
 
-void ASpaceObject::SetFaction(Faction setFaction) {
+void ASpaceObject::SetFaction(const Faction setFaction) {
 
 }
 
-
-BehaviorState ASpaceObject::GetBehaviorState() {
+BehaviorState ASpaceObject::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool ASpaceObject::InitObject(int objectId) {
+bool ASpaceObject::InitObject(const int objectId) {
 
 	return false;
 }
 
-bool ASpaceObject::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool ASpaceObject::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 
 	return false;
 }
 
-float ASpaceObject::GetValue(GetStatType statType) {
+float ASpaceObject::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -142,14 +141,8 @@ float ASpaceObject::GetValue(GetStatType statType) {
 	return _value;
 }
 
-void ASpaceObject::GetRepaired(GetStatType statType, float repairValue) {
-	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
-	switch (statType) {
-	case GetStatType::currentHull:
-		currentDurability = FMath::Clamp(currentDurability + repairValue, 0.0f, maxDurability);
-		break;
-	default:
-		break;
-	}
+void ASpaceObject::GetRepaired(const GetStatType statType, float repairValue) {
+
+	return;
 }
 #pragma endregion

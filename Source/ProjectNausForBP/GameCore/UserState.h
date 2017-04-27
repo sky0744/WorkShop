@@ -27,11 +27,11 @@ protected:
 #pragma region Save/Load
 public:
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool NewGameSetting(Faction selectedFaction, FText userName);
+		bool NewGameSetting(const Faction selectedFaction, const FText& userName);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool Jump(FString jumpToSector);
+		bool Jump(const FString& jumpToSector);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool TotalSave(bool isBeforeWarp = false);
+		bool TotalSave(const bool isBeforeWarp = false);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool TotalLoad();
 
@@ -44,21 +44,46 @@ private:
 
 #pragma region User Data Access
 public:
-	UFUNCTION(BlueprintCallable,  Category = "Call Function : State")
-		FText GetName();
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		Faction GetOriginFaction();
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		const FText& GetName() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		Faction GetOriginFaction() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool ShipBuy(int newShipID);
+		bool ShipBuy(const int newShipID);
+
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool ChangeCredit(float credit);//, FText category, FText contents);
+		/**	유저에게 크레딧을 부여합니다.
+		*	@param varianceCredit - 부여 크레딧. 범위는 -9999999999999999.0f ~ 9999999999999999.0f
+		*	@return 변동 성공 여부(유효성)
+		*/
+		bool ChangeCredit(float varianceCredit);//, FText category, FText contents);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/**	유저가 보유한 크레딧의 양을 확인합니다.
+		*	@return 보유 크레딧
+		*/
+		float GetCredit() const;
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool ChangeBounty(float _bounty);
+		/**	유저에게 현상금을 부여 또는 탕감합니다.
+		*	@param varianceBounty - 부여 현상금.
+		*	@return 변동 성공 여부(유효성)
+		*/
+		bool ChangeBounty(float varianceBounty);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/**	유저에게 부여된 현상금을 확인합니다.
+		*	@return 부여 현상금
+		*/
+		float GetBounty() const;
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		float GetCredit();
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		float GetBounty();
+		/**	유저에게 명성을 부여합니다.
+		*	@param varianceRenown - 명성. 범위는 -1000.0f ~ 1000.0f
+		*/
+		void ChangeRenown(float varianceRenown);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/**	유저의 명성을 확인합니다.
+		*	@return 명성 수치
+		*/
+		float GetRenown() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool AddPlayerCargo(FItem addItem);
@@ -70,36 +95,36 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool SellItem(FItem sellItems);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool TransferItem(FItem transferItems, bool isToStationDirection);
+		bool TransferItem(const FItem transferItems, const bool isToStationDirection);
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool EquipModule(int itemSlotIndex);
+		bool EquipModule(const int itemSlotIndex);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool UnEquipModule(ItemType moduleType, int slotIndex);
+		bool UnEquipModule(const ItemType moduleType, const int slotIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void SetDockedStructure(TScriptInterface<IStructureable> dockingStructure);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void GetDockedStructure(TScriptInterface<IStructureable>& getStructure);
-	TScriptInterface<IStructureable> DockedStructure();
+		void SetDockedStructure(const TScriptInterface<IStructureable> dockingStructure);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		void GetDockedStructure(TScriptInterface<IStructureable>& getStructure) const;
+	TScriptInterface<IStructureable> DockedStructure() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		void GetUserDataItem(TArray<FItem>& setArray) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		void GetUserDataSkill(TArray<FSkill>& setArray) const;
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void GetUserDataItem(TArray<FItem>& setArray);
+		void AddSkillQueue(const FSkill addSkill);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void GetUserDataSkill(TArray<FSkill>& setArray);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void AddSkillQueue(FSkill addSkill);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void DropSkillQueue(FSkill dropSkill);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void GetAchievments(TArray<int>& _achievmentsLevels);
+		void DropSkillQueue(const FSkill dropSkill);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		void GetAchievments(TArray<int>& _achievmentsLevels) const;
 
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-	bool CheckSkill(TArray<int>& skillID, TArray<int>& skillLevel);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-	float CheckCargoValue();
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-	float CheckAddItemValue(FItem item);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		bool CheckSkill(const TArray<FSkill>& checkSkill) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		float CheckCargoValue() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		float CheckAddItemValue(const FItem item) const;
 #pragma endregion
 
 #pragma region Components & Variables
@@ -108,6 +133,7 @@ private:
 	int sShipID;
 	Faction originFaction;
 	float sCredit;
+	float sRenown;
 	float sBounty;
 
 protected:
