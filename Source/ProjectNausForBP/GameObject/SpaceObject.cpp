@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -25,6 +25,7 @@ ASpaceObject::ASpaceObject()
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
 
+	objectID = -1;
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 }
 
@@ -32,8 +33,19 @@ ASpaceObject::ASpaceObject()
 void ASpaceObject::BeginPlay()
 {
 	Super::BeginPlay();
-
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(false);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->AddToObjectList(this);
+	}
 	lengthToLongAsix = 0.0f;
+
+	float tempX = FMath::FRandRange(0.001f, 0.01f);
+	if (FMath::RandBool())
+		tempX *= -1.0f;
+	float tempY = FMath::FRandRange(0.001f, 0.01f);
+	if (FMath::RandBool())
+		tempY *= -1.0f;
+	AddActorWorldOffset(FVector(tempX, tempY, 0.0f));
 }
 
 void ASpaceObject::Tick( float DeltaTime )
@@ -42,8 +54,6 @@ void ASpaceObject::Tick( float DeltaTime )
 }
 
 float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
-		return 0.0f;
 
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
 	float effectDamage = 0.0f;
@@ -56,6 +66,7 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 	else {
 		effectDamage = currentDurability;
 		currentDurability = 0.0f;
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceObject][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"), 
@@ -65,71 +76,73 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 }
 
 void ASpaceObject::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int ASpaceObject::GetObjectID() {
+int ASpaceObject::GetObjectID() const {
 	return 0;
 }
 
-ObjectType ASpaceObject::GetObjectType() {
+void ASpaceObject::GetObjectName(FText& spaceObjectName) const {
+	spaceObjectName = objectName;
+}
+
+ObjectType ASpaceObject::GetObjectType() const {
 	return ObjectType::SpaceObject;
 }
 
-Faction ASpaceObject::GetFaction() {
+Faction ASpaceObject::GetFaction() const {
 	return Faction::Neutral;
 }
 
-void ASpaceObject::SetFaction(Faction setFaction) {
+void ASpaceObject::SetFaction(const Faction setFaction) {
 
 }
 
-
-BehaviorState ASpaceObject::GetBehaviorState() {
+BehaviorState ASpaceObject::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool ASpaceObject::InitObject(int objectId) {
+bool ASpaceObject::InitObject(const int objectId) {
 
 	return false;
 }
 
-bool ASpaceObject::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool ASpaceObject::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 
 	return false;
 }
 
-float ASpaceObject::GetValue(GetStatType statType) {
-	float value;
+float ASpaceObject::GetValue(const GetStatType statType) const {
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::maxHull:
-		value = maxDurability;
+		_value = maxDurability;
 		break;
 	case GetStatType::currentHull:
-		value = currentDurability;
+		_value = currentDurability;
 		break;
 	default:
-		value = -1.0;
+		_value = 0.0f;
 		break;
 	}
-	return value;
+	return _value;
 }
 
-void ASpaceObject::GetRepaired(GetStatType statType, float repairValue) {
-	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
-	switch (statType) {
-	case GetStatType::currentHull:
-		currentDurability = FMath::Clamp(currentDurability + repairValue, 0.0f, maxDurability);
-		break;
-	default:
-		break;
-	}
+void ASpaceObject::GetRepaired(const GetStatType statType, float repairValue) {
+
+	return;
 }
 #pragma endregion

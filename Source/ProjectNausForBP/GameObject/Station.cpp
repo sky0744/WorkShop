@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Station.h"
@@ -31,89 +31,19 @@ void AStation::BeginPlay() {
 
 void AStation::Tick(float DeltaSeconds) {
 
-	currentShield = FMath::Clamp(currentShield + rechargeShield * 5.0f, 0.0f, maxShield);
-	currentArmor = FMath::Clamp(currentArmor + repairArmor * 5.0f, 0.0f, maxArmor);
-	currentHull = FMath::Clamp(currentHull + repairHull * 5.0f, 0.0f, maxHull);
-
-	if (structureInfo->remainItemListRefreshTime >= 0.0f)
-		structureInfo->remainItemListRefreshTime = FMath::Clamp(structureInfo->remainItemListRefreshTime - DeltaSeconds, 0.0f, structureInfo->maxItemListRefreshTime);
-	if (structureInfo->remainItemListRefreshTime <= 0.0f && structureInfo->structureType != StructureType::ProductionFacility) {
-		int findIndex = -1;
-		int addAmount = 0;
-		FItem item = FItem();
-
-		for (int index = 0; index < structureInfo->itemSellListId.Num(); index++) {
-			if (structureInfo->itemSellListId[index].sellingChance >= FMath::RandRange(0.0, 100.0f)) {
-				item = FItem(structureInfo->itemSellListId[index].sellingItemID, 1);
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, item);
-				addAmount = FMath::RandRange(structureInfo->itemSellListId[index].sellingItemMinAmount, structureInfo->itemSellListId[index].sellingItemMaxAmount);
-
-				if (findIndex > -1)
-					structureInfo->itemList[findIndex].itemAmount += addAmount;
-				else if (addAmount > 0)
-					structureInfo->itemList.Emplace(FItem(structureInfo->itemSellListId[index].sellingItemID, addAmount));
-			}
-			else {
-				item = FItem(structureInfo->itemSellListId[index].sellingItemID, 1);
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, item);
-
-				if (findIndex > -1)
-					structureInfo->itemList.RemoveAtSwap(findIndex);
-			}
-		}
-		structureInfo->remainItemListRefreshTime = structureInfo->maxItemListRefreshTime;
-		if (Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->DockedStructure().GetObjectRef() == this->_getUObject()) {
-			UE_LOG(LogClass, Log, TEXT("[Info][Gate][Tick] Update UI with sell refresh"));
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationInfo();
-		}
-	}
-	
-	if ((structureInfo->structureType == StructureType::ProductionFacility || structureInfo->structureType == StructureType::Hub) && structureInfo->productItemList.Num() > 0) {
-		structureInfo->remainProductTime = FMath::Clamp(structureInfo->remainProductTime - DeltaSeconds, 0.0f, structureInfo->maxItemListRefreshTime);
-		if (structureInfo->remainProductTime <= 0.0f) {
-			bool canProduct = true;
-			int findIndex = -1;
-
-			for (int index = 0; index < structureInfo->consumptItemList.Num(); index++) {
-				findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, structureInfo->consumptItemList[index]);
-
-				if (findIndex < 0 || structureInfo->itemList[findIndex].itemAmount < structureInfo->consumptItemList[index].itemAmount)
-				{
-					canProduct = false;
-					break;
-				}
-			}
-
-			if (canProduct == true) {
-				for (int index = 0; index < structureInfo->consumptItemList.Num(); index++) {
-					findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, structureInfo->consumptItemList[index]);
-					structureInfo->itemList[findIndex].itemAmount -= structureInfo->consumptItemList[index].itemAmount;
-					if (structureInfo->itemList[findIndex].itemAmount <= 0)
-						structureInfo->itemList.RemoveAt(findIndex);
-				}
-
-				for (int index = 0; index < structureInfo->productItemList.Num(); index++) {
-					if (!canProduct || index > structureInfo->maxProductAmount.Num() || structureInfo->itemList[findIndex].itemAmount >= structureInfo->maxProductAmount[index])
-						break;
-
-					findIndex = USafeENGINE::FindItemSlot(structureInfo->itemList, structureInfo->productItemList[index]);
-					if (findIndex > -1) 
-						structureInfo->itemList[findIndex].itemAmount += structureInfo->productItemList[index].itemAmount;
-					else 
-						structureInfo->itemList.Emplace(FItem(structureInfo->productItemList[index]));
-				}
-				structureInfo->remainProductTime = structureInfo->maxProductTime;
-				if (Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->DockedStructure().GetObjectRef() == this->_getUObject()) {
-					UE_LOG(LogClass, Log, TEXT("[Info][Gate][Tick] Update UI with processing"));
-					Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationInfo();
-				}
-			}
-		}
-	}
+	currentShield = FMath::Clamp(currentShield + rechargeShield * DeltaSeconds, 0.0f, maxShield);
+	currentArmor = FMath::Clamp(currentArmor + repairArmor * DeltaSeconds, 0.0f, maxArmor);
+	currentHull = FMath::Clamp(currentHull + repairHull * DeltaSeconds, 0.0f, maxHull);
 }
 
 float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
 
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
@@ -169,7 +99,7 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 	else {
 		effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectShieldDamage, effectArmorDamage, effectHullDamage, isCritical ? TEXT("Critical") : TEXT("Non Critical"));
@@ -178,97 +108,106 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 }
 
 void AStation::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
+	if (structureInfo) {
+		structureInfo->isDestroyed = true;
+		structureInfo->remainRespawnTime = structureInfo->maxRespawnTime;
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int AStation::GetObjectID() {
+int AStation::GetObjectID() const {
 	if(structureInfo != nullptr)
 		return structureInfo->structureID; 
 	else return -1;
 }
 
-ObjectType AStation::GetObjectType() {
+ObjectType AStation::GetObjectType() const {
 	return ObjectType::Station;
 }
 
-Faction AStation::GetFaction() {
+Faction AStation::GetFaction() const {
 	if (structureInfo != nullptr)
 		return structureInfo->structureFaction; 
 	else return Faction::Neutral;
 }
 
-void AStation::SetFaction(Faction setFaction) {
+void AStation::SetFaction(const Faction setFaction) {
 	return;
 }
 
-BehaviorState AStation::GetBehaviorState() {
+BehaviorState AStation::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool AStation::InitObject(int objectId) {
+bool AStation::InitObject(const int objectId) {
 	return false;
 }
 
-bool AStation::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool AStation::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float AStation::GetValue(GetStatType statType) {
-	float value;
+float AStation::GetValue(const GetStatType statType) const {
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::maxShield:
-		value = maxShield;
+		_value = maxShield;
 		break;
 	case GetStatType::rechargeShield:
-		value = rechargeShield;
+		_value = rechargeShield;
 		break;
 	case GetStatType::currentShield:
-		value = currentShield;
+		_value = currentShield;
 		break;
 	case GetStatType::defShield:
-		value = defShield;
+		_value = defShield;
 		break;
 
 	case GetStatType::maxArmor:
-		value = maxArmor;
+		_value = maxArmor;
 		break;
 	case GetStatType::repaireArmor:
-		value = repairArmor;
+		_value = repairArmor;
 		break;
 	case GetStatType::currentArmor:
-		value = currentArmor;
+		_value = currentArmor;
 		break;
 	case GetStatType::defArmor:
-		value = defArmor;
+		_value = defArmor;
 		break;
 
 	case GetStatType::maxHull:
-		value = maxHull;
+		_value = maxHull;
 		break;
 	case GetStatType::repaireHull:
-		value = repairHull;
+		_value = repairHull;
 		break;
 	case GetStatType::currentHull:
-		value = currentHull;
+		_value = currentHull;
 		break;
 	case GetStatType::defHull:
-		value = defHull;
+		_value = defHull;
 		break;
 	default:
-		value = -1;
+		_value = 0.0f;
 		break;
 	}
-	return value;
+	return _value;
 }
 
-void AStation::GetRepaired(GetStatType statType, float repairValue) {
+void AStation::GetRepaired(const GetStatType statType, float repairValue) {
 
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -288,23 +227,27 @@ void AStation::GetRepaired(GetStatType statType, float repairValue) {
 #pragma endregion
 
 #pragma region Interface Implementation : IStructureable
-FString AStation::GetDestinationName() {
+const FString AStation::GetDestinationName() const {
 	return "";
 }
 
-StructureType AStation::GetStationType() {
-	return structureInfo->structureType;
+StructureType AStation::GetStationType() const {
+	if(structureInfo != nullptr)
+		return structureInfo->structureType;
+	else return StructureType::TradingCenter;
 }
 
-bool AStation::RequestedDock(Faction requestFaction) {
-	return true;
+bool AStation::RequestedDock(const  Faction requestFaction) const {
+	if(structureInfo != nullptr)
+		return true;
+	else return false;
 }
 
-bool AStation::RequestedJump(Faction requestFaction) {
+bool AStation::RequestedJump(const Faction requestFaction) const {
 	return false;
 }
 
-bool AStation::SetStructureData(FStructureInfo& structureData) {
+bool AStation::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	if (isInited)
 		return false;
 
@@ -313,6 +256,7 @@ bool AStation::SetStructureData(FStructureInfo& structureData) {
 
 	structureInfo = &structureData;
 	tempStationData = tempInstance->GetStationData((structureInfo->structureID));
+	objectName = tempStationData.Name;
 
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempStationData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
@@ -333,29 +277,19 @@ bool AStation::SetStructureData(FStructureInfo& structureData) {
 	repairHull = tempStationData.RepairHull;
 	defHull = tempStationData.DefHull;
 
-	AddActorWorldOffset(FVector(0.0f, 0.0f, 1.0f));
 	isInited = true;
 	return true;
 }
 
-void AStation::GetStructureData(FStructureInfo& structureData) {
+void AStation::GetStructureData(FStructureInfo& structureData) const {
 	structureData = *structureInfo;
 	return;
 }
 #pragma endregion
 
 #pragma region Functions
-FStructureInfo* AStation::GetStructureDataPointer() {
+FStructureInfo* AStation::GetStructureDataPointer() const {
 	return structureInfo;
 }
 
-void AStation::RefreshStationItem(){
-
-}
-void AStation::ProductItemInStationCargo(){
-
-}
-void AStation::ProductItemInPlayerCargo(){
-
-}
 #pragma endregion

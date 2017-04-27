@@ -1,8 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "CargoContainer.h"
-
 
 
 // Sets default values
@@ -24,6 +23,7 @@ ACargoContainer::ACargoContainer()
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+	cargoContainerID = -1;
 }
 
 #pragma region Event Calls
@@ -40,8 +40,6 @@ void ACargoContainer::Tick(float DeltaTime)
 }
 
 float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
-		return 0.0f;
 
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
 	float effectDamage = 0.0f;
@@ -54,6 +52,7 @@ float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const&
 	else {
 		effectDamage = currentDurability;
 		currentDurability = 0.0f;
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][CargoContainer][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"),
@@ -63,59 +62,130 @@ float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const&
 }
 
 void ACargoContainer::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int ACargoContainer::GetObjectID() {
+int ACargoContainer::GetObjectID() const {
 	return 0;
 }
 
-ObjectType ACargoContainer::GetObjectType() {
+ObjectType ACargoContainer::GetObjectType() const {
 	return ObjectType::SpaceObject;
 }
 
-Faction ACargoContainer::GetFaction() {
+Faction ACargoContainer::GetFaction() const {
 	return Faction::Neutral;
 }
 
-void ACargoContainer::SetFaction(Faction setFaction) {
-
+void ACargoContainer::SetFaction(const Faction setFaction) {
+	faction = Faction::Neutral;
 }
 
-BehaviorState ACargoContainer::GetBehaviorState() {
+BehaviorState ACargoContainer::GetBehaviorState() const {
 	return BehaviorState::Idle;
 }
 
-bool ACargoContainer::InitObject(int objectId) {
-
+bool ACargoContainer::InitObject(const int objectId) {
 	return false;
 }
 
-bool ACargoContainer::LoadBaseObject(float shield, float armor, float hull, float power) {
-
+bool ACargoContainer::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	return false;
 }
 
-float ACargoContainer::GetValue(GetStatType statType) {
-	float value;
+float ACargoContainer::GetValue(const GetStatType statType) const {
+	float _value;
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		value = lengthToLongAsix * 0.5f;
+		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::maxHull:
-		value = maxDurability;
+		_value = maxDurability;
 		break;
 	case GetStatType::currentHull:
-		value = currentDurability;
+		_value = currentDurability;
 		break;
 	default:
-		value = -1.0;
+		_value = 0.0f;
 		break;
 	}
-	return value;
+	return _value;
+}
+#pragma endregion
+
+#pragma region Functions
+void ACargoContainer::SetCargoFromData(const ObjectType objectType, const int ObjectIDforDrop) {
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (!USafeENGINE::IsValid(_tempInstance)) {
+		Destroy();
+		return;
+	}
+	FNPCData _tempNPCData;
+	int minAmount;
+
+	switch (objectType) {
+	case ObjectType::Ship:
+		_tempNPCData = _tempInstance->GetNPCData(objectID);
+		cargo.Reserve(_tempNPCData.dropItems.Num());
+
+		for (FNPCDropData& dropData : _tempNPCData.dropItems)
+			if (FMath::Clamp(dropData.dropChance, _def_DropChance_MIN, _def_DropChance_MAX) > FMath::FRandRange(_def_DropChance_MIN, _def_DropChance_MAX)) {
+				minAmount = FMath::Max(1, dropData.dropAmountMin);
+				cargo.Emplace(FItem(dropData.dropItemID, FMath::RandRange(minAmount, FMath::Max(minAmount, dropData.dropAmountMax))));
+			}
+		break;
+	case ObjectType::Drone:
+
+	default:
+		Destroy();
+		return;
+	}
+	cargo.Shrink();
+}
+
+void ACargoContainer::SetCargo(const TArray<FItem>& items, float dropChance) {
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (!USafeENGINE::IsValid(_tempInstance)) {
+		Destroy();
+		return;
+	}
+	int minAmount = 1;
+
+	cargo.Reserve(items.Num());
+	dropChance = FMath::Clamp(dropChance, _def_DropChance_MIN, _def_DropChance_MAX);
+	for (const FItem& item : items) {
+		if (dropChance > FMath::FRandRange(_def_DropChance_MIN, _def_DropChance_MAX))
+			cargo.Emplace(FItem(item.itemID, FMath::RandRange(minAmount, FMath::Max(minAmount, item.itemAmount))));
+
+		cargo.Shrink();
+	}
+}
+
+void ACargoContainer::AddCargo(const TArray<FItem>& items) {
+
+	cargo.Append(items);
+}
+
+void ACargoContainer::GetAllCargo(TArray<FItem>& gettingItems) {
+
+	gettingItems = cargo;
+}
+
+bool ACargoContainer::GetCargo(int cargoSlot, FItem& gettingItem) {
+
+	if (cargo.Num() - 1 > cargoSlot)
+		return false;
+
+	gettingItem = cargo[cargoSlot];
+	return true;
 }
 #pragma endregion

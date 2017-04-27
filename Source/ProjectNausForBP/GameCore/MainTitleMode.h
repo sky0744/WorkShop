@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d68e7c1254d707674b8af667b7941daf286b30d10725d2f5783261062501dc73
-size 449
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "GameFramework/GameMode.h"
+#include "ProjectNausForBP.h"
+#include "MainTitleMode.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class PROJECTNAUSFORBP_API AMainTitleMode : public AGameMode
+{
+	GENERATED_BODY()
+public:
+	AMainTitleMode();
+#pragma region Base GameMode
+protected:
+	virtual void BeginPlay() override;
+#pragma endregion
+	
+};

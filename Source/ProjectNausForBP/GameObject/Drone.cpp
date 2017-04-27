@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 #include "ProjectNausForBP.h"
@@ -29,6 +29,7 @@ ADrone::ADrone() {
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+	droneID = -1;
 }
 
 #pragma region Event Calls
@@ -44,8 +45,15 @@ void ADrone::Tick(float DeltaSeconds) {
 }
 
 float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass())) 
+		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass())) 
+		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else 
 		return 0.0f;
+	
 
 	FHitResult _hitResult;
 	FVector _hitDirect;
@@ -99,7 +107,7 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	else {
 		_effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
+		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][Drone][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),
@@ -110,34 +118,39 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 }
 
 void ADrone::BeginDestroy() {
+
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int ADrone::GetObjectID() {
+int ADrone::GetObjectID() const {
 	return droneID;
 }
 
-ObjectType ADrone::GetObjectType() {
+ObjectType ADrone::GetObjectType() const {
 	return ObjectType::Ship;
 }
 
-Faction ADrone::GetFaction() {
+Faction ADrone::GetFaction() const {
 	return faction;
 }
 
-void ADrone::SetFaction(Faction setFaction) {
+void ADrone::SetFaction(const Faction setFaction) {
 	faction = setFaction;
 	return;
 }
 
-BehaviorState ADrone::GetBehaviorState() {
+BehaviorState ADrone::GetBehaviorState() const {
 	return behaviorState;
 }
 
-bool ADrone::InitObject(int objectId) {
+bool ADrone::InitObject(const int objectId) {
 	/*
 	if (objectId < 0)
 	return false;
@@ -154,6 +167,7 @@ bool ADrone::InitObject(int objectId) {
 
 	if (sShipID.GetValue() != objectId) {
 	sShipID.SetValue(objectId);
+	objectName = ...?
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempData.MeshPath.ToString()));
 	objectMesh->SetStaticMesh(newMesh);
 
@@ -195,12 +209,12 @@ bool ADrone::InitObject(int objectId) {
 	return true;
 }
 
-bool ADrone::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool ADrone::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 
 	return false;
 }
 
-float ADrone::GetValue(GetStatType statType) {
+float ADrone::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
@@ -240,13 +254,13 @@ float ADrone::GetValue(GetStatType statType) {
 		_value = defHull;
 		break;
 	default:
-		_value = -1.0f;
+		_value = 0.0f;
 		break;
 	}
-	return 0.0f;
+	return _value = 0.0f;
 }
 
-void ADrone::GetRepaired(GetStatType statType, float repairValue) {
+void ADrone::GetRepaired(const GetStatType statType, float repairValue) {
 	
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -282,7 +296,7 @@ bool ADrone::CommandAttack(ASpaceObject* target) {
 	return false;
 }
 
-bool ADrone::CommandMining(TScriptInterface<ICollectable> target) {
+bool ADrone::CommandMining(AResource* target) {
 	return false;
 }
 
@@ -306,15 +320,7 @@ bool ADrone::CommandUndock() {
 	return false;
 }
 
-bool ADrone::CommandLaunch(TArray<int> BaySlot) {
-	return false;
-}
-
-bool ADrone::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-	return false;
-}
-
-bool ADrone::CommandToggleActiveModule(int slotIndex) {
+bool ADrone::CommandLaunch(const TArray<int>& BaySlot) {
 	return false;
 }
 #pragma endregion

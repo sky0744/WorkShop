@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "Commandable.h"
@@ -31,7 +31,7 @@ bool ICommandable::CommandAttack(ASpaceObject* target) {
 	return false;
 }
 
-bool ICommandable::CommandMining(TScriptInterface<ICollectable> target) {
+bool ICommandable::CommandMining(AResource* target) {
 	unimplemented();
 	return false;
 }
@@ -61,17 +61,7 @@ bool ICommandable::CommandUndock() {
 	return false;
 }
 
-bool ICommandable::CommandLaunch(TArray<int> baySlot) {
-	unimplemented();
-	return false;
-}
-
-bool ICommandable::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-	unimplemented();
-	return false;
-}
-
-bool ICommandable::CommandToggleActiveModule(int slotIndex) {
+bool ICommandable::CommandLaunch(const TArray<int>& baySlot) {
 	unimplemented();
 	return false;
 }

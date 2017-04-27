@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -26,27 +26,27 @@ protected:
 
 #pragma region SpaceObject Inheritance
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual int GetObjectID() override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual ObjectType GetObjectType() override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual int GetObjectID() const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual ObjectType GetObjectType() const override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual Faction GetFaction() override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual void SetFaction(Faction setFaction) override;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual BehaviorState GetBehaviorState() override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual Faction GetFaction() const override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual void SetFaction(const Faction setFaction) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual BehaviorState GetBehaviorState() const override;
 
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual bool InitObject(int objectId) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual bool LoadBaseObject(float shield, float armor, float hull, float power) override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual bool InitObject(const int objectId) override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual bool LoadBaseObject(const float shield, const float armor, const float hull, const float power) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called For SpaceObject")
-		virtual float GetValue(GetStatType statType) override;
-	UFUNCTION(BlueprintCallable, Category = "Called For SpaceObject")
-		virtual void GetRepaired(GetStatType statType, float repairValue) override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to SpaceObject")
+		virtual float GetValue(const GetStatType statType) const override;
+	UFUNCTION(BlueprintCallable, Category = "Call to SpaceObject")
+		virtual void GetRepaired(const GetStatType statType, float repairValue) override;
 #pragma endregion
 
 #pragma region Interface Implementation : ICommandable
@@ -60,7 +60,7 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandAttack(ASpaceObject* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandMining(TScriptInterface<ICollectable> target) override;
+		virtual bool CommandMining(AResource* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandRepair(ASpaceObject* target) override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
@@ -72,27 +72,25 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
 		virtual bool CommandUndock() override;
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandLaunch(TArray<int> baySlot) override;
-
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandToggleTargetModule(int slotIndex, ASpaceObject* target) override;
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Command")
-		virtual bool CommandToggleActiveModule(int slotIndex) override;
+		virtual bool CommandLaunch(const TArray<int>& baySlot) override;
 #pragma endregion
 
 #pragma region Functions
 public:
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called in Ship")
-		BehaviorType GetBehaviorType();
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called in Ship")
-		ShipClass GetShipClass();
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Ship")
+		BehaviorType GetBehaviorType() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Ship")
+		ShipClass GetShipClass() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Ship")
+		void GetDockedStructure(TScriptInterface<IStructureable>& getStructure) const;
+	
 private:
 	bool MoveDistanceCheck();
 	void RotateCheck();
 	void Movement();
 	void ModuleCheck();
 
-	bool CheckCanBehavior();
+	bool CheckCanBehavior() const;
 #pragma endregion
 
 #pragma region Path Finder
@@ -101,10 +99,11 @@ private:
 	void RequestPathUpdate();
 
 	UPROPERTY()
-		UNavigationPath* waypointData;
-	UPROPERTY()
 		TArray<FVector> wayPoint;
 
+	//성능 테스트를 위해 전역변수 <-> 지역변수 스트레스 테스트 할 것임
+	UPROPERTY()
+		UNavigationPath* waypointData;
 	FCollisionObjectQueryParams traceObjectParams;
 	FCollisionQueryParams traceParams;
 	FHitResult pathFindTraceResult;
@@ -116,6 +115,7 @@ private:
 	FVector targetVector;
 	FVector realMoveFactor;
 	FRotator targetRotate;
+	float resultOuter;
 
 	int currentClosedPathIndex;
 	float remainDistance;
@@ -123,19 +123,13 @@ private:
 	bool bIsFirstCheckStraight;
 	float nextPointDistance;
 	float nextPointOuter;
+	//여기까지
 #pragma endregion
 
 #pragma region Components
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
 		UFloatingPawnMovement* objectMovement;
-public:
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Ship Data")
-		class UBehaviorTree* aiBehaviorTree;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Ship Data")
-		UBlackboardComponent* compAIBlackboard;
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Ship Data")
-		class UBlackboardData* aiBlackboard;
 #pragma endregion
 
 #pragma region Variables
@@ -152,18 +146,13 @@ private:
 	float lengthRader;
 	float strategyPoint;
 	float bounty;
-public:
-	UPROPERTY()
-		TArray<FItem> cargo;
-private:
+
 	UPROPERTY()
 		ASpaceObject* targetObject;
 	UPROPERTY()
 		TScriptInterface<ICommandable> targetCommand;
 	UPROPERTY()
 		TScriptInterface<IStructureable> targetStructure;
-	UPROPERTY()
-		TScriptInterface<ICollectable> targetCollect;
 
 	float maxShield;
 	float rechargeShield;
@@ -186,12 +175,9 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
-	UPROPERTY()
-		TArray<ASpaceObject*> targetingObject;
 
 	float maxSpeed;
 	float targetSpeed;
-	float setedTargetSpeed;
 	float currentSpeed;
 
 	float maxAcceleration;
@@ -202,12 +188,13 @@ private:
 	float maxRotateRate;
 	float rotateAcceleration;
 	float rotateDeceleration;
-	float rotateRateFactor;
 	float targetRotateRateFactor;
 	float realRotateRateFactor;
 
 	float bonusCannonLifeTime;
 	float bonusRailGunLifeTime;
 	float bonusMissileLifeTime;
+
+	float moduleConsumptPower;
 #pragma endregion
 };

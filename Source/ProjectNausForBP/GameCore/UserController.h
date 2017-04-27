@@ -1,12 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "GameFramework/PlayerController.h"
 #include "ProjectNausForBP.h"
 #include "../GameCoreSub/Enums.h"
-#include "../GameCoreSub/UI3DMove.h"
-#include "../GameCoreSub/UI3DTarget.h"
 #include "../GameObject/PlayerShip.h"
 #include "UserController.generated.h"
 
@@ -83,22 +81,28 @@ public:
 #pragma region player flow control
 public:
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void PlayerInterAction(InteractionType interaction);
+		void PlayerInterAction(const InteractionType interaction);
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		bool SetWarpLocation(FVector location);
+		bool SetWarpLocation(const FVector location);
 
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		bool ToggleTargetModule(int slotIndex);
+		bool ToggleTargetModule(const int slotIndex);
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		bool ToggleActiveModule(int slotIndex);
+		bool ToggleActiveModule(const int slotIndex);
 
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		ASpaceObject* GetTargetInfo();
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player Controller")
+		ASpaceObject* GetTargetInfo() const;
+protected:
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void SetTarget(ASpaceObject* target);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void SettingInteraction(const ASpaceObject* target) const;
 #pragma endregion
 
 #pragma region Components & Variables
-protected:
+private:
 	APlayerShip* ControlledPawn;
+	ASpaceObject* tObj;
 
 	FVector mousePositionInWorld;
 	FVector mouseDirectionInWorld;
@@ -110,7 +114,6 @@ protected:
 	FCollisionObjectQueryParams traceObjectParams;
 	FCollisionQueryParams traceParams;
 	FHitResult hitResult;
-	ASpaceObject* tObj;
 	FVector warpLocation;
 #pragma endregion
 };

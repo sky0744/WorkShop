@@ -1,3 +1,39 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:be8406eb71e9660567ca11697430fe8fadb3625a4606caee4347e4c7145df8ac
-size 853
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "ProjectNausForBP.h"
+#include "Collectable.h"
+
+
+// This function does not need to be modified.
+UCollectable::UCollectable(const class FObjectInitializer& ObjectInitializer)
+: Super(ObjectInitializer)
+{
+}
+
+// Add default functionality here for any ICollectable functions that are not pure virtual 
+
+
+void ICollectable::SetResource(float durability, FItem ore) {
+	unimplemented();
+	return;
+}
+
+float ICollectable::GetResourceAmount() {
+	unimplemented();
+	return -1.0f;
+}
+
+float ICollectable::GetResourceDurability() {
+	unimplemented();
+	return -1.0f;
+}
+
+float ICollectable::GetResourceDef() {
+	unimplemented();
+	return -1.0f;
+}
+
+FItem ICollectable::CollectResource(float miningPerfomance) {
+	unimplemented();
+	return FItem();
+}

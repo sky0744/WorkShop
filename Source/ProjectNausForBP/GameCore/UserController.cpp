@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ProjectNausForBP.h"
 #include "UserController.h"
@@ -77,8 +77,6 @@ void AUserController::SetupInputComponent() {
 }
 #pragma endregion
 
-
-#pragma region Input Binding
 #pragma region Input Binding - Action
 void AUserController::ControlCamReset() {
 	//GEngine->AddOnScreenDebugMessage(-1, 0.0333f, FColor::Yellow, "Control Roll : " + FString::SanitizeFloat(value));
@@ -160,43 +158,9 @@ void AUserController::ClickReleaseMouseLeft(FKey key) {
 		, traceObjectParams
 		, traceParams);
 
-	if (hitResult.bBlockingHit) {
-		if (hitResult.Actor->IsA(ASpaceObject::StaticClass())) {
-
-			ASpaceObject* _tempObj = Cast<ASpaceObject>(hitResult.Actor.Get());
-			FColor _peerColor;
-
-			if (ControlledPawn == _tempObj)
-				return;
-
-			if (tObj == nullptr || tObj != _tempObj) {
-				tObj = _tempObj;
-				switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction())) {
-				case Peer::Neutral:
-					_peerColor = FColor::Yellow;
-					break;
-				case Peer::Friendship:
-					_peerColor = FColor::Green;
-					break;
-				case Peer::Enemy:
-					_peerColor = FColor::Red;
-					break;
-				case Peer::TempHold:
-					_peerColor = FColor::Blue;
-					break;
-				default:
-					_peerColor = FColor::White;
-					break;
-				}
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUITarget(tObj, _peerColor, 5.0f);
-			}
-			else if (tObj == _tempObj) 
-				tObj = nullptr;
-			else
-				return;
-
-			UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseLeft] Click Object : %s"), *hitResult.Actor.Get()->GetName());
-		}
+	if (hitResult.bBlockingHit &&hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) {
+		SetTarget(Cast<ASpaceObject>(hitResult.Actor.Get()));
+		UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseLeft] Click Object : %s"), *hitResult.Actor.Get()->GetName());
 	}
 }
 
@@ -232,18 +196,8 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 		, traceObjectParams
 		, traceParams);
 
-	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) {
-		ASpaceObject* _tempObj = Cast<ASpaceObject>(hitResult.Actor.Get());
-		FColor peerColor;
-
-		if (ControlledPawn == _tempObj)
-			return;
-
-		if (tObj == _tempObj)
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIInteraction(hitResult.Actor.Get(), tObj->GetObjectType());
-
-		UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseright] Click Object : %s"), *hitResult.Actor.Get()->GetName());
-	}
+	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) 
+		SettingInteraction(Cast<ASpaceObject>(hitResult.Actor.Get()));
 	else {
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIInteraction();
 		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
@@ -258,7 +212,7 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 #pragma endregion
 
 #pragma region player flow control
-void AUserController::PlayerInterAction(InteractionType interaction) {
+void AUserController::PlayerInterAction(const InteractionType interaction) {
 
 	ICommandable* _pObj;
 	if (!ControlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
@@ -266,7 +220,7 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 	_pObj = Cast<ICommandable>(ControlledPawn);
 
 	TScriptInterface<IStructureable> _sObj;
-	TScriptInterface<ICollectable> _cObj;
+	AResource* _resource;
 
 	_pObj->CommandStop();
 
@@ -295,15 +249,13 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 		_pObj->CommandJump(_sObj);
 		break;
 	case InteractionType::Warp:
-		//warpLocation
+		_pObj->CommandWarp( USafeENGINE::CheckLocationMovetoTarget(ControlledPawn, tObj, 500.0f) );
 		break;
 	case InteractionType::Collect:
-		if (!tObj->GetClass()->ImplementsInterface(UCollectable::StaticClass()))
+		if (!tObj->IsA(AResource::StaticClass()))
 			return;
-
-		_cObj.SetObject(tObj);
-		_cObj.SetInterface(Cast<ICollectable>(tObj));
-		_pObj->CommandMining(_cObj);
+		_resource = Cast<AResource>(tObj);
+		_pObj->CommandMining(_resource);
 		break;
 	case InteractionType::Repair:
 		_pObj->CommandRepair(tObj);
@@ -313,7 +265,7 @@ void AUserController::PlayerInterAction(InteractionType interaction) {
 	}
 }
 
-bool AUserController::SetWarpLocation(FVector location) {
+bool AUserController::SetWarpLocation(const FVector location) {
 	//if location is invaild / too far(out of normal zone), cancel setting warp location.
 	if (FVector::Dist(FVector::ZeroVector, location) > 500000.0f)
 		return false;
@@ -322,19 +274,62 @@ bool AUserController::SetWarpLocation(FVector location) {
 	return true;
 }
 
-bool AUserController::ToggleTargetModule(int slotIndex) {
-	ICommandable* _possessPawn = Cast<ICommandable>(ControlledPawn);
-	return _possessPawn->CommandToggleTargetModule(slotIndex, tObj);
+bool AUserController::ToggleTargetModule(const int slotIndex) {
+	return ControlledPawn->ToggleTargetModule(slotIndex, tObj);
 }
 
-bool AUserController::ToggleActiveModule(int slotIndex) {
-	ICommandable* _possessPawn = Cast<ICommandable>(ControlledPawn);
-	return _possessPawn->CommandToggleActiveModule(slotIndex);
+bool AUserController::ToggleActiveModule(const int slotIndex) {
+	return ControlledPawn->ToggleActiveModule(slotIndex);
 }
 
-ASpaceObject* AUserController::GetTargetInfo() {
-	if(tObj != ControlledPawn)
+ASpaceObject* AUserController::GetTargetInfo() const {
+
+	if(USafeENGINE::IsValid(tObj) && tObj != ControlledPawn)
 		return tObj;
 	else return nullptr;
+}
+
+void AUserController::SetTarget(ASpaceObject* target) {
+
+	if (target->IsA(ASpaceObject::StaticClass())) {
+
+		FColor _peerColor;
+		if (ControlledPawn == target)
+			return;
+
+		if (!USafeENGINE::IsValid(tObj) || tObj != target) {
+			tObj = target;
+			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction(), false)) {
+			case Peer::Neutral:
+				_peerColor = FColor::Yellow;
+				break;
+			case Peer::Friendship:
+				_peerColor = FColor::Green;
+				break;
+			case Peer::Enemy:
+				_peerColor = FColor::Red;
+				break;
+			case Peer::TempHold:
+				_peerColor = FColor::Blue;
+				break;
+			default:
+				_peerColor = FColor::White;
+				break;
+			}
+			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUITarget(tObj, _peerColor, 5.0f);
+		} else if (tObj == target)
+			tObj = nullptr;
+		else
+			return;
+	}
+}
+
+void AUserController::SettingInteraction(const ASpaceObject* target) const {
+	
+	FColor peerColor;
+	if (ControlledPawn == target)
+		return;
+	if (tObj == target)
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIInteraction(tObj, tObj->GetObjectType());
 }
 #pragma endregion

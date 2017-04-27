@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c0b21a1fac87f0492d38df07f287f67278fb5619a7292c09b3a85d4a98a9ee8e
-size 539
+{
+	"FileVersion": 3,
+	"EngineAssociation": "4.14",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "ProjectNausForBP",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"AIModule",
+				"CoreUObject"
+			]
+		}
+	],
+	"Plugins": [
+	],
+	"TargetPlatforms": [
+		"WindowsNoEditor"
+	]
+}

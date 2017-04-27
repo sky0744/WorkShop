@@ -1,6 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
+
 #include "ProjectNausForBP.h"
 #include "Ship.h"
 
@@ -29,6 +30,7 @@ AShip::AShip()
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
+	npcShipID = -1;
 }
 
 #pragma region Event Calls
@@ -49,12 +51,14 @@ void AShip::Tick(float DeltaTime)
 	if (checkTime > 0.5f) {
 		checkTime = 0.0f;
 
+		currentShield = FMath::Clamp(currentShield + rechargeShield * 0.5f, 0.0f, maxShield);
+		currentArmor = FMath::Clamp(currentArmor + repairArmor * 0.5f, 0.0f, maxArmor);
+		currentHull = FMath::Clamp(currentHull + repairHull * 0.5f, 0.0f, maxHull);
+		currentPower = FMath::Clamp(currentPower + rechargePower * 0.5f, 0.0f, maxPower);
+
 		CheckPath();
 		ModuleCheck();
 	}
-
-	currentShield = FMath::Clamp(currentShield + rechargeShield * DeltaTime, 0.0f, maxShield);
-	currentPower = FMath::Clamp(currentPower + rechargePower * DeltaTime, 0.0f, maxPower);
 
 	switch (behaviorState) {
 	case BehaviorState::Idle:
@@ -68,15 +72,12 @@ void AShip::Tick(float DeltaTime)
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
-			targetObject = nullptr;
 			bIsStraightMove = true;
 			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
 		}
-		break;
-	case BehaviorState::Battle:
 		break;
 	case BehaviorState::Warping:
 		break;
@@ -88,9 +89,15 @@ void AShip::Tick(float DeltaTime)
 }
 
 float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	if (!DamageCauser->IsA(ASpaceObject::StaticClass()))
+	Faction _dealingFaction;
+
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		_dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		_dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
-	
+
 	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
 
 	float effectShieldDamage = 0.0f;
@@ -104,16 +111,19 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	hitDirect = hitResult.ImpactPoint - GetActorLocation();
 	hitDirect.Normalize();
 
-	ASpaceObject* aObj = Cast<ASpaceObject>(DamageCauser);
-
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %f %f %f"), currentShield, currentArmor, currentHull);
 	if (FVector::DotProduct(GetActorForwardVector(), hitDirect) > 0.95f) {
 		remainDamage *= 2.0f;
 		isCritical = true;
-	}
-	else if (FVector::DotProduct(GetActorForwardVector(), hitDirect) < -0.95f) {
+	} else if (FVector::DotProduct(GetActorForwardVector(), hitDirect) < -0.95f) {
 		remainDamage *= 3.0f;
 		isCritical = true;
+	}
+
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (USafeENGINE::IsValid(_spaceState)) {
+		if (_dealingFaction != Faction::Player)
+			_spaceState->ChangeRelationship(faction, _dealingFaction, false, -FMath::Sqrt(DamageAmount) * 0.005f);
 	}
 
 	//remainDamage = sDefShield.GetValue();
@@ -121,92 +131,89 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		effectShieldDamage = remainDamage;
 		currentShield -= remainDamage;
 		remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		effectShieldDamage = currentShield;
 		remainDamage -= effectShieldDamage;
 		currentShield = 0.0f;
 	}
-
+	//remainDamage = sDefArmor.GetValue();
 	if (currentArmor > remainDamage) {
 		effectArmorDamage = remainDamage;
 		currentArmor -= remainDamage;
 		remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		effectArmorDamage = currentArmor;
 		remainDamage -= effectArmorDamage;
 		currentArmor = 0.0f;
 	}
-
+	//remainDamage = sDefHull.GetValue();
 	if (currentHull > remainDamage) {
 		effectHullDamage = remainDamage;
 		currentHull -= remainDamage;
 		remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		effectHullDamage = currentHull;
 		currentHull = 0.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, this->GetName() + " is Die!");
-		Destroy();
 
-		if (aObj->GetFaction() == Faction::Player && bounty > 0.0f)
-			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->ChangeCredit(bounty);
-		
-		/*Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->factionRelation[(uint8)faction * 12 + (uint8)aObj->GetFaction()] -= strategyPoint * 0.00005f;
-		
-		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-		if (_tempInstance == nullptr)
-			return effectShieldDamage + effectArmorDamage + effectHullDamage;
-		FNPCData _tempNpcShipData = _tempInstance->GetNPCData(npcShipID);
+		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+		if (_dealingFaction == Faction::Player && USafeENGINE::IsValid(_userState)) {
+			if (bounty > 0.0f)
+				_userState->ChangeCredit(bounty);
 
-		for (int index = 0; index < cargo.Num(); index++) 
-			cargo[index].itemAmount = FMath::TruncToInt(cargo[index].itemAmount * FMath::RandRange(0.0f, 1.0f));
+			uint8 _peerResult = (uint8)_spaceState->PeerIdentify(faction, _dealingFaction, true);
+			//Ï†ÑÎûµ Ìè¨Ïù∏Ìä∏Ïùò 0.1%(Ï†ÅÎåÄ Ïò§Î∏åÏ†ùÌä∏ ÌååÍ¥¥) / -0.5%(Ïö∞Ìò∏ Ïò§Î∏åÏ†ùÌä∏ ÌååÍ¥¥)Î•º Î™ÖÏÑ±Ïóê Î∞òÏòÅ
+			if (_peerResult < 2)
+				_userState->ChangeRenown(strategyPoint * 0.001f);
+			else if(_peerResult > 4)
+				_userState->ChangeRenown(-strategyPoint * 0.005f);
 
-		int temp = FMath::Min3(_tempNpcShipData.dropItems.Num(), _tempNpcShipData.dropChance.Num(), _tempNpcShipData.dropRandomAmount.Num());
-		cargo.Reserve(temp + cargo.Num());
-		for (int index = 0; index < temp; index++) {
-			if (_tempNpcShipData.dropChance[index] < FMath::RandRange(0.0f, 100.0f))
-				continue;
-			cargo.Emplace(FItem(_tempNpcShipData.cargoItems[index].itemID, FMath::Max(0, _tempNpcShipData.cargoItems[index].itemAmount - FMath::RandRange(_tempNpcShipData.havingRandomAmount[index], _tempNpcShipData.havingRandomAmount[index]))));
+			//Ïπ¥Í≥† ÎìúÎûç
+			ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(), 
+				FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			
+			_cargoContanier->SetCargoFromData(ObjectType::Ship, npcShipID);
+			UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
 		}
-		cargo.Shrink();
-		*/
+		Destroy();
 	}
-
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectShieldDamage, effectArmorDamage, effectHullDamage, isCritical ? TEXT("Critical") : TEXT("Non Critical"));
 
 	return effectShieldDamage + effectArmorDamage + effectHullDamage;
 }
 
 void AShip::BeginDestroy() {
+	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
+		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	}
+
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
 
 #pragma region SpaceObject Inheritance
-int AShip::GetObjectID() {
+int AShip::GetObjectID() const {
 	return npcShipID;
 }
 
-ObjectType AShip::GetObjectType() {
+ObjectType AShip::GetObjectType() const {
 	return ObjectType::Ship;
 }
 
-Faction AShip::GetFaction() {
+Faction AShip::GetFaction() const {
 	return faction;
 }
 
-void AShip::SetFaction(Faction setFaction) {
+void AShip::SetFaction(const Faction setFaction) {
 	faction = setFaction;
 }
 
-BehaviorState AShip::GetBehaviorState() {
+BehaviorState AShip::GetBehaviorState() const {
 	return behaviorState;
 }
 
-bool AShip::InitObject(int npcID) {
+bool AShip::InitObject(const int npcID) {
 	if (isInited == true || npcID < 0)
 		return false;
 
@@ -216,6 +223,40 @@ bool AShip::InitObject(int npcID) {
 
 	FNPCData _tempNpcShipData = _tempInstance->GetNPCData(npcID);
 	FShipData _tempShipData = _tempInstance->GetShipData(_tempNpcShipData.ShipID);
+	FItemData _tempModuleData;
+
+	npcShipID = _tempNpcShipData.NPCID;
+	objectName = _tempNpcShipData.Name;
+
+	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
+	objectMesh->SetStaticMesh(newMesh);
+
+	shipClass = _tempShipData.Shipclass;
+	faction = _tempNpcShipData.faction;
+	behaviorType = _tempNpcShipData.behaviorType;
+	lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f); ;
+
+	int tempModuleSlotNumber = FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num());
+	slotTargetModule.Empty();
+	for (int index = 0; index < tempModuleSlotNumber; index++) {
+		_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
+		if (_tempModuleData.Type == ItemType::TargetModule) {
+			slotTargetModule[index].moduleID = _tempModuleData.ItemID;
+			slotTargetModule[index].moduleType = _tempModuleData.ModuleType;
+			slotTargetModule[index].maxCooltime = _tempModuleData.MaxCooltime;
+			slotTargetModule[index].maxUsagePower = _tempModuleData.MaxUsagePower;
+			slotTargetModule[index].incrementUsagePower = _tempModuleData.IncrementUsagePower;
+			slotTargetModule[index].decrementUsagePower = _tempModuleData.DecrementUsagePower;
+
+			slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
+			slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
+			slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
+			slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
+
+			slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo[FMath::RandRange(0, _tempModuleData.UsageAmmo.Num() - 1)], FMath::RandRange(0, _tempModuleData.AmmoCapacity));
+			slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
+		}
+	}
 
 	if (&_tempNpcShipData == nullptr || &_tempShipData == nullptr)
 		return false;
@@ -224,126 +265,166 @@ bool AShip::InitObject(int npcID) {
 	strategyPoint = _tempNpcShipData.strategyPoint;
 	bounty = _tempNpcShipData.npcBounty;
 
-	maxShield = FMath::Clamp(_tempShipData.Shield * (1.0f + FMath::Clamp(_tempShipData.BonusShield + _tempNpcShipData.BonusShield, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield * (1.0f + FMath::Clamp(_tempShipData.BonusShieldRecharge + _tempNpcShipData.BonusShieldRecharge, 0.0f, 5.0f)), 0.0f, 500.0f);
-	defShield = FMath::Clamp(_tempShipData.DefShield * (1.0f + FMath::Clamp(_tempShipData.BonusShieldDef + _tempNpcShipData.BonusShieldDef, 0.0f, 5.0f)), 0.0f, 1000.0f);
+	maxShield = FMath::Clamp(_tempShipData.Shield, 10.0f, 1000000.0f);
+	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield, 0.0f, 500.0f);
+	defShield = FMath::Clamp(_tempShipData.DefShield, 0.0f, 1000.0f);
 	currentShield = maxShield;
 
-	maxArmor = FMath::Clamp(_tempShipData.Armor * (1.0f + FMath::Clamp(_tempShipData.BonusArmor + _tempNpcShipData.BonusArmor, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	repairArmor = FMath::Clamp(_tempShipData.RepairArmor * (1.0f + FMath::Clamp(_tempShipData.BonusArmor + _tempNpcShipData.BonusArmor, 0.0f, 5.0f)), 0.0f, 500.0f);
-	defArmor = FMath::Clamp(_tempShipData.DefArmor * (1.0f + FMath::Clamp(_tempShipData.BonusArmorDef + _tempNpcShipData.BonusArmorDef, 0.0f, 5.0f)), 0.0f, 1000.0f);
+	maxArmor = FMath::Clamp(_tempShipData.Armor, 10.0f, 1000000.0f);
+	repairArmor = FMath::Clamp(_tempShipData.RepairArmor, 0.0f, 500.0f);
+	defArmor = FMath::Clamp(_tempShipData.DefArmor, 0.0f, 1000.0f);
 	currentArmor = maxArmor;
 
-	maxHull = FMath::Clamp(_tempShipData.Hull * (1.0f + FMath::Clamp(_tempShipData.BonusHull + _tempNpcShipData.BonusHull, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	repairHull = FMath::Clamp(_tempShipData.RepairHull * (1.0f + FMath::Clamp(_tempShipData.BonusHull + _tempNpcShipData.BonusHull, 0.0f, 5.0f)), 0.0f, 500.0f);
-	defHull = FMath::Clamp(_tempShipData.DefHull * (1.0f + FMath::Clamp(_tempShipData.BonusHullDef + _tempNpcShipData.BonusHullDef, 0.0f, 5.0f)), 0.0f, 1000.0f);
+	maxHull = FMath::Clamp(_tempShipData.Hull, 10.0f, 1000000.0f);
+	repairHull = FMath::Clamp(_tempShipData.RepairHull, 0.0f, 500.0f);
+	defHull = FMath::Clamp(_tempShipData.DefHull, 0.0f, 1000.0f);
 	currentHull = maxHull;
 
-	maxPower = FMath::Clamp(_tempShipData.Power * (1.0f + FMath::Clamp(_tempShipData.BonusPower + _tempNpcShipData.BonusPower, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-	rechargePower = FMath::Clamp(_tempShipData.RechargePower * (1.0f + FMath::Clamp(_tempShipData.BonusPowerRecharge + _tempNpcShipData.BonusPowerRecharge, 0.0f, 5.0f)), 0.0f, 5000.0f);
+	maxPower = FMath::Clamp(_tempShipData.Power, 10.0f, 1000000.0f);
+	rechargePower = FMath::Clamp(_tempShipData.RechargePower, 0.0f, 5000.0f);
 	currentPower = maxPower;
 
-	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed * (1.0f + FMath::Clamp(_tempShipData.BonusMobilitySpeed + _tempNpcShipData.BonusMobilitySpeed, 0.0f, 5.0f)), 0.0f, 10000.0f);
-	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityAcceleration + _tempNpcShipData.BonusMobilityAcceleration, 0.0f, 5.0f)), 0.0f, 10000.0f);
-	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityAcceleration + _tempNpcShipData.BonusMobilityAcceleration, 0.0f, 5.0f)), 0.0f, 10000.0f);
+	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, 0.0f, 10000.0f);
+	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, 0.0f, 10000.0f);
+	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 10000.0f);
 	startAccelAngle = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 180.0f);
 
-	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityRotation + _tempNpcShipData.BonusMobilityRotation, 0.0f, 5.0f)), 0.0f, 90.0f);
-	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityRotation + _tempNpcShipData.BonusMobilityRotation, 0.0f, 5.0f)), 0.0f, 90.0f);
-	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate * (1.0f + FMath::Clamp(_tempShipData.BonusMobilityRotation + _tempNpcShipData.BonusMobilityRotation, 0.0f, 5.0f)), 0.0f, 90.0f);
+	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
+	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
+	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
 
-	int temp = FMath::Min3(_tempNpcShipData.cargoItems.Num(), _tempNpcShipData.havingChance.Num(), _tempNpcShipData.havingRandomAmount.Num());
-	cargo.Reserve(temp);
-	for (int index = 0; index < temp; index++) {
-		if (_tempNpcShipData.havingChance[index] < FMath::RandRange(0.0f, 100.0f))
-			continue;
-		cargo.Emplace(FItem(_tempNpcShipData.cargoItems[index].itemID, FMath::Max(0, _tempNpcShipData.cargoItems[index].itemAmount - FMath::RandRange(_tempNpcShipData.havingRandomAmount[index], _tempNpcShipData.havingRandomAmount[index]))));
-	}
-	cargo.Shrink();
+	for (FBonusStat& bonusStat : _tempShipData.bonusStats) {
 
-	FItemData _tempModuleData;
-	bonusCannonLifeTime = FMath::Clamp(_tempNpcShipData.BonusCannonLifeTime + _tempShipData.BonusCannonLifeTime, 0.0f, 5.0f);
-	bonusRailGunLifeTime = FMath::Clamp(_tempNpcShipData.BonusRailGunLifeTime + _tempShipData.BonusRailGunLifeTime, 0.0f, 5.0f);
-	bonusMissileLifeTime = FMath::Clamp(_tempNpcShipData.BonusMissileLifeTime + _tempShipData.BonusMissileLifeTime, 0.0f, 5.0f);
-
-	if (!isInited) {
-		npcShipID = _tempNpcShipData.ShipID;
-		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-		objectMesh->SetStaticMesh(newMesh);
-
-		shipClass = _tempShipData.Shipclass;
-		faction = _tempNpcShipData.faction;
-		behaviorType = _tempNpcShipData.behaviorType;
-		lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f); ;
-
-		int tempModuleSlotNumber = FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num());
-		slotTargetModule.Empty();
-		for (int index = 0; index < tempModuleSlotNumber; index++) {
-			_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
-			if (_tempModuleData.Type == ItemType::TargetModule) {
-				slotTargetModule[index].moduleID = _tempModuleData.ItemID;
-				slotTargetModule[index].moduleType = _tempModuleData.ModuleType;
-				slotTargetModule[index].maxCooltime = _tempModuleData.MaxCooltime;
-				slotTargetModule[index].maxUsagePower = _tempModuleData.MaxUsagePower;
-				slotTargetModule[index].incrementUsagePower = _tempModuleData.IncrementUsagePower;
-				slotTargetModule[index].decrementUsagePower = _tempModuleData.DecrementUsagePower;
-
-				slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
-				slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
-				slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
-
-				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo, 0);
-				slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
-
-				switch (_tempModuleData.ModuleType) {
-				case ModuleType::Beam:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusBeamDamage + _tempShipData.BonusBeamDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - _tempNpcShipData.BonusBeamPower + _tempShipData.BonusBeamPower, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusBeamCoolTime + _tempShipData.BonusBeamCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusBeamAccaucy + _tempShipData.BonusBeamAccaucy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusBeamRange + _tempShipData.BonusBeamRange, 0.0f, 5.0f);
-					break;
-				case ModuleType::Cannon:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusCannonDamage + _tempShipData.BonusCannonDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusCannonCoolTime + _tempShipData.BonusCannonCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusCannonAccaucy + _tempShipData.BonusCannonAccaucy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusCannonLaunchVelocity + _tempShipData.BonusCannonLaunchVelocity, 0.0f, 5.0f);
-					break;
-				case ModuleType::Railgun:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusRailGunDamage + _tempShipData.BonusRailGunDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - _tempNpcShipData.BonusRailGunPower + _tempShipData.BonusRailGunPower, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusRailGunCoolTime + _tempShipData.BonusRailGunCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusRailGunAccuracy + _tempShipData.BonusRailGunAccuracy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusRailGunLaunchVelocity + _tempShipData.BonusRailGunLaunchVelocity, 0.0f, 5.0f);
-					break;
-				case ModuleType::MissileLauncher:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusMissileDamage + _tempShipData.BonusMissileDamage, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.BonusMissileCoolTime + _tempShipData.BonusMissileCoolTime, 0.0f, 5.0f);
-					slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + _tempNpcShipData.BonusMissileAccuracy + _tempShipData.BonusMissileAccuracy, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.BonusMissileLaunchVelocity + _tempShipData.BonusMissileLaunchVelocity, 0.0f, 5.0f);
-					break;
-				case ModuleType::MinerLaser:
-					slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.MiningBonusAmount + _tempShipData.MiningBonusAmount, 0.0f, 5.0f);
-					slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - _tempNpcShipData.MiningBonusPower + _tempShipData.MiningBonusPower, 0.0f, 5.0f);
-					slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - _tempNpcShipData.MiningBonusRof + _tempShipData.MiningBonusRof, 0.0f, 5.0f);
-					slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + _tempNpcShipData.MiningBonusRange + _tempShipData.MiningBonusRange, 0.0f, 5.0f);
-					break;
-				default:
-					break;
+		switch (bonusStat.bonusStatType) {
+		case BonusStatType::BonusMaxShield:
+			maxShield = FMath::Clamp(maxShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRechargeShield:
+			rechargeShield = FMath::Clamp(rechargeShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusDefShield:
+			defShield = FMath::Clamp(defShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMaxArmor:
+			maxArmor = FMath::Clamp(maxArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRepaireArmor:
+			repairArmor = FMath::Clamp(repairArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusDefArmor:
+			defArmor = FMath::Clamp(defArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMaxHull:
+			maxHull = FMath::Clamp(maxHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRepaireHull:
+			repairHull = FMath::Clamp(repairHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusDefHull:
+			defHull = FMath::Clamp(defHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMaxPower:
+			maxPower = FMath::Clamp(maxPower * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			break;
+		case BonusStatType::BonusRechargePower:
+			rechargePower = FMath::Clamp(rechargePower * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			break;
+		case BonusStatType::BonusMobilitySpeed:
+			maxSpeed = FMath::Clamp(maxSpeed * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 10000.0f);
+			break;
+		case BonusStatType::BonusMobilityAcceleration:
+			maxAcceleration = FMath::Clamp(maxAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			minAcceleration = FMath::Clamp(minAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			break;
+		case BonusStatType::BonusMobilityRotation:
+			maxRotateRate = FMath::Clamp(maxRotateRate * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			break;
+		case BonusStatType::BonusMobilityRotateAcceleration:
+			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			break;
+		default:
+			for (int index = 0; index < slotTargetModule.Num(); index++) {
+				if (slotTargetModule[index].moduleID > 0) {
+					switch (slotTargetModule[index].moduleType) {
+					case ModuleType::Beam:
+						if (bonusStat.bonusStatType == BonusStatType::BonusBeamDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamPower)
+							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						slotTargetModule[index].ammoLifeSpanBonus = FMath::Clamp(slotTargetModule[index].ammoLifeSpanBonus, 0.0f, slotTargetModule[index].maxCooltime);
+						break;
+					case ModuleType::Cannon:
+						if (bonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::Railgun:
+						if (bonusStat.bonusStatType == BonusStatType::BonusRailGunDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunPower)
+							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::MissileLauncher:
+						if (bonusStat.bonusStatType == BonusStatType::BonusMissileDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					case ModuleType::MinerLaser:
+						if (bonusStat.bonusStatType == BonusStatType::BonusMiningAmount)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningPower)
+							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
+						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						break;
+					default:
+						break;
+					}
 				}
 			}
+			break;
 		}
 	}
-	AddActorWorldOffset(FVector(0.0f, 0.0f, 0.0f));
 	return true;
 }
 
-bool AShip::LoadBaseObject(float shield, float armor, float hull, float power) {
+bool AShip::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
 	
 	return true;
 }
 
-float AShip::GetValue(GetStatType statType) {
+float AShip::GetValue(const GetStatType statType) const {
 	float _value;
 	
 	switch (statType) {
@@ -415,24 +496,18 @@ float AShip::GetValue(GetStatType statType) {
 	case GetStatType::minAcceleration:
 		_value = minAcceleration;
 		break;
-	case GetStatType::currentAcceleration:
-		_value = accelerationFactor;
-		break;
 
 	case GetStatType::maxRotateRate:
 		_value = maxRotateRate;
 		break;
-	case GetStatType::currentRotateRate:
-		_value = rotateRateFactor;
-		break;
 	default:
-		_value = -1;
+		_value = 0.0f;
 		break;
 	}
 	return _value;
 }
 
-void AShip::GetRepaired(GetStatType statType, float repairValue) {
+void AShip::GetRepaired(const GetStatType statType, float repairValue) {
 
 	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
 	switch (statType) {
@@ -455,12 +530,13 @@ void AShip::GetRepaired(GetStatType statType, float repairValue) {
 void AShip::CommandStop() {
 
 	behaviorState = BehaviorState::Idle;
-	setedTargetSpeed = 0.0f;
+	targetSpeed = 0.0f;
 	targetRotateRateFactor = 0.0f;
 	bIsStraightMove = false;
 }
 
 bool AShip::CommandMoveToPosition(FVector position) {
+
 	if (CheckCanBehavior() == true) {
 		
 		moveTargetVector = position;
@@ -468,14 +544,13 @@ bool AShip::CommandMoveToPosition(FVector position) {
 		bIsStraightMove = true;
 		RequestPathUpdate();
 		behaviorState = BehaviorState::Move;
-
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, lengthToLongAsix);
 		return true;
 	}
 	else return false;
 }
 
 bool AShip::CommandMoveToTarget(ASpaceObject* target) {
+
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		bIsStraightMove = true;
@@ -487,17 +562,22 @@ bool AShip::CommandMoveToTarget(ASpaceObject* target) {
 }
 
 bool AShip::CommandAttack(ASpaceObject* target) {
+
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
 		behaviorState = BehaviorState::Battle;
+
+		for (FTargetModule& module : slotTargetModule) 
+			module.moduleState = ModuleState::Activate;
 		return true;
 	}
 	else return false;
 }
 
-bool AShip::CommandMining(TScriptInterface<ICollectable> target) {
+bool AShip::CommandMining(AResource* target) {
+
 	if (CheckCanBehavior() == true) {
-		targetCollect = target;
+		targetObject = target;
 		behaviorState = BehaviorState::Mining;
 		return true;
 	}
@@ -505,275 +585,429 @@ bool AShip::CommandMining(TScriptInterface<ICollectable> target) {
 }
 
 bool AShip::CommandRepair(ASpaceObject* target) {
-	if (CheckCanBehavior() == true) {
-		TArray<bool> isRepairableModuleInSlot;
-		//for(int index = 0; slotTargetModule.Num(); index++)
-		//	slotTargetModule[index]
-		switch (target->GetObjectType()) {
 
-		case ObjectType::Station:
-		case ObjectType::Ship:
-		case ObjectType::Drone:
-		case ObjectType::Gate:
-			targetObject = target;
-		}
-		return true;
-	}
-	else return false;
+	return false;
 }
 
 bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
+
 	if (CheckCanBehavior() == true) {
-		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->Jump(target->GetDestinationName());
+		Destroy();
 		return true;
 	}
 	else return false;
 }
 
 bool AShip::CommandWarp(FVector location) {
+
 	if (CheckCanBehavior() == true) {
-		return true;
-	}
-	else return false;
-}
-
-bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
-	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Request : %s"), *target.GetObjectRef()->GetName());
-		if (target->RequestedDock(Faction::Player)) {
-			targetStructure = target;
-			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
-			bIsStraightMove = true;
-			RequestPathUpdate();
-			behaviorState = BehaviorState::Docking;
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
-			return true;
-		}
-		else {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Rejected. Order Cancel."));
-			return false;
-		}
-	}
-	else return false;
-}
-
-bool AShip::CommandUndock() {
-	if (behaviorState == BehaviorState::Docked) {
-		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(nullptr);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIStationButton();
-		bIsStraightMove = true;
+		SetActorLocation(location, false, nullptr, ETeleportType::TeleportPhysics);
 		behaviorState = BehaviorState::Idle;
 		return true;
 	}
 	else return false;
 }
 
-bool AShip::CommandLaunch(TArray<int> baySlot) {
-	if (CheckCanBehavior() == true) {
+bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
+
+	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
+		if (target->RequestedDock(Faction::Player)) {
+			targetStructure = target;
+			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
+			bIsStraightMove = true;
+			RequestPathUpdate();
+			behaviorState = BehaviorState::Docking;
+			return true;
+		}
+		else return false;
+	}
+	else return false;
+}
+
+bool AShip::CommandUndock() {
+
+	if (behaviorState == BehaviorState::Docked) {
+		bIsStraightMove = true;
+		targetObject = nullptr;
+		behaviorState = BehaviorState::Idle;
 		return true;
 	}
 	else return false;
 }
 
-/*
-* ≈∏∞‘∆√ ∏µ‚¿« µø¿€¿ª ¡¶æÓ. «√∑π¿ÃæÓ ¿¸øÎ.
-* @param slotIndex - ≈∏∞‘∆√ ∏µ‚ ΩΩ∑‘ π¯»£.
-* @return √≥∏Æ »ƒ¿« ∏µ‚ µø¿€ ªÛ≈¬.
-*/
-bool AShip::CommandToggleTargetModule(int slotIndex, ASpaceObject* target) {
-	if (target == nullptr || target == this) 
-		return false;
-
-	//≈∏∞‘∆√ ∏µ‚ø° «—«ÿº≠∏∏( < ModuleType::ShieldGenerator ) «‘ºˆ √≥∏Æ
-	if (slotIndex < slotTargetModule.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
-		//«ˆ¿Á ∏µ‚¿Ã »∞º∫»≠µ«æÓ ¿÷¿ª ∞ÊøÏ -> ¿€µø ¡ﬂ¡ˆ øπæ‡, «ˆ¿Á ƒ—¡Æ¿÷¥¬ ªÛ≈¬¿”¿ª ∏Æ≈œ
-		if (slotTargetModule[slotIndex].moduleState != ModuleState::NotActivate) {
-			slotTargetModule[slotIndex].isBookedForOff = true;
-			return true;
-		}
-
-		else {
-			//«ˆ¿Á ≤®¡Æ¿÷¥¬ ªÛ≈¬
-			switch (slotTargetModule[slotIndex].moduleType) {
-			case ModuleType::Beam:
-			case ModuleType::TractorBeam:
-			case ModuleType::MinerLaser:
-				//∏µ‚¿Ã ∫ˆ ∞Ëø≠¿Œ ∞ÊøÏ
-				if (target == nullptr)
-					return false;
-				slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
-				slotTargetModule[slotIndex].isBookedForOff = false;
-				slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-				targetingObject[slotIndex] = target;
-				return true;
-				break;
-			case ModuleType::Cannon:
-			case ModuleType::Railgun:
-			case ModuleType::MissileLauncher:
-				//∏µ‚¿Ã Ω«≈∫ ∞Ëø≠¿Œ ∞ÊøÏ, ∏µ‚¿ª »∞º∫»≠«œ±‚ ¿Ã¿¸ø° ammo ªÛ≈¬∏¶ »Æ¿Œ
-				if (slotTargetModule[slotIndex].ammo.itemAmount < 1) {
-					USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-					AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-					FItemData _tempModuleData = _tempInstance->GetItemData(slotTargetModule[slotIndex].moduleID);
-					TArray<FItem> _tempItemSlot;
-					int _findSlot;
-
-					userState->GetUserDataItem(_tempItemSlot);
-					_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
-
-					//ammo∏¶ ƒ´∞Ì ∏ÆΩ∫∆Æø°º≠ √£æ“¿Ω.
-					if (_findSlot > -1) {
-						slotTargetModule[slotIndex].moduleState = ModuleState::ReloadAmmo;
-						targetingObject[slotIndex] = target;
-						slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-					}
-				}
-				else if (target != nullptr) {
-					slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
-					targetingObject[slotIndex] = target;
-					slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
-				}
-				slotTargetModule[slotIndex].isBookedForOff = false;
-				return true;
-				break;
-			default:
-				return false;
-				break;
-			}
-		}
-	}
-	for (int index = 0; index < slotTargetModule.Num(); index++)
-		slotTargetModule[index].moduleState = ModuleState::NotActivate;
-	return false;
-}
-
-/*
-* æ◊∆º∫Í ∏µ‚¿« µø¿€¿ª ¡¶æÓ.
-* @param slotIndex - ≈∏∞‘∆√ ∏µ‚ ΩΩ∑‘ π¯»£.
-* @return √≥∏Æ »ƒ¿« ∏µ‚ µø¿€ ªÛ≈¬.
-*/
-bool AShip::CommandToggleActiveModule(int slotIndex) {
-
+bool AShip::CommandLaunch(const TArray<int>& baySlot) {
 	return false;
 }
 #pragma endregion
 
 #pragma region Functions
-
-BehaviorType AShip::GetBehaviorType() {
+BehaviorType AShip::GetBehaviorType() const {
 	return behaviorType;
 }
 
-ShipClass AShip::GetShipClass() {
+ShipClass AShip::GetShipClass() const {
 	return shipClass;
 }
 
+void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) const {
+	getStructure = targetStructure;
+}
+
 bool AShip::MoveDistanceCheck() {
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+		realMoveFactor = targetVector - GetActorLocation();
+		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
+	} else {
+		if (targetObject != nullptr)
+			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
 
-	FRotator _targetRotate;
-	FVector _realMoveFactor;
-	float _distance;
+		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 
-	if (targetObject != nullptr) {
-		moveTargetVector = targetObject->GetActorLocation();
-		_realMoveFactor = moveTargetVector - GetActorLocation();
-		_distance = FVector::Dist(GetActorLocation(), moveTargetVector) - lengthToLongAsix - targetObject->GetValue(GetStatType::halfLength);
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
+		moveTargetVector -= GetActorLocation();
+		moveTargetVector.Normalize();
+		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
+		DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
+		if (wayPoint.Num() > currentClosedPathIndex)
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return false;
+
+		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
+			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+			if (wayPoint.Num() > index + 1)
+				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
+		}
 	}
-	else {
-		_realMoveFactor = moveTargetVector - GetActorLocation();
-		_distance = FVector::Dist(FVector::ZeroVector, _realMoveFactor);
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
-	}
+	targetVector.Z = 0.0f;
 
+	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
 
 	//checks distance and Angle For start Acceleration.
-	if (_distance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
-		if (FMath::Abs(_targetRotate.Yaw) < startAccelAngle)
-			setedTargetSpeed = targetSpeed;
-		else
-			setedTargetSpeed = 0.0f;
-	}
-	else setedTargetSpeed = 0.0f;
+	if (nextPointDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+		if (FMath::Abs(targetRotate.Yaw) < startAccelAngle)
+			targetSpeed = maxSpeed;
+		else targetSpeed = 0.0f;
+	} else targetSpeed = 0.0f;
 
 	//arrive to Destination. use upper of Nyquist Rate for high precision.
-	if (_distance < currentSpeed * tempDeltaTime * 50.0f) {
-		setedTargetSpeed = 0.0f;
+	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
+	
+	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+		targetSpeed = 0.0f;
+		currentClosedPathIndex = 0;
+		bIsStraightMove = false;
 		return true;
 	}
+	//arrive to Destination not yet.
+	return false;
+}
 
+void AShip::RotateCheck() {
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+	} else {
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, wayPoint.Num() - 1);
+		if (wayPoint.IsValidIndex(currentClosedPathIndex))
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return;
+	}
+	targetVector.Z = 0;
+
+	realMoveFactor = targetVector - GetActorLocation();
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
+
+	if (nextPointOuter > 0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = maxRotateRate;
+		else
+			targetRotateRateFactor = 0.0f;
+	} else if (nextPointOuter < -0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = -maxRotateRate;
+		else
+			targetRotateRateFactor = 0.0f;
+	} else targetRotateRateFactor = 0.0f;
+}
+
+void AShip::Movement() {
+
+	if (targetRotateRateFactor > 0.0f) {
+		if (realRotateRateFactor >= 0.0f) {
+			if (targetRotateRateFactor > realRotateRateFactor)
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateAcceleration * tempDeltaTime, 0.0f, targetRotateRateFactor);
+			else
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, targetRotateRateFactor, maxRotateRate);
+		} else
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, 0.0f);
+	} else if (targetRotateRateFactor < 0.0f) {
+		if (realRotateRateFactor <= 0.0f) {
+			if (targetRotateRateFactor > realRotateRateFactor)
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, targetRotateRateFactor);
+			else
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateAcceleration * tempDeltaTime, targetRotateRateFactor, 0.0f);
+		} else
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
+	} else {
+
+		if (realRotateRateFactor < 0.0f)
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, 0.0f);
+		else
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
+	}
+
+	if (currentSpeed < targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed + maxAcceleration * tempDeltaTime, 0.0f, targetSpeed);
+	else if (currentSpeed > targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed - minAcceleration * tempDeltaTime, 0.0f, maxSpeed);
+
+	AddActorLocalRotation(FRotator(0.0f, realRotateRateFactor, 0.0f) * tempDeltaTime);
+	AddActorWorldOffset(GetActorForwardVector() * currentSpeed * tempDeltaTime, true);
+}
+
+void AShip::ModuleCheck() {
+
+	moduleConsumptPower = 0.0f;
+
+	for (int index = 0; index < slotTargetModule.Num(); index++) {
+		//ÏóêÎÑàÏßÄÍ∞Ä Î∂ÄÏ°±Ìï† Í≤ΩÏö∞ Î™®Îì† Î™®ÎìàÏùò ÎèôÏûëÏùÑ Ï§ëÏßÄ ÏòàÏïΩ.
+		if (currentPower < 5.0f)
+			slotTargetModule[index].isBookedForOff = true;
+
+		//Î™®ÎìàÏù¥ ÏºúÏ†∏ÏûàÏùÑ Í≤ΩÏö∞ power ÏÜåÎ™®Îüâ Ï¶ùÍ∞Ä Î∞è Ïø®ÌÉÄÏûÑ ÏßÄÏÜç Í∞êÏÜå
+		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
+				0.0f, slotTargetModule[index].maxUsagePower);
+			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+
+			//Ïø®ÌÉÄÏûÑ ÏôÑÎ£åÏãú ÌñâÎèô Ïã§Ïãú
+			if (slotTargetModule[index].remainCooltime <= 0.0f) {
+				switch (slotTargetModule[index].moduleState) {
+				case ModuleState::Activate:
+				case ModuleState::Overload:
+					if (targetObject != nullptr && targetObject != this) {
+						//Î™©Ìëú ÏßÄÏ†ê Î∞è Î∞©Ìñ• Í≥ÑÏÇ∞
+						FVector _targetedLocation = targetObject->GetActorLocation();
+						FVector _targetedDirect = _targetedLocation - GetActorLocation();
+						_targetedDirect.Normalize();
+						FRotator _targetedRotation = _targetedDirect.Rotation();
+
+						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
+							+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
+
+						//ÎπîÍ≥ÑÏó¥ Î™®ÎìàÏùò Í≤ΩÏö∞
+						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
+							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
+
+							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
+								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+							if (_beam == nullptr)
+								return;
+							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
+
+							if (targetObject->IsA(ASpaceObject::StaticClass()))
+								_beam->SetBeamProperty(this, targetObject, slotTargetModule[index].launchSpeedMultiple,
+									slotTargetModule[index].moduleType, slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+							else slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						}
+						//ÌÉÑÎèÑ Î¨¥Í∏∞Î•òÏùò Í≤ΩÏö∞
+						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
+							slotTargetModule[index].moduleType == ModuleType::Railgun ||
+							slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
+
+							if (slotTargetModule[index].ammo.itemAmount < 1) {
+								slotTargetModule[index].moduleState = ModuleState::ReloadAmmo;
+								slotTargetModule[index].isBookedForOff = false;
+							} else {
+								slotTargetModule[index].ammo.itemAmount--;
+
+								AProjectiles* _projectile = Cast<AProjectiles>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AProjectiles::StaticClass(),
+									_spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
+								if (_projectile == nullptr)
+									return;
+								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
+
+								switch (slotTargetModule[index].moduleType) {
+								case ModuleType::Cannon:
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+									break;
+								case ModuleType::Railgun:
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+									break;
+								case ModuleType::MissileLauncher:
+									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus, targetObject);
+									break;
+								}
+							}
+						}
+					} else {
+						slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						targetObject = nullptr;
+						slotTargetModule[index].isBookedForOff = false;
+					}
+					break;
+				case ModuleState::ReloadAmmo:
+					if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
+						slotTargetModule[index].moduleType == ModuleType::Railgun ||
+						slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
+
+						//Ïû¨Ïû•Ï†Ñ Ïã§Ïãú. Î™®Îìà ÎèôÏûëÏùÄ Ïû¨Ïû•Ï†ÑÏù¥ ÏôÑÎ£åÎêòÎ©¥ ÏûêÎèôÏúºÎ°ú ÏãúÏûë.
+							slotTargetModule[index].ammo.itemAmount = slotTargetModule[index].ammoCapacity;
+							if (targetObject != nullptr)
+								slotTargetModule[index].moduleState = ModuleState::Activate;
+							else 
+								slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						 
+						slotTargetModule[index].isBookedForOff = false;
+					}
+					break;
+				default:
+					break;
+				}
+
+				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
+				//Î™®Îìà ÎèôÏûë Ï§ëÏßÄ ÏòàÏïΩÏù¥ ÌôúÏÑ±ÌôîÎêòÏñ¥ ÏûàÎã§Î©¥ ÎèôÏûë Ï§ëÏßÄ.
+				if (slotTargetModule[index].isBookedForOff) {
+					slotTargetModule[index].moduleState = ModuleState::NotActivate;
+					targetObject = nullptr;
+					slotTargetModule[index].isBookedForOff = false;
+				}
+			}
+		}
+		//Î™®ÎìàÏù¥ Í∫ºÏ†∏ÏûàÏùÑ Í≤ΩÏö∞ power ÏÜåÎ™®Îüâ Í∞êÏÜå
+		else
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
+				0.0f, slotTargetModule[index].maxUsagePower);
+		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
+	}
+}
+
+/*
+bool AShip::MoveDistanceCheck() {
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+		realMoveFactor = targetVector - GetActorLocation();
+		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
+	} else {
+		if (targetObject != nullptr) {
+			moveTargetVector = targetObject->GetActorLocation();
+			remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
+		} else remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+
+		moveTargetVector -= GetActorLocation();
+		moveTargetVector.Normalize();
+		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
+		DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
+		if (wayPoint.Num() > currentClosedPathIndex)
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return false;
+
+		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
+			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+			if (wayPoint.Num() > index + 1)
+				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
+		}
+	}
+	targetVector.Z = 0;
+
+	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+
+	//checks distance and Angle For start Acceleration.
+	if (nextPointDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+		if (FMath::Abs(targetRotate.Yaw) < startAccelAngle)
+			targetSpeed = maxSpeed;
+		else targetSpeed = 0.0f;
+	} else targetSpeed = 0.0f;
+
+	//arrive to Destination. use upper of Nyquist Rate for high precision.
+	if (!bIsStraightMove && nextPointDistance < currentSpeed * tempDeltaTime * 20.0f) {
+		UE_LOG(LogClass, Log, TEXT("Closed Path Point Arrive. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
+		UE_LOG(LogClass, Log, TEXT("index++. currentClosedPathIndex : %d, Count of WayPoints : %d"), currentClosedPathIndex, wayPoint.Num());
+	}
+
+	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+		targetSpeed = 0.0f;
+		currentClosedPathIndex = 0;
+		bIsStraightMove = false;
+		return true;
+	}
 	//arrive to Destination not yet.
 	return false;
 }
 
 void AShip::RotateCheck() {
 
-	FRotator _targetRotate;
-	FVector _realMoveFactor;
-	float resultOuter;
-
-	if (targetObject != nullptr) {
-		_realMoveFactor = targetObject->GetActorLocation() - GetActorLocation();
-		_realMoveFactor.Normalize();
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
+	if (bIsStraightMove) {
+		targetVector = moveTargetVector;
+	} else {
+		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, wayPoint.Num() - 1);
+		if (wayPoint.IsValidIndex(currentClosedPathIndex))
+			targetVector = wayPoint[currentClosedPathIndex];
+		else return;
 	}
-	else {
-		_realMoveFactor = moveTargetVector - GetActorLocation();
-		_targetRotate = _realMoveFactor.Rotation() - GetActorRotation();
-	}
-	resultOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), _realMoveFactor));
-	_targetRotate.Normalize();
+	targetVector.Z = 0;
 
-	if (resultOuter > 0.01f) {
-		if (FMath::Abs(_targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
-			targetRotateRateFactor = maxRotateRate * rotateRateFactor;
+	realMoveFactor = targetVector - GetActorLocation();
+	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+
+	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
+
+	if (nextPointOuter > 0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = maxRotateRate;
 		else
 			targetRotateRateFactor = 0.0f;
-	}
-	//left on side, rotate left
-	else if (resultOuter < -0.01f) {
-		if (FMath::Abs(_targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
-			targetRotateRateFactor = maxRotateRate * rotateRateFactor;
+	} else if (nextPointOuter < -0.01f) {
+		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+			targetRotateRateFactor = -maxRotateRate;
 		else
 			targetRotateRateFactor = 0.0f;
-	}
-	else targetRotateRateFactor = 0.0f;
+	} else targetRotateRateFactor = 0.0f;
 }
 
 void AShip::Movement() {
 	if (targetRotateRateFactor > 0.0f) {
 		if (realRotateRateFactor >= 0.0f) {
 			if (targetRotateRateFactor > realRotateRateFactor)
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateAcceleration * tempDeltaTime, 0.0f, targetRotateRateFactor);
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateAcceleration * tempDeltaTime, 0.0f, targetRotateRateFactor);
 			else
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateDeceleration * tempDeltaTime, targetRotateRateFactor, maxRotateRate * rotateRateFactor);
-		}
-		else {
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateDeceleration * tempDeltaTime, -maxRotateRate * rotateRateFactor, 0.0f);
-		}
-	}
-	else if (targetRotateRateFactor < 0.0f) {
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, targetRotateRateFactor, maxRotateRate);
+		} else 
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, 0.0f);
+	} else if (targetRotateRateFactor < 0.0f) {
 		if (realRotateRateFactor <= 0.0f) {
 			if (targetRotateRateFactor > realRotateRateFactor)
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateDeceleration * tempDeltaTime, -maxRotateRate * rotateRateFactor, targetRotateRateFactor);
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, -maxRotateRate, targetRotateRateFactor);
 			else
-				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateAcceleration * tempDeltaTime, targetRotateRateFactor, 0.0f);
-		}
-		else {
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate * rotateRateFactor);
-		}
-	}
-	else {
+				realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateAcceleration * tempDeltaTime, targetRotateRateFactor, 0.0f);
+		} else 
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
+	} else {
 		if (realRotateRateFactor < 0.0f)
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateRateFactor * rotateDeceleration * tempDeltaTime, -maxRotateRate * rotateRateFactor, 0.0f);
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor + rotateDeceleration * tempDeltaTime, maxRotateRate, 0.0f);
 		else
-			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateRateFactor * rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate * rotateRateFactor);
+			realRotateRateFactor = FMath::Clamp(realRotateRateFactor - rotateDeceleration * tempDeltaTime, 0.0f, maxRotateRate);
 	}
 
-	if (currentSpeed < setedTargetSpeed)
-		currentSpeed = FMath::Clamp(currentSpeed + accelerationFactor * maxAcceleration * tempDeltaTime, 0.0f, setedTargetSpeed);
-	else if (currentSpeed > setedTargetSpeed)
-		currentSpeed = FMath::Clamp(currentSpeed - accelerationFactor * minAcceleration * tempDeltaTime, 0.0f, maxSpeed );
+	if (currentSpeed < targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed + accelerationFactor * maxAcceleration* tempDeltaTime, 0.0f, targetSpeed);
+	else if (currentSpeed > targetSpeed)
+		currentSpeed = FMath::Clamp(currentSpeed - accelerationFactor * minAcceleration* tempDeltaTime, 0.0f, maxSpeed);
 
 	AddActorLocalRotation(FRotator(0.0f, realRotateRateFactor, 0.0f) * tempDeltaTime);
 	AddActorWorldOffset(GetActorForwardVector() * currentSpeed * tempDeltaTime, true);
@@ -782,30 +1016,30 @@ void AShip::Movement() {
 void AShip::ModuleCheck() {
 	/*
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
-		//ø°≥ ¡ˆ∞° ∫Œ¡∑«“ ∞ÊøÏ ∏µÁ ∏µ‚¿« µø¿€¿ª ¡ﬂ¡ˆ øπæ‡.
+		//ÏóêÎÑàÏßÄÍ∞Ä Î∂ÄÏ°±Ìï† Í≤ΩÏö∞ Î™®Îì† Î™®ÎìàÏùò ÎèôÏûëÏùÑ Ï§ëÏßÄ ÏòàÏïΩ.
 		if (sCurrentPower < 5.0f)
 			slotTargetModule[index].isBookedForOff = true;
 
-		//∏µ‚¿Ã ƒ—¡Æ¿÷¿ª ∞ÊøÏ power º“∏∑Æ ¡ı∞° π◊ ƒ≈∏¿” ¡ˆº” ∞®º“
+		//Î™®ÎìàÏù¥ ÏºúÏ†∏ÏûàÏùÑ Í≤ΩÏö∞ power ÏÜåÎ™®Îüâ Ï¶ùÍ∞Ä Î∞è Ïø®ÌÉÄÏûÑ ÏßÄÏÜç Í∞êÏÜå
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
 			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
-			//ƒ≈∏¿” øœ∑·Ω√ «‡µø Ω«Ω√
+			//Ïø®ÌÉÄÏûÑ ÏôÑÎ£åÏãú ÌñâÎèô Ïã§Ïãú
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
 					if (targetingObject[index] != nullptr && targetingObject[index] != this) {
-						//∏Ò«• ¡ˆ¡° π◊ πÊ«‚ ∞ËªÍ
+						//Î™©Ìëú ÏßÄÏ†ê Î∞è Î∞©Ìñ• Í≥ÑÏÇ∞
 						FVector _targetedLocation = targetingObject[index]->GetActorLocation();
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
 						FTransform _spawnedTransform = FTransform(_targetedRotation, GetActorLocation() + _targetedDirect * lengthToLongAsix);
 
-						//∫ˆ∞Ëø≠ ∏µ‚¿« ∞ÊøÏ
+						//ÎπîÍ≥ÑÏó¥ Î™®ÎìàÏùò Í≤ΩÏö∞
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
 							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
 
@@ -822,7 +1056,7 @@ void AShip::ModuleCheck() {
 								_beam->SetBeamProperty(this, _beam->GetActorLocation() + _targetedDirect * slotTargetModule[index].launchSpeedMultiple,
 									true, slotTargetModule[index].damageMultiple, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 						}
-						//≈∫µµ π´±‚∑˘¿« ∞ÊøÏ
+						//ÌÉÑÎèÑ Î¨¥Í∏∞Î•òÏùò Í≤ΩÏö∞
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
 							slotTargetModule[index].moduleType == ModuleType::Railgun ||
 							slotTargetModule[index].moduleType == ModuleType::MissileLauncher) {
@@ -882,11 +1116,11 @@ void AShip::ModuleCheck() {
 						_findSlot = USafeENGINE::FindItemSlot(_tempItemSlot, FItem(_tempModuleData.UsageAmmo, 0));
 
 
-						//ammo∏¶ √£¡ˆ ∏¯«œø¥¿Ω. ¿Á¿Â¿¸ π◊ ∏µ‚ µø¿€ Ω«Ω√«œ¡ˆ æ ¿Ω.
+						//ammoÎ•º Ï∞æÏßÄ Î™ªÌïòÏòÄÏùå. Ïû¨Ïû•Ï†Ñ Î∞è Î™®Îìà ÎèôÏûë Ïã§ÏãúÌïòÏßÄ ÏïäÏùå.
 						if (_findSlot < 0)
 							slotTargetModule[index].moduleState = ModuleState::NotActivate;
 
-						//ammo∏¶ √£¿Ω. ¿Á¿Â¿¸ Ω«Ω√. ∏µ‚ µø¿€¿∫ ¿Á¿Â¿¸¿Ã øœ∑·µ«∏È ¿⁄µø¿∏∑Œ Ω√¿€.
+						//ammoÎ•º Ï∞æÏùå. Ïû¨Ïû•Ï†Ñ Ïã§Ïãú. Î™®Îìà ÎèôÏûëÏùÄ Ïû¨Ïû•Ï†ÑÏù¥ ÏôÑÎ£åÎêòÎ©¥ ÏûêÎèôÏúºÎ°ú ÏãúÏûë.
 						else {
 							_reloadedAmount = FMath::Min(_tempItemSlot[_findSlot].itemAmount, slotTargetModule[index].ammoCapacity - slotTargetModule[index].ammo.itemAmount);
 							if (userState->DropPlayerCargo(FItem(_tempItemSlot[_findSlot].itemID, _reloadedAmount))) {
@@ -902,7 +1136,7 @@ void AShip::ModuleCheck() {
 								}
 							}
 							else {
-								//ammo∏¶ √£æ“¿∏≥™ ¿Â¿¸ø° Ω«∆–.
+								//ammoÎ•º Ï∞æÏïòÏúºÎÇò Ïû•Ï†ÑÏóê Ïã§Ìå®.
 								UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Reload Fail!"));
 								slotTargetModule[index].moduleState = ModuleState::NotActivate;
 							}
@@ -916,7 +1150,7 @@ void AShip::ModuleCheck() {
 				}
 
 				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
-				//∏µ‚ µø¿€ ¡ﬂ¡ˆ øπæ‡¿Ã »∞º∫»≠µ«æÓ ¿÷¥Ÿ∏È µø¿€ ¡ﬂ¡ˆ.
+				//Î™®Îìà ÎèôÏûë Ï§ëÏßÄ ÏòàÏïΩÏù¥ ÌôúÏÑ±ÌôîÎêòÏñ¥ ÏûàÎã§Î©¥ ÎèôÏûë Ï§ëÏßÄ.
 				if (slotTargetModule[index].isBookedForOff) {
 					UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Target Module %d - Off."), index);
 					slotTargetModule[index].moduleState = ModuleState::NotActivate;
@@ -924,15 +1158,15 @@ void AShip::ModuleCheck() {
 				}
 			}
 		}
-		//∏µ‚¿Ã ≤®¡Æ¿÷¿ª ∞ÊøÏ power º“∏∑Æ ∞®º“
+		//Î™®ÎìàÏù¥ Í∫ºÏ†∏ÏûàÏùÑ Í≤ΩÏö∞ power ÏÜåÎ™®Îüâ Í∞êÏÜå
 		else
 			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
 				0.0f, slotTargetModule[index].maxUsagePower);
 		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
-	}*/
-}
+	}
+}*/
 
-bool AShip::CheckCanBehavior() {
+bool AShip::CheckCanBehavior() const {
 	switch (behaviorState)
 	{
 	case BehaviorState::Docked:
@@ -960,10 +1194,10 @@ void AShip::CheckPath() {
 
 	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix + 10.0f)
 		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, frontTraceResult, true);
+		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix + 10.0f)
 		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, frontTraceResult, true);
+		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 
 	bIsStraightMove = !bMoveTargetHited;
 	if (!(!bMoveTargetHited || !bFrontHited))
