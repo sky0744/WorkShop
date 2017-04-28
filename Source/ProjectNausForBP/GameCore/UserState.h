@@ -8,9 +8,10 @@
 #include "../GameCoreSub/SaveLoader.h"
 #include "UserState.generated.h"
 
-
-
-
+#pragma region Constant Value UserState Type - Real
+const int _define_SkillLevelMIN = 0;
+const int _define_SkillLevelMAX = 5;
+#pragma endregion
 UCLASS()
 class PROJECTNAUSFORBP_API AUserState : public APlayerState
 {

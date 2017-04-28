@@ -4,8 +4,6 @@
 #include "ProjectNausForBP.h"
 #include "SafeENGINE.h"
 
-#define limitHalfSizeSector 99000.0f
-
 USafeENGINE::USafeENGINE() {
 	static ConstructorHelpers::FObjectFinder<UDataTable> _ShipDataTable(TEXT("DataTable'/Game/DataTable/ShipData.ShipData'"));
 	ShipData = _ShipDataTable.Object;
@@ -170,7 +168,7 @@ bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dro
 			UE_LOG(LogClass, Log, TEXT("[DropCargo][Find] %d"), itemList.Num());
 		}
 		else if (itemList[_slotIndex].itemAmount == dropItem.itemAmount) {
-			itemList.RemoveAt(_slotIndex);
+			itemList.RemoveAtSwap(_slotIndex);
 			UE_LOG(LogClass, Log, TEXT("[DropCargo][Delete] %d"), itemList.Num());
 		}
 		else {
@@ -198,7 +196,7 @@ bool USafeENGINE::CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkil
 }
 
 float USafeENGINE::CheckDistanceConsiderSize(const ASpaceObject* actor1, const ASpaceObject* actor2) {
-	if (actor1 == nullptr || actor2 == nullptr)
+	if (!IsValid(actor1) || !IsValid(actor2))
 		return 0.0f;
 
 	float _realDistance = FVector::Dist(actor1->GetActorLocation(), actor2->GetActorLocation());
@@ -209,26 +207,27 @@ float USafeENGINE::CheckDistanceConsiderSize(const ASpaceObject* actor1, const A
 }
 
 FVector USafeENGINE::CheckLocationMovetoTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance) {
-	if (requestor == nullptr || target == nullptr)
+	if (!IsValid(requestor) || !IsValid(target))
 		return FVector::ZeroVector;
 
 	FVector _location = target->GetActorLocation();
 	FVector _directiveVector = _location - requestor->GetActorLocation();
 	_directiveVector.Normalize();
 
-	distance += requestor->GetValue(GetStatType::halfLength);
-	distance += target->GetValue(GetStatType::halfLength);
+	distance -= requestor->GetValue(GetStatType::halfLength);
+	distance -= target->GetValue(GetStatType::halfLength);
+	distance = FMath::Max(distance, 0.0f);
 
 	_location -= _directiveVector * distance;
-	_location.X = FMath::Clamp(_location.X, -limitHalfSizeSector, limitHalfSizeSector);
-	_location.Y = FMath::Clamp(_location.Y, -limitHalfSizeSector, limitHalfSizeSector);
+	_location.X = FMath::Clamp(_location.X, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
+	_location.Y = FMath::Clamp(_location.Y, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
 	_location.Z = 0.0f;
 	
 	return _location;
 }
 
 FVector USafeENGINE::GetRandomLocationToTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance) {
-	if (requestor == nullptr || target == nullptr)
+	if (!IsValid(requestor) || !IsValid(target))
 		return FVector::ZeroVector;
 
 	FVector _location = target->GetActorLocation();
@@ -238,8 +237,8 @@ FVector USafeENGINE::GetRandomLocationToTarget(const ASpaceObject* requestor, co
 	distance += target->GetValue(GetStatType::halfLength);
 
 	_location -= _directiveVector * distance;
-	_location.X = FMath::Clamp(_location.X, -limitHalfSizeSector, limitHalfSizeSector);
-	_location.Y = FMath::Clamp(_location.Y, -limitHalfSizeSector, limitHalfSizeSector);
+	_location.X = FMath::Clamp(_location.X, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
+	_location.Y = FMath::Clamp(_location.Y, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
 	_location.Z = 0.0f;
 
 	return _location;
@@ -248,8 +247,8 @@ FVector USafeENGINE::GetRandomLocationToTarget(const ASpaceObject* requestor, co
 FVector USafeENGINE::GetRandomLocationToLocation(FVector location, float distance) {
 
 	FVector _directiveVector;
-	_directiveVector.X = FMath::FRandRange(-limitHalfSizeSector, limitHalfSizeSector);
-	_directiveVector.Y = FMath::FRandRange(-limitHalfSizeSector, limitHalfSizeSector);
+	_directiveVector.X = FMath::FRandRange(_define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
+	_directiveVector.Y = FMath::FRandRange(_define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
 	_directiveVector.Z = 0.0f;
 	_directiveVector.Normalize();
 
@@ -260,8 +259,8 @@ FVector USafeENGINE::GetRandomLocation(bool requestNormalizedVector) {
 
 	FVector _location;
 
-	_location.X = FMath::FRandRange(-limitHalfSizeSector, limitHalfSizeSector);
-	_location.Y = FMath::FRandRange(-limitHalfSizeSector, limitHalfSizeSector);
+	_location.X = FMath::FRandRange(_define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
+	_location.Y = FMath::FRandRange(_define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
 	_location.Z = 0.0f;
 
 	if (requestNormalizedVector)
@@ -272,8 +271,8 @@ FVector USafeENGINE::GetRandomLocation(bool requestNormalizedVector) {
 
 FVector USafeENGINE::GetLocationLimitedSector(FVector location) {
 	
-	location.X = FMath::Clamp(location.X, -limitHalfSizeSector, limitHalfSizeSector);
-	location.Y = FMath::Clamp(location.Y, -limitHalfSizeSector, limitHalfSizeSector);
+	location.X = FMath::Clamp(location.X, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
+	location.Y = FMath::Clamp(location.Y, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
 	location.Z = 0.0f;
 
 	return location;

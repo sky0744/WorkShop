@@ -187,6 +187,11 @@ enum class BonusStatType : uint8 {
 
 	BonusMaxPower			UMETA(DisplayName = "BonusMaxPower"),
 	BonusRechargePower		UMETA(DisplayName = "BonusRechargePower"),
+
+	BonusMaxRadarRange			UMETA(DisplayName = "MaxRadarRange"),
+	BonusMaxCPUPerfomance			UMETA(DisplayName = "BonusMaxCPUPerfomance"),
+	BonusMaxPowerGridPerfomance		UMETA(DisplayName = "BonusMaxPowerGridPerfomance"),
+	BonusMaxCargoSize		UMETA(DisplayName = "BonusMaxCargoSize"),
 	
 	BonusMobilitySpeed		UMETA(DisplayName = "BonusMobilitySpeed"),
 	BonusMobilityAcceleration	UMETA(DisplayName = "BonusMobilityAcceleration"),
@@ -204,7 +209,8 @@ enum class BonusStatType : uint8 {
 	BonusActiveAcceleration		UMETA(DisplayName = "BonusActiveAcceleration"),
 	BonusActiveRotation		UMETA(DisplayName = "BonusActiveRotation"),
 
-	BonusActiveUsagePower		UMETA(DisplayName = "BonusActiveUsagePower"),
+	BonusActiveModuleUsagePower		UMETA(DisplayName = "BonusActiveModuleUsagePower"),
+	BonusTargetModuleUsagePower		UMETA(DisplayName = "BonusTargetModuleUsagePower"),
 
 	BonusBeamDamage			UMETA(DisplayName = "BonusBeamDamage"),
 	BonusBeamPower			UMETA(DisplayName = "BonusBeamPower"),

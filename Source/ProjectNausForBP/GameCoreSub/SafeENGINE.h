@@ -9,6 +9,11 @@
  * 
  */
 
+#pragma region Constant Value SpaceObject Type
+const float _define_LimitSectorSizeMIN = -99000.0f;
+const float _define_LimitSectorSizeMAX = 99000.0f;
+#pragma endregion
+
 #pragma region Sub Data Structure in DataTable Set or Instance
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FNPCTradeData : public FTableRowBase
@@ -363,9 +368,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float ShipValue;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float lengthToLongAsix;
+		float LengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float lengthRader;
+		float LengthRadarRange;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float Shield;

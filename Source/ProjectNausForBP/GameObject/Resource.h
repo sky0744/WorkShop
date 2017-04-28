@@ -7,6 +7,20 @@
 #include "SpaceObject.h"
 #include "Resource.generated.h"
 
+#pragma region Constant Value Resource Type - Backup / Real
+/*
+const float _define_StatDamperMIN = 10.0f;
+const float _define_StatDamperMAX = 1000000.0f;
+const float _define_StatDefMIN = -1000.0f;
+const float _define_StatDefMAX = 1000.0f;
+
+const float _define_DamagedMin = 1.0f;
+const float _define_DamagedMAX = 10000.0f;
+*/
+const float _define_StatResourceAmountMIN = 0.0f;
+const float _define_StatResourceAmountMAX = 10000.0f;
+#pragma endregion
+
 UCLASS()
 class PROJECTNAUSFORBP_API AResource : public ASpaceObject
 {

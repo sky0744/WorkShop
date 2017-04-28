@@ -70,10 +70,9 @@ void APlayerShip::Tick(float DeltaTime)
 	tempDeltaTime = DeltaTime;
 	checkTime += DeltaTime;
 	if (checkTime > 0.5f) {
-		checkTime = 0.0f;
-
 		CheckPath();
-		ModuleCheck();
+		ModuleCheck(checkTime);
+		checkTime = 0.0f;
 	}
 
 	sCurrentHull = FMath::Clamp(sCurrentHull + FMath::Clamp((sRepairHull + moduleStatHullRepair), 0.0f, 500.0f) * DeltaTime, 0.0f, sMaxHull);
@@ -227,68 +226,57 @@ bool APlayerShip::InitObject(const int objectId) {
 		return false;
 
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] before init ID : %d, Init to ID : %d"), sShipID, objectId);
+	sShipID = objectId;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
-	if (sShipID != objectId) {
-		sShipID = objectId;
-		objectName = _tempShipData.Name;
-		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-		if (newMesh) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Mesh Generate!"));
-			objectMesh->SetStaticMesh(newMesh);
-		}
+	objectName = _tempShipData.Name;
+	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
+	if (newMesh) 
+		objectMesh->SetStaticMesh(newMesh);
+	slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
+	targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
+	slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
+	slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
+	slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
 
-		slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
-		targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
-		slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, 0, 8));
-		slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, 0, 8));
-		slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, 0, 8));
+	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Init Module Slots : %d, %d, %d, %d"), slotTargetModule.Num(), slotActiveModule.Num(), slotPassiveModule.Num(), slotSystemModule.Num());
 
-		slotTargetModule.Init(FTargetModule(), FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
-		targetingObject.Init(nullptr, FMath::Clamp(_tempShipData.SlotTarget, 0, 8));
-		slotActiveModule.Init(FActiveModule(), FMath::Clamp(_tempShipData.SlotActive, 0, 8));
-		slotPassiveModule.Init(0, FMath::Clamp(_tempShipData.SlotPassive, 0, 8));
-		slotSystemModule.Init(0, FMath::Clamp(_tempShipData.SlotSystem, 0, 8));
-		
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Init Module Slots : %d, %d, %d, %d"), slotTargetModule.Num(), slotActiveModule.Num(), slotPassiveModule.Num(), slotSystemModule.Num());
+	sMaxShield = FMath::Clamp(_tempShipData.Shield, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRechargeShield = FMath::Clamp(_tempShipData.RechargeShield, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	sDefShield = FMath::Clamp(_tempShipData.DefShield, _define_StatDefMIN, _define_StatDefMAX);
 
-		lengthToLongAsix = FMath::Clamp(_tempShipData.lengthToLongAsix, 10.0f, 10000.0f);
-		lengthRader = FMath::Clamp(_tempShipData.lengthRader, 10.0f, 100000.0f);
-	}
+	sMaxArmor = FMath::Clamp(_tempShipData.Armor, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRepairArmor = FMath::Clamp(_tempShipData.RepairArmor, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	sDefArmor = FMath::Clamp(_tempShipData.DefArmor, _define_StatDefMIN, _define_StatDefMAX);
 
-	sMaxShield = FMath::Clamp(_tempShipData.Shield, 10.0f, 10000000.0f);
-	sRechargeShield = FMath::Clamp(_tempShipData.RechargeShield, 0.0f, 500.0f);
-	sDefShield = FMath::Clamp(_tempShipData.DefShield, 0.0f, 1000.0f);
+	sMaxHull = FMath::Clamp(_tempShipData.Hull, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRepairHull = FMath::Clamp(_tempShipData.RepairHull, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	sDefHull = FMath::Clamp(_tempShipData.DefHull, _define_StatDefMIN, _define_StatDefMAX);
 
-	sMaxArmor = FMath::Clamp(_tempShipData.Armor, 10.0f, 10000000.0f);
-	sRepairArmor = FMath::Clamp(_tempShipData.RepairArmor, 0.0f, 500.0f);
-	sDefArmor = FMath::Clamp(_tempShipData.DefArmor, 0.0f, 1000.0f);
+	sMaxPower = FMath::Clamp(_tempShipData.Power, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRechargePower = FMath::Clamp(_tempShipData.RechargePower, _define_StatRestoreMIN, _define_StatRestoreMAX);
 
-	sMaxHull = FMath::Clamp(_tempShipData.Hull, 10.0f, 10000000.0f);
-	sRepairHull = FMath::Clamp(_tempShipData.RepairHull, 0.0f, 500.0f);
-	sDefHull = FMath::Clamp(_tempShipData.DefHull, 0.0f, 1000.0f);
+	sMaxCompute = FMath::Clamp(_tempShipData.Compute, _define_StatComputePerformanceMIN, _define_StatComputePerformanceMAX);
+	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
+	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
-	sMaxPower = FMath::Clamp(_tempShipData.Power, 10.0f, 10000000.0f);
-	sRechargePower = FMath::Clamp(_tempShipData.RechargePower, 0.0f, 500.0f);
+	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
+	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 
-	sMaxCompute = FMath::Clamp(_tempShipData.Compute, 0.0f, 100000.0f);
-	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, 0.0f, 100000.0f);
-	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, 50.0f, 1000000.0f);
+	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
+	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
+	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
+	sStartAccelAngle = FMath::Clamp(_tempShipData.StartAccelAngle, _define_StatRotateMIN, _define_StatRotateMAX);
 
-	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, 0.0f, 10000.0f);
-	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, 0.0f, 1000.0f);
-	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 1000.0f);
-	sStartAccelAngle = FMath::Clamp(_tempShipData.StartAccelAngle, 0.0f, 180.0f);
-
-	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
-	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, 0.0f, 90.0f);
-	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, 0.0f, 90.0f);
+	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 
 	if (TotalStatsUpdate() == false)
 		return false;
-	
+
 	return true;
 }
 
@@ -304,10 +292,7 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 		_value = lengthToLongAsix * 0.5f;
 		break;
 	case GetStatType::raderDistance:
-		_value = lengthRader;
-		break;
-	case GetStatType::engageDistance:
-		_value = lengthRader;
+		_value = lengthRadarRange;
 		break;
 	case GetStatType::maxShield:
 		_value = sMaxShield;
@@ -425,7 +410,7 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 
 void APlayerShip::GetRepaired(const GetStatType statType, float repairValue) {
 
-	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
+	repairValue = FMath::Clamp(repairValue, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	switch (statType) {
 	case GetStatType::currentShield:
 		sCurrentShield = FMath::Clamp(sCurrentShield + repairValue, 0.0f, sMaxShield);
@@ -457,36 +442,40 @@ bool APlayerShip::TotalStatsUpdate() {
 	TArray<FBonusStat> _tempbonusStats;
 	bool isFindSameAttribute = false;
 
-	UEnum* EnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("BonusStatType"), true);
-	_tempbonusStats.Reserve(EnumPtr->NumEnums());
+	sMaxShield = FMath::Clamp(_tempShipData.Shield, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRechargeShield = FMath::Clamp(_tempShipData.RechargeShield, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	sDefShield = FMath::Clamp(_tempShipData.DefShield, _define_StatDefMIN, _define_StatDefMAX);
 
-	sMaxShield = _tempShipData.Shield;
-	sRechargeShield = _tempShipData.RechargeShield;
-	sDefShield = _tempShipData.DefShield;
+	sMaxArmor = FMath::Clamp(_tempShipData.Armor, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRepairArmor = FMath::Clamp(_tempShipData.RepairArmor, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	sDefArmor = FMath::Clamp(_tempShipData.DefArmor, _define_StatDefMIN, _define_StatDefMAX);
 
-	sMaxArmor = _tempShipData.Armor;
-	sRepairArmor = _tempShipData.RepairArmor;
-	sDefArmor = _tempShipData.DefArmor;
+	sMaxHull = FMath::Clamp(_tempShipData.Hull, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRepairHull = FMath::Clamp(_tempShipData.RepairHull, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	sDefHull = FMath::Clamp(_tempShipData.DefHull, _define_StatDefMIN, _define_StatDefMAX);
 
-	sMaxHull = _tempShipData.Hull;
-	sRepairHull = _tempShipData.RepairHull;
-	sDefHull = _tempShipData.DefHull;
+	sMaxPower = FMath::Clamp(_tempShipData.Power, _define_StatDamperMIN, _define_StatDamperMAX);
+	sRechargePower = FMath::Clamp(_tempShipData.RechargePower, _define_StatRestoreMIN, _define_StatRestoreMAX);
 
-	sMaxPower = _tempShipData.Power;
-	sRechargePower = _tempShipData.RechargePower;
+	sMaxCompute = FMath::Clamp(_tempShipData.Compute, _define_StatComputePerformanceMIN, _define_StatComputePerformanceMAX);
+	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
+	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
-	sMaxSpeed = _tempShipData.MaxSpeed;
-	sMinAcceleration = _tempShipData.MinAcceleration;
-	sMaxAcceleration = _tempShipData.MaxAcceleration;
+	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
+	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 
-	sMaxRotateRate = _tempShipData.MaxRotateRate;
-	sRotateAcceleration = _tempShipData.rotateAcceleraion;
-	sRotateDeceleration = _tempShipData.rotateDeceleraion;
+	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
+	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
+	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
+	sStartAccelAngle = FMath::Clamp(_tempShipData.StartAccelAngle, _define_StatRotateMIN, _define_StatRotateMAX);
+
+	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 
 	for (int index = 0; index < slotPassiveModule.Num(); index++) {
 		if (slotPassiveModule[index] > 0) {
 			_tempModuleData = _tempInstance->GetItemData(slotPassiveModule[index]);
-
 			CheckPassiveTypeModule(_tempModuleData.StatType, _tempModuleData.BonusStatValue);
 		}
 	}
@@ -497,25 +486,17 @@ bool APlayerShip::TotalStatsUpdate() {
 		}
 	}
 
-	_tempbonusStats = _tempShipData.bonusStats;
+	
+	Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->GetUserDataSkill(_skillList);
+	_tempbonusStats.Reserve(_skillList.Num() + 20);
 	for (int index = 0; index < _skillList.Num(); index++) {
 		_tempSkillData = _tempInstance->GetSkillData(_skillList[index].skillID);
 		_skillList[index].skillLevel = FMath::Clamp(_skillList[index].skillLevel, 0, 5);
-
-
-		for (FBonusStat& stats : _tempbonusStats) {
-			if (stats.bonusStatType == _tempSkillData.BonusType) {
-				stats.bonusStat += _tempSkillData.BonusAmountPerLevel * _skillList[index].skillLevel;
-				isFindSameAttribute = true;
-				break;
-			}
-		}
-		if (isFindSameAttribute == false)
-			_tempbonusStats.Emplace(_tempSkillData.BonusType, _tempSkillData.BonusAmountPerLevel * _skillList[index].skillLevel);
+		_tempbonusStats.Emplace(FBonusStat(_tempSkillData.BonusType, _tempSkillData.BonusAmountPerLevel * _skillList[index].skillLevel));
 	}
-
-	for (FBonusStat& stats : _tempbonusStats) 
-		CheckBonusStat(stats.bonusStatType, stats.bonusStat);
+	_tempbonusStats.Shrink();
+	_tempbonusStats.Append(_tempShipData.bonusStats);
+	CheckBonusStat(_tempbonusStats);
 
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIShip();
 	UE_LOG(LogClass, Log, TEXT("Ship Totaly Init complete!"));
@@ -524,186 +505,294 @@ bool APlayerShip::TotalStatsUpdate() {
 
 void APlayerShip::CheckPassiveTypeModule(const BonusStatType type, float value) {
 	switch (type) {
-	case BonusStatType::BonusMaxShield:				sMaxShield = sMaxShield + value;			break;
-	case BonusStatType::BonusRechargeShield:		sRechargeShield = sRechargeShield + value;	break;
-	case BonusStatType::BonusDefShield:				sDefShield = sDefShield + value;			break;
-
-	case BonusStatType::BonusMaxArmor:				sMaxArmor = sMaxArmor + value;				break;
-	case BonusStatType::BonusRepaireArmor:			sRepairArmor = sRepairArmor + value;		break;
-	case BonusStatType::BonusDefArmor:				sDefArmor = sDefArmor + value;				break;
-
-	case BonusStatType::BonusMaxHull:				sMaxHull = sMaxHull + value;				break;
-	case BonusStatType::BonusRepaireHull:			sRepairHull = sRepairHull + value;			break;
-	case BonusStatType::BonusDefHull:				sDefHull = sDefHull + value;				break;
-
-	case BonusStatType::BonusMaxPower:				sMaxPower = sMaxPower + value;				break;
-	case BonusStatType::BonusRechargePower:			sRechargePower = sRechargePower + value;	break;
-
-	case BonusStatType::BonusMobilitySpeed:			sMaxSpeed = sMaxSpeed * (1.0f + value);	break;
-	case BonusStatType::BonusMobilityAcceleration:
-		sMinAcceleration = sMinAcceleration * (1.0f + value);
-		sMaxAcceleration = sMaxAcceleration * (1.0f + value);
+	case BonusStatType::BonusMaxShield:					
+		sMaxShield = FMath::Clamp(sMaxShield + value, _define_StatDamperMIN, _define_StatDamperMAX);
 		break;
-	case BonusStatType::BonusMobilityRotation:		sMaxRotateRate = sMaxRotateRate * (1.0f + value);	break;
+	case BonusStatType::BonusRechargeShield:			
+		sRechargeShield = FMath::Clamp(sRechargeShield + value, _define_StatRestoreMIN, _define_StatRestoreMAX);
+		break;
+	case BonusStatType::BonusDefShield:					
+		sDefShield = FMath::Clamp(sDefShield + value, _define_StatDefMIN, _define_StatDefMAX);
+		break;
+
+	case BonusStatType::BonusMaxArmor:					
+		sMaxArmor = FMath::Clamp(sMaxArmor + value, _define_StatDamperMIN, _define_StatDamperMAX);
+		break;
+	case BonusStatType::BonusRepaireArmor:				
+		sRepairArmor = FMath::Clamp(sRepairArmor + value, _define_StatRestoreMIN, _define_StatRestoreMAX);
+		break;
+	case BonusStatType::BonusDefArmor:					
+		sDefArmor = FMath::Clamp(sDefArmor + value, _define_StatDefMIN, _define_StatDefMAX);
+		break;
+
+	case BonusStatType::BonusMaxHull:					
+		sMaxHull = FMath::Clamp(sMaxHull + value, _define_StatDamperMIN, _define_StatDamperMAX);
+		break;
+	case BonusStatType::BonusRepaireHull:				
+		sRepairHull = FMath::Clamp(sRepairHull + value, _define_StatRestoreMIN, _define_StatRestoreMAX);
+		break;
+	case BonusStatType::BonusDefHull:					
+		sDefHull = FMath::Clamp(sDefHull + value, _define_StatDefMIN, _define_StatDefMAX);
+		break;
+
+	case BonusStatType::BonusMaxPower:					
+		sMaxPower = FMath::Clamp(sMaxPower + value, _define_StatDamperMIN, _define_StatDamperMAX);
+		break;
+	case BonusStatType::BonusRechargePower:				
+		sRechargePower = FMath::Clamp(sRechargePower + value, _define_StatRestoreMIN, _define_StatRestoreMAX);
+		break;
+
+	case BonusStatType::BonusMobilitySpeed:				
+		sMaxSpeed = FMath::Clamp(sMaxSpeed * (1.0f + value), _define_StatAccelMIN, _define_StatAccelMAX);
+		break;
+	case BonusStatType::BonusMobilityAcceleration:
+		sMinAcceleration = FMath::Clamp(sMinAcceleration * (1.0f + value), _define_StatAccelMIN, _define_StatAccelMAX);
+		sMaxAcceleration = FMath::Clamp(sMaxAcceleration * (1.0f + value), _define_StatAccelMIN, _define_StatAccelMAX);
+		break;
+	case BonusStatType::BonusMobilityRotation:			
+		sMaxRotateRate = FMath::Clamp(sMaxRotateRate * (1.0f + value), _define_StatRotateMIN, _define_StatRotateMAX);
+		break;
 	case BonusStatType::BonusMobilityRotateAcceleration:
-		sRotateAcceleration = sRotateAcceleration * (1.0f + value);
-		sRotateDeceleration = sRotateDeceleration * (1.0f + value);
+		sRotateAcceleration = FMath::Clamp(sRotateAcceleration * (1.0f + value), _define_StatRotateMIN, _define_StatRotateMAX);
+		sRotateDeceleration = FMath::Clamp(sRotateDeceleration * (1.0f + value), _define_StatRotateMIN, _define_StatRotateMAX);
+		break;
+	case BonusStatType::BonusMaxRadarRange:				
+		lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + value), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+		break;
+	case BonusStatType::BonusMaxCPUPerfomance:			
+		sMaxCompute = FMath::Clamp(sMaxCompute + value, _define_StatComputePerformanceMIN, _define_StatComputePerformanceMAX);
+		break;
+	case BonusStatType::BonusMaxPowerGridPerfomance:	
+		sMaxPowerGrid = FMath::Clamp(sMaxPowerGrid + value, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
+		break;
+	case BonusStatType::BonusMaxCargoSize:				
+		sMaxCargo = FMath::Clamp(sMaxCargo + value, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 		break;
 	default:
 		break;
 	}
 }
 
-void APlayerShip::CheckBonusStat(const BonusStatType type, float value) {
-	switch (type) {
-	case BonusStatType::BonusMaxShield:
-		sMaxShield = FMath::Clamp(sMaxShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-		break;
-	case BonusStatType::BonusRechargeShield:
-		sRechargeShield = FMath::Clamp(sRechargeShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
-		break;
-	case BonusStatType::BonusDefShield:
-		sDefShield = FMath::Clamp(sDefShield * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
-		break;
-	case BonusStatType::BonusMaxArmor:
-		sMaxArmor = FMath::Clamp(sMaxArmor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-		break;
-	case BonusStatType::BonusRepaireArmor:
-		sRepairArmor = FMath::Clamp(sRepairArmor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
-		break;
-	case BonusStatType::BonusDefArmor:
-		sDefArmor = FMath::Clamp(sDefArmor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
-		break;
-	case BonusStatType::BonusMaxHull:
-		sMaxHull = FMath::Clamp(sMaxHull * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-		break;
-	case BonusStatType::BonusRepaireHull:
-		sRepairHull = FMath::Clamp(sRepairHull * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
-		break;
-	case BonusStatType::BonusDefHull:
-		sDefHull = FMath::Clamp(sDefHull * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
-		break;
-	case BonusStatType::BonusMaxPower:
-		sMaxPower = FMath::Clamp(sMaxPower * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 10.0f, 1000000.0f);
-		break;
-	case BonusStatType::BonusRechargePower:
-		sRechargePower = FMath::Clamp(sRechargePower * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 500.0f);
-		break;
-	case BonusStatType::BonusMobilitySpeed:
-		sMaxSpeed = FMath::Clamp(sMaxSpeed * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 10000.0f);
-		break;
-	case BonusStatType::BonusMobilityAcceleration:
-		sMaxAcceleration = FMath::Clamp(sMaxAcceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
-		sMinAcceleration = FMath::Clamp(sMinAcceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
-		break;
-	case BonusStatType::BonusMobilityRotation:
-		sMaxRotateRate = FMath::Clamp(sMaxRotateRate * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 90.0f);
-		break;
-	case BonusStatType::BonusMobilityRotateAcceleration:
-		sRotateAcceleration = FMath::Clamp(sRotateAcceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 90.0f);
-		sRotateDeceleration = FMath::Clamp(sRotateDeceleration * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 90.0f);
-		break;
+void APlayerShip::CheckBonusStat(const TArray<FBonusStat>& bonusStatArray) {
 
-	case BonusStatType::BonusDroneBaseStats:
-		bonusDroneBaseStats = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
-		break;
-	case BonusStatType::BonusDroneControl:
-		bonusDroneDamage = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
-		break;
-	case BonusStatType::BonusDroneDamage:
-		bonusDroneRange = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
-		break;
-	case BonusStatType::BonusDroneRange:
-		bonusDroneSpeed = 1.0f + FMath::Clamp(value, 0.0f, 5.0f);
-		break;
-	case BonusStatType::BonusDroneSpeed:
-		bonusDroneControl = FMath::Clamp(value, 0.0f, 20.0f);
-		break;
+	float _bonusValue = 0.0f;
+	TArray<FBonusStat> _bonusStatsForWork = bonusStatArray;
 
-	default:
-		for (int index = 0; index < slotActiveModule.Num(); index++)
-			if (slotActiveModule[index].moduleID > 0 && slotActiveModule[index].moduleType == ModuleType::ShieldGenerator)
-				slotActiveModule[index].maxActiveModuleFactor = FMath::Clamp(slotActiveModule[index].maxActiveModuleFactor * (1.0f + FMath::Clamp(value, 0.0f, 5.0f)), 0.0f, 1000.0f);
-		for (int index = 0; index < slotTargetModule.Num(); index++) {
-			if (slotTargetModule[index].moduleID > 0) {
-				switch (slotTargetModule[index].moduleType) {
-				case ModuleType::Beam:
-					if (type == BonusStatType::BonusBeamDamage)
-						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusBeamPower)
-						slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusBeamCoolTime)
-						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusBeamAccuracy)
-						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusBeamRange)
-						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					slotTargetModule[index].ammoLifeSpanBonus = FMath::Clamp(slotTargetModule[index].ammoLifeSpanBonus, 0.0f, slotTargetModule[index].maxCooltime);
-					break;
-				case ModuleType::Cannon:
-					if (type == BonusStatType::BonusCannonDamage)
-						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusCannonCoolTime)
-						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusCannonAccuracy)
-						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusCannonLifeTime)
-						slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusCannonLaunchVelocity)
-						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					break;
-				case ModuleType::Railgun:
-					if (type == BonusStatType::BonusRailGunDamage)
-						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusRailGunPower)
-						slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusRailGunCoolTime)
-						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusRailGunAccuracy)
-						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusRailGunLifeTime)
-						slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusRailGunLaunchVelocity)
-						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					break;
-				case ModuleType::MissileLauncher:
-					if (type == BonusStatType::BonusMissileDamage)
-						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusMissileCoolTime)
-						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusMissileAccuracy)
-						slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusMissileLifeTime)
-						slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusMissileLaunchVelocity)
-						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					break;
-				case ModuleType::MinerLaser:
-					if (type == BonusStatType::BonusMiningAmount)
-						slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					else if (type == BonusStatType::BonusMiningPower)
-						slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusMiningCoolTime)
-						slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - value, 0.0f, 5.0f);
-					else if (type == BonusStatType::BonusMiningRange)
-						slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + value, 1.0f, 5.0f);
-					break;
-				default:
-					break;
-				}
+	//보너스 스텟의 배열에서 동일 보너스 타입의 엘리먼트들을 1개로 통합하고 나머지는 제거
+	for (int index = 0; index < _bonusStatsForWork.Num(); index++) {
+		for (int subIndex = 0; subIndex < _bonusStatsForWork.Num(); subIndex++) 
+			if (_bonusStatsForWork[index].bonusStatType == _bonusStatsForWork[subIndex].bonusStatType && index != subIndex) {
+				_bonusStatsForWork[FMath::Min(index, subIndex)].bonusStat = _bonusStatsForWork[FMath::Max(index, subIndex)].bonusStat;
+				_bonusStatsForWork.RemoveAtSwap(FMath::Max(index, subIndex));
 			}
+	}
+	for (FBonusStat& tBonusStat : _bonusStatsForWork) {
+		switch (tBonusStat.bonusStatType) {
+		case BonusStatType::BonusMaxShield:
+			sMaxShield = FMath::Clamp(sMaxShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			break;
+		case BonusStatType::BonusRechargeShield:
+			sRechargeShield = FMath::Clamp(sRechargeShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			break;
+		case BonusStatType::BonusDefShield:
+			sDefShield = FMath::Clamp(sDefShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
+			break;
+		case BonusStatType::BonusMaxArmor:
+			sMaxArmor = FMath::Clamp(sMaxArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			break;
+		case BonusStatType::BonusRepaireArmor:
+			sRepairArmor = FMath::Clamp(sRepairArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			break;
+		case BonusStatType::BonusDefArmor:
+			sDefArmor = FMath::Clamp(sDefArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
+			break;
+		case BonusStatType::BonusMaxHull:
+			sMaxHull = FMath::Clamp(sMaxHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			break;
+		case BonusStatType::BonusRepaireHull:
+			sRepairHull = FMath::Clamp(sRepairHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			break;
+		case BonusStatType::BonusDefHull:
+			sDefHull = FMath::Clamp(sDefHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
+			break;
+		case BonusStatType::BonusMaxPower:
+			sMaxPower = FMath::Clamp(sMaxPower * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			break;
+		case BonusStatType::BonusRechargePower:
+			sRechargePower = FMath::Clamp(sRechargePower * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			break;
+		case BonusStatType::BonusMobilitySpeed:
+			sMaxSpeed = FMath::Clamp(sMaxSpeed * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatSpeedMIN, _define_StatSpeedMAX);
+			break;
+		case BonusStatType::BonusMobilityAcceleration:
+			sMaxAcceleration = FMath::Clamp(sMaxAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
+			sMinAcceleration = FMath::Clamp(sMinAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
+			break;
+		case BonusStatType::BonusMobilityRotation:
+			sMaxRotateRate = FMath::Clamp(sMaxRotateRate * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			break;
+		case BonusStatType::BonusMobilityRotateAcceleration:
+			sRotateAcceleration = FMath::Clamp(sRotateAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			sRotateDeceleration = FMath::Clamp(sRotateDeceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			break;
+
+		case BonusStatType::BonusMaxRadarRange:
+			lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+			break;
+		case BonusStatType::BonusMaxCPUPerfomance:
+			sMaxCompute = FMath::Clamp(sMaxCompute + tBonusStat.bonusStat, _define_StatComputePerformanceMIN, _define_StatComputePerformanceMAX);
+			break;
+		case BonusStatType::BonusMaxPowerGridPerfomance:
+			sMaxPowerGrid = FMath::Clamp(sMaxPowerGrid + tBonusStat.bonusStat, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
+			break;
+		case BonusStatType::BonusMaxCargoSize:
+			sMaxCargo = FMath::Clamp(sMaxCargo + tBonusStat.bonusStat, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
+			break;
+
+		case BonusStatType::BonusDroneBaseStats:
+			bonusDroneBaseStats = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusDroneControl:
+			bonusDroneControl = FMath::Clamp(tBonusStat.bonusStat, 0.0f, 20.0f);
+			break;
+		case BonusStatType::BonusDroneDamage:
+			bonusDroneDamage = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusDroneRange:
+			bonusDroneRange = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusDroneSpeed:
+			bonusDroneSpeed = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+
+		case BonusStatType::BonusActiveRechargeShield:
+			for(FActiveModule& module : slotActiveModule)
+				if(module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveDefShield:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveRepaireArmor:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveDefArmor:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveRepaireHull:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveDefHull:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveSpeed:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveAcceleration:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveRotation:
+			for (FActiveModule& module : slotActiveModule)
+				if (module.moduleType == ModuleType::ShieldGenerator)
+					module.maxActiveModuleFactor *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusActiveModuleUsagePower:
+			for (FActiveModule& module : slotActiveModule)
+				module.maxActiveModuleFactor *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReducePowerMAX, 1.0f - _define_StatBonusReducePowerMIN);
+			break;
+		case BonusStatType::BonusTargetModuleUsagePower:
+			for (FTargetModule& module : slotTargetModule)
+				module.maxUsagePower *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReducePowerMAX, 1.0f - _define_StatBonusReducePowerMIN);
+			break;
+		default:
+			for (int index = 0; index < slotTargetModule.Num(); index++) 
+				if (slotTargetModule[index].moduleID > 0) {
+					switch (slotTargetModule[index].moduleType) {
+					case ModuleType::Beam:
+						if (tBonusStat.bonusStatType == BonusStatType::BonusBeamDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						slotTargetModule[index].ammoLifeSpanBonus = FMath::Clamp(slotTargetModule[index].ammoLifeSpanBonus, 0.0f, slotTargetModule[index].maxCooltime);
+						break;
+					case ModuleType::Cannon:
+						if (tBonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						break;
+					case ModuleType::Railgun:
+						if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						break;
+					case ModuleType::MissileLauncher:
+						if (tBonusStat.bonusStatType == BonusStatType::BonusMissileDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						break;
+					case ModuleType::MinerLaser:
+						if (tBonusStat.bonusStatType == BonusStatType::BonusMiningAmount)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMiningCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMiningRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						break;
+					default:
+						break;
+					}
+				}
+			break;
 		}
-		break;
 	}
 }
 
 bool APlayerShip::LoadFromSave(const USaveLoader* loader) {
 
 	if (sIsInited == false) {
-		sCurrentShield = FMath::Clamp(loader->shield, 0.0f, sMaxShield);
-		sCurrentArmor = FMath::Clamp(loader->armor, 0.0f, sMaxArmor);
-		sCurrentHull = FMath::Clamp(loader->hull, 0.0f, sMaxHull);
-		sCurrentPower = FMath::Clamp(loader->power, 0.0f, sMaxPower);
+		sCurrentShield = FMath::Clamp(loader->shield, _define_StatDamperMIN, _define_StatDamperMAX);
+		sCurrentArmor = FMath::Clamp(loader->armor, _define_StatDamperMIN, _define_StatDamperMAX);
+		sCurrentHull = FMath::Clamp(loader->hull, _define_StatDamperMIN, _define_StatDamperMAX);
+		sCurrentPower = FMath::Clamp(loader->power, _define_StatDamperMIN, _define_StatDamperMAX);
 
 		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 		if (!USafeENGINE::IsValid(_tempInstance))
@@ -783,7 +872,7 @@ bool APlayerShip::LoadFromSave(const USaveLoader* loader) {
 bool APlayerShip::EquipModule(const int moduleID) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData = _tempInstance->GetItemData(moduleID);
-	if (USafeENGINE::IsValid(_tempInstance))
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 
 	if (behaviorState != BehaviorState::Docked) {
@@ -1454,7 +1543,7 @@ void APlayerShip::Movement() {
 	AddActorWorldOffset(GetActorForwardVector() * currentSpeed * tempDeltaTime, true);
 }
 
-void APlayerShip::ModuleCheck() {
+void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 	moduleStatShieldRegen = moduleStatArmorRepair = moduleStatHullRepair = 0.0f;
 	moduleStatEngine = moduleStatAcceleration = moduleStatThruster = 0.0f;
 	moduleConsumptPower = 0.0f;
@@ -1466,9 +1555,9 @@ void APlayerShip::ModuleCheck() {
 
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
-			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * moduleCheckTime,
 				0.0f, slotTargetModule[index].maxUsagePower);
-			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - moduleCheckTime, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
 			//쿨타임 완료시 행동 실시
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
@@ -1483,7 +1572,6 @@ void APlayerShip::ModuleCheck() {
 						FRotator _targetedRotation = _targetedDirect.Rotation();
 						
 						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix;
-							//+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
 						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 
 						//빔계열 모듈의 경우
@@ -1599,7 +1687,7 @@ void APlayerShip::ModuleCheck() {
 		}
 		//모듈이 꺼져있을 경우 power 소모량 감소
 		else
-			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * moduleCheckTime,
 				0.0f, slotTargetModule[index].maxUsagePower);
 		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
 	}
@@ -1607,15 +1695,15 @@ void APlayerShip::ModuleCheck() {
 		if (sCurrentPower < 5.0f)
 			slotActiveModule[index].moduleState = ModuleState::NotActivate;
 		if (slotActiveModule[index].moduleState == ModuleState::Activate) {
-			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower + slotActiveModule[index].incrementUsagePower * 0.5f,
+			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower + slotActiveModule[index].incrementUsagePower * moduleCheckTime,
 				0.0f, slotActiveModule[index].maxUsagePower);
-			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor + slotActiveModule[index].incrementActiveModuleFactor * 0.5f,
+			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor + slotActiveModule[index].incrementActiveModuleFactor * moduleCheckTime,
 				0.0f, slotActiveModule[index].maxActiveModuleFactor);
 		}
 		else {
-			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower - slotActiveModule[index].decrementUsagePower * 0.5f,
+			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower - slotActiveModule[index].decrementUsagePower * moduleCheckTime,
 				0.0f, slotActiveModule[index].maxUsagePower);
-			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor - slotActiveModule[index].decrementActiveModuleFactor * 0.5f,
+			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor - slotActiveModule[index].decrementActiveModuleFactor * moduleCheckTime,
 				0.0f, slotActiveModule[index].maxActiveModuleFactor);
 		}
 		moduleConsumptPower += slotActiveModule[index].currentUsagePower;

@@ -209,7 +209,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 
 						FRotator _rotator = FRotator(0.0f, currentSectorInfo->GateList[randomGateForRegenLocation].structureRotation.Yaw, 0.0f);
 						FVector _location = FVector(currentSectorInfo->GateList[randomGateForRegenLocation].structureLocation, 0.0f);
-						_location += USafeENGINE::GetRandomLocation(true) * (_tempShipData.lengthToLongAsix * 0.5f
+						_location += USafeENGINE::GetRandomLocation(true) * (_tempShipData.LengthToLongAsix * 0.5f
 							+ _tempStationData.lengthToLongAsix * 0.5f + FMath::FRandRange(10.0f, 100.0f));
 
 						AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(),
@@ -352,7 +352,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 					saver->rotation.Yaw = _nextSectorInfo->GateList[index].structureRotation.Yaw;
 					saver->position = FVector(_nextSectorInfo->GateList[index].structureLocation, 0.0f);
 					saver->position += USafeENGINE::GetRandomLocation(true)
-						* (_tempStationData.lengthToLongAsix * 0.5f + _tempShipData.lengthToLongAsix * 0.5f + FMath::FRandRange(10.0f, 100.0f));
+						* (_tempStationData.lengthToLongAsix * 0.5f + _tempShipData.LengthToLongAsix * 0.5f + FMath::FRandRange(10.0f, 100.0f));
 					break;
 				}
 			}

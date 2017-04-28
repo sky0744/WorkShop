@@ -138,7 +138,7 @@ void ACargoContainer::SetCargoFromData(const ObjectType objectType, const int Ob
 		cargo.Reserve(_tempNPCData.dropItems.Num());
 
 		for (FNPCDropData& dropData : _tempNPCData.dropItems)
-			if (FMath::Clamp(dropData.dropChance, _def_DropChance_MIN, _def_DropChance_MAX) > FMath::FRandRange(_def_DropChance_MIN, _def_DropChance_MAX)) {
+			if (FMath::Clamp(dropData.dropChance, _define_DropChance_MIN, _define_DropChance_MAX) > FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX)) {
 				minAmount = FMath::Max(1, dropData.dropAmountMin);
 				cargo.Emplace(FItem(dropData.dropItemID, FMath::RandRange(minAmount, FMath::Max(minAmount, dropData.dropAmountMax))));
 			}
@@ -161,9 +161,9 @@ void ACargoContainer::SetCargo(const TArray<FItem>& items, float dropChance) {
 	int minAmount = 1;
 
 	cargo.Reserve(items.Num());
-	dropChance = FMath::Clamp(dropChance, _def_DropChance_MIN, _def_DropChance_MAX);
+	dropChance = FMath::Clamp(dropChance, _define_DropChance_MIN, _define_DropChance_MAX);
 	for (const FItem& item : items) {
-		if (dropChance > FMath::FRandRange(_def_DropChance_MIN, _def_DropChance_MAX))
+		if (dropChance > FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX))
 			cargo.Emplace(FItem(item.itemID, FMath::RandRange(minAmount, FMath::Max(minAmount, item.itemAmount))));
 
 		cargo.Shrink();

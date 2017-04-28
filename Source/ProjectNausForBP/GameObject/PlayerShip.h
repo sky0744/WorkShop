@@ -10,6 +10,51 @@
 #include "../Interface/Commandable.h"
 #include "PlayerShip.generated.h"
 
+#pragma region Constant Value Ship Type - Backup / Real
+/*
+const float _define_StatDamperMIN = 10.0f;
+const float _define_StatDamperMAX = 1000000.0f;
+const float _define_StatRestoreMIN = 0.0f;
+const float _define_StatRestoreMAX = 500.0f;
+const float _define_StatDefMIN = -1000.0f;
+const float _define_StatDefMAX = 1000.0f;
+
+const int _define_StatModuleSlotMIN = 0;
+const int _define_StatModuleSlotMAX = 8;
+*/
+const float _define_StatComputePerformanceMIN = 0.0f;
+const float _define_StatComputePerformanceMAX = 99999.0f;
+const float _define_StatPowerGridPerformanceMIN = 0.0f;
+const float _define_StatPowerGridPerformanceMAX = 99999.0f;
+const float _define_StatCargoSizeMIN = 0.0f;
+const float _define_StatCargoSizeMAX = 200000.0f;
+/*
+const float _define_StatLengthMIN = 10.0f;
+const float _define_StatLengthMAX = 10000.0f;
+const float _define_StatRadarRangeMIN = 10.0f;
+const float _define_StatRadarRangeMAX = 100000.0f;
+
+const float _define_StatSpeedMIN = 0.0f;
+const float _define_StatSpeedMAX = 10000.0f;
+const float _define_StatAccelMIN = 0.0f;
+const float _define_StatAccelMAX = 1000.0f;
+const float _define_StatRotateMIN = 0.0f;
+const float _define_StatRotateMAX = 90.0f;
+
+const float _define_StatBonusMIN = 0.0f;
+const float _define_StatBonusMAX = 5.0f;
+const float _define_StatBonusReducePowerMIN = 0.0f;
+const float _define_StatBonusReducePowerMAX = 0.75f;
+const float _define_StatBonusReduceCooltimeMIN = 0.0f;
+const float _define_StatBonusReduceCooltimeMAX = 0.75f;
+const float _define_StatDroneControlMIN = 0.0f;
+const float _define_StatDroneControlMAX = 20.0f;
+
+const float _define_DamagedMin = 1.0f;
+const float _define_DamagedMAX = 10000.0f;
+*/
+#pragma endregion
+
 UCLASS()
 class PROJECTNAUSFORBP_API APlayerShip : public ASpaceObject, public ICommandable
 {
@@ -55,7 +100,7 @@ public:
 protected:
 	bool TotalStatsUpdate();
 	void CheckPassiveTypeModule(const BonusStatType type, float value);
-	void CheckBonusStat(const BonusStatType type, float value);
+	void CheckBonusStat(const TArray<FBonusStat>& bonusStatArray);
 public:
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual bool LoadFromSave(const USaveLoader* loader);
@@ -131,7 +176,7 @@ private:
 	bool MoveDistanceCheck();
 	void RotateCheck();
 	void Movement();
-	void ModuleCheck();
+	void ModuleCheck(const float moduleCheckTime);
 
 	bool CheckCanBehavior() const;
 
@@ -194,7 +239,7 @@ private:
 	BehaviorState behaviorState;
 
 	float lengthToLongAsix;
-	float lengthRader;
+	float lengthRadarRange;
 
 	UPROPERTY()
 		ASpaceObject* targetObject;

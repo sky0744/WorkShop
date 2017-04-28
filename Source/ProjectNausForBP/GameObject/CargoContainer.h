@@ -6,8 +6,21 @@
 #include "SpaceObject.h"
 #include "CargoContainer.generated.h"
 
-#define _def_DropChance_MIN 0.0f
-#define _def_DropChance_MAX 100.0f
+#pragma region Constant Value Ship Type - Backup / Real
+/*
+const float _define_StatDamperMIN = 10.0f;
+const float _define_StatDamperMAX = 1000000.0f;
+const float _define_StatDefMIN = -1000.0f;
+const float _define_StatDefMAX = 1000.0f;
+
+const float _define_DamagedMin = 1.0f;
+const float _define_DamagedMAX = 10000.0f;
+*/
+const float _define_DropChance_MIN = 0.0f;
+const float _define_DropChance_MAX = 100.0f;
+
+#pragma endregion
+
 
 UCLASS()
 class PROJECTNAUSFORBP_API ACargoContainer : public ASpaceObject {

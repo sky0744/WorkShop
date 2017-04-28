@@ -5,7 +5,7 @@
 #include "ProjectNausForBP.h"
 #include "SpaceObject.generated.h"
 
-#pragma region Constant Value SpaceObject Type
+#pragma region Constant Value SpaceObject Type - Real
 const float _define_StatDamperMIN = 10.0f;
 const float _define_StatDamperMAX = 1000000.0f;
 const float _define_StatRestoreMIN = 0.0f;
@@ -13,20 +13,32 @@ const float _define_StatRestoreMAX = 500.0f;
 const float _define_StatDefMIN = -1000.0f;
 const float _define_StatDefMAX = 1000.0f;
 
+const int _define_StatModuleSlotMIN = 0;
+const int _define_StatModuleSlotMAX = 8;
+
+const float _define_StatLengthMIN = 10.0f;
+const float _define_StatLengthMAX = 10000.0f;
+const float _define_StatRadarRangeMIN = 10.0f;
+const float _define_StatRadarRangeMAX = 100000.0f;
+
 const float _define_StatSpeedMIN = 0.0f;
 const float _define_StatSpeedMAX = 10000.0f;
 const float _define_StatAccelMIN = 0.0f;
-const float _define_StatAccelMAX = 10000.0f;
+const float _define_StatAccelMAX = 1000.0f;
 const float _define_StatRotateMIN = 0.0f;
 const float _define_StatRotateMAX = 90.0f;
 
 const float _define_StatBonusMIN = 0.0f;
 const float _define_StatBonusMAX = 5.0f;
+const float _define_StatBonusReducePowerMIN = 0.0f;
+const float _define_StatBonusReducePowerMAX = 0.75f;
+const float _define_StatBonusReduceCooltimeMIN = 0.0f;
+const float _define_StatBonusReduceCooltimeMAX = 0.75f;
 const float _define_StatDroneControlMIN = 0.0f;
 const float _define_StatDroneControlMAX = 20.0f;
 
-const float _define_DamageMin = 1.0f;
-const float _define_DamageMAX = 10000.0f;
+const float _define_DamagedMin = 1.0f;
+const float _define_DamagedMAX = 10000.0f;
 #pragma endregion
 
 UCLASS()
