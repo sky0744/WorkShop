@@ -39,23 +39,23 @@ void AResource::Tick( float DeltaTime )
 
 float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
 
-	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
-	float effectDamage = 0.0f;
+	float _remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
+	float _effectDamage = 0.0f;
 	
 	//remainDamage = sDefShield.GetValue();
-	if (currentDurability > remainDamage) {
-		effectDamage = remainDamage;
-		currentDurability -= remainDamage;
-		remainDamage = 0.0f;
+	if (currentDurability > _remainDamage) {
+		_effectDamage = _remainDamage;
+		currentDurability -= _remainDamage;
+		_remainDamage = 0.0f;
 	}
 	else {
-		effectDamage = currentDurability;
+		_effectDamage = currentDurability;
 		currentDurability = 0.0f;
 		Destroy();
 	}
-	UE_LOG(LogClass, Log, TEXT("[Info][Resource][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectDamage);
+	UE_LOG(LogClass, Log, TEXT("[Info][Resource][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectDamage);
 
-	return effectDamage;
+	return _effectDamage;
 }
 
 void AResource::BeginDestroy() {
@@ -108,10 +108,9 @@ bool AResource::InitObject(const int objectId) {
 
 		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath.ToString()));
 		objectMesh->SetStaticMesh(newMesh);
-		lengthToLongAsix = _tempResourceData.lengthToLongAsix;
 
 		resourceType = _tempResourceData.Type;
-		lengthToLongAsix = _tempResourceData.lengthToLongAsix;
+		lengthToLongAsix = _tempResourceData.LengthToLongAsix;
 
 		maxDurability = FMath::FRandRange(_tempResourceData.DurabilityRange.X, _tempResourceData.DurabilityRange.Y);
 		currentDurability = maxDurability;

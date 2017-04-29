@@ -48,7 +48,9 @@ const float _define_StatBonusReducePowerMAX = 0.75f;
 const float _define_StatBonusReduceCooltimeMIN = 0.0f;
 const float _define_StatBonusReduceCooltimeMAX = 0.75f;
 const float _define_StatDroneControlMIN = 0.0f;
-const float _define_StatDroneControlMAX = 20.0f;
+const float _define_StatDroneControlMAX = 1000.0f;
+const float _define_StatDroneBayMIN = 0.0f;
+const float _define_StatDroneBayMAX = 5000.0f;
 
 const float _define_DamagedMin = 1.0f;
 const float _define_DamagedMAX = 10000.0f;

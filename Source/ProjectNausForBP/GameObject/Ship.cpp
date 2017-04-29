@@ -98,87 +98,98 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	else
 		return 0.0f;
 
-	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
+	FHitResult _hitResult;
+	FVector _hitDirect;
+	DamageEvent.GetBestHitInfo(this, DamageCauser, _hitResult, _hitDirect);
+	_hitDirect = _hitResult.ImpactPoint - GetActorLocation();
+	_hitDirect.Normalize();
 
-	float effectShieldDamage = 0.0f;
-	float effectArmorDamage = 0.0f;
-	float effectHullDamage = 0.0f;
-	bool isCritical = false;
+	float _remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
+	float _effectShieldDamage = 0.0f;
+	float _effectArmorDamage = 0.0f;
+	float _effectHullDamage = 0.0f;
+	float _effectReduceDamage = 0.0f;
+	bool _isCritical = false;
 
-	FHitResult hitResult;
-	FVector hitDirect;
-	DamageEvent.GetBestHitInfo(this, DamageCauser, hitResult, hitDirect);
-	hitDirect = hitResult.ImpactPoint - GetActorLocation();
-	hitDirect.Normalize();
-
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %f %f %f"), currentShield, currentArmor, currentHull);
-	if (FVector::DotProduct(GetActorForwardVector(), hitDirect) > 0.95f) {
-		remainDamage *= 2.0f;
-		isCritical = true;
-	} else if (FVector::DotProduct(GetActorForwardVector(), hitDirect) < -0.95f) {
-		remainDamage *= 3.0f;
-		isCritical = true;
+	if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) > 0.95f) {
+		_remainDamage *= 2.0f;
+		_isCritical = true;
+	} else if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) < -0.95f) {
+		_remainDamage *= 3.0f;
+		_isCritical = true;
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState)) {
-		if (_dealingFaction != Faction::Player)
-			_spaceState->ChangeRelationship(faction, _dealingFaction, false, -FMath::Sqrt(DamageAmount) * 0.005f);
-	}
+	if (USafeENGINE::IsValid(_spaceState))
+		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
 
-	//remainDamage = sDefShield.GetValue();
-	if (currentShield > remainDamage) {
-		effectShieldDamage = remainDamage;
-		currentShield -= remainDamage;
-		remainDamage = 0.0f;
+	/*
+	*	데미지 경감 공식 : 경감률 = (def -1)^2 + 0.15,
+	*	Def 범위 : -1000.0f ~ 1000.0f -> 최대 경감률 : -4.15f(역경감) ~ 0.15f
+	*/
+	if (currentShield > _remainDamage) {
+		_effectReduceDamage = FMath::Pow((FMath::Clamp(defShield, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+		_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+		_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+		_effectShieldDamage = _remainDamage;
+		currentShield -= _remainDamage;
+		_remainDamage = 0.0f;
 	} else {
-		effectShieldDamage = currentShield;
-		remainDamage -= effectShieldDamage;
+		_effectShieldDamage = currentShield;
+		_remainDamage -= _effectShieldDamage;
 		currentShield = 0.0f;
+
+		if (currentArmor > _remainDamage) {
+			_effectReduceDamage = FMath::Pow((FMath::Clamp(defArmor, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+			_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+			_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+			_effectArmorDamage = _remainDamage;
+			currentArmor -= _remainDamage;
+			_remainDamage = 0.0f;
+		} else {
+			_effectArmorDamage = currentArmor;
+			_remainDamage -= _effectArmorDamage;
+			currentArmor = 0.0f;
+
+			_effectReduceDamage = FMath::Pow((FMath::Clamp(defHull, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+			_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+			_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+			_effectHullDamage = _remainDamage;
+			currentHull -= _remainDamage;
+			_remainDamage = 0.0f;
+		}
 	}
-	//remainDamage = sDefArmor.GetValue();
-	if (currentArmor > remainDamage) {
-		effectArmorDamage = remainDamage;
-		currentArmor -= remainDamage;
-		remainDamage = 0.0f;
-	} else {
-		effectArmorDamage = currentArmor;
-		remainDamage -= effectArmorDamage;
-		currentArmor = 0.0f;
-	}
-	//remainDamage = sDefHull.GetValue();
-	if (currentHull > remainDamage) {
-		effectHullDamage = remainDamage;
-		currentHull -= remainDamage;
-		remainDamage = 0.0f;
-	} else {
-		effectHullDamage = currentHull;
+	if (currentHull <= 0.0f) {
+		_effectHullDamage = currentHull;
 		currentHull = 0.0f;
 
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-		if (_dealingFaction == Faction::Player && USafeENGINE::IsValid(_userState)) {
-			if (bounty > 0.0f)
-				_userState->ChangeCredit(bounty);
+		Peer _peerResult = Peer::Neutral;
 
-			uint8 _peerResult = (uint8)_spaceState->PeerIdentify(faction, _dealingFaction, true);
-			//전략 포인트의 0.1%(적대 오브젝트 파괴) / -0.5%(우호 오브젝트 파괴)를 명성에 반영
-			if (_peerResult < 2)
-				_userState->ChangeRenown(strategyPoint * 0.001f);
-			else if(_peerResult > 4)
-				_userState->ChangeRenown(-strategyPoint * 0.005f);
-
-			//카고 드랍
-			ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(), 
-				FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-			
-			_cargoContanier->SetCargoFromData(ObjectType::Ship, npcShipID);
-			UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
+		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState)) {
+			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
+			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
+			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			if (_dealingFaction == Faction::Player) {
+				if (bounty > 0.0f)
+					_userState->ChangeCredit(bounty);
+				_userState->ChangeRenown(_peerResult, strategicPoint);
+			}
 		}
+		//카고 드랍
+		ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
+			FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+
+		_cargoContanier->SetCargoFromData(ObjectType::Ship, npcShipID);
+		UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
 		Destroy();
 	}
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"), *this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectShieldDamage, effectArmorDamage, effectHullDamage, isCritical ? TEXT("Critical") : TEXT("Non Critical"));
 
-	return effectShieldDamage + effectArmorDamage + effectHullDamage;
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),
+		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectShieldDamage, _effectArmorDamage, _effectHullDamage,
+		_isCritical ? TEXT("Critical") : TEXT("Non Critical"));
+
+	return _effectShieldDamage + _effectArmorDamage + _effectHullDamage;
 }
 
 void AShip::BeginDestroy() {
@@ -232,8 +243,8 @@ bool AShip::InitObject(const int npcID) {
 	objectMesh->SetStaticMesh(newMesh);
 
 	shipClass = _tempShipData.Shipclass;
-	faction = _tempNpcShipData.faction;
-	behaviorType = _tempNpcShipData.behaviorType;
+	faction = _tempNpcShipData.FactionOfProduction;
+	behaviorType = _tempNpcShipData.BehaviorTypeOfNPC;
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, 10.0f, 100000.0f);
 
 	int tempModuleSlotNumber = FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num());
@@ -263,8 +274,8 @@ bool AShip::InitObject(const int npcID) {
 
 	lengthToLongAsix = _tempShipData.LengthToLongAsix;
 	lengthRadarRange = _tempShipData.LengthRadarRange;
-	strategyPoint = _tempNpcShipData.strategyPoint;
-	bounty = _tempNpcShipData.npcBounty;
+	strategicPoint = _tempShipData.StrategicPoint + _tempNpcShipData.StrategicPointBonus;
+	bounty = _tempNpcShipData.NpcBounty;
 
 	maxShield = FMath::Clamp(_tempShipData.Shield, 10.0f, 1000000.0f);
 	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield, 0.0f, 500.0f);

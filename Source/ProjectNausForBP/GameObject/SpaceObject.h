@@ -5,7 +5,7 @@
 #include "ProjectNausForBP.h"
 #include "SpaceObject.generated.h"
 
-#pragma region Constant Value SpaceObject Type - Real
+#pragma region Constant Value In SpaceObject - Real
 const float _define_StatDamperMIN = 10.0f;
 const float _define_StatDamperMAX = 1000000.0f;
 const float _define_StatRestoreMIN = 0.0f;
@@ -35,10 +35,14 @@ const float _define_StatBonusReducePowerMAX = 0.75f;
 const float _define_StatBonusReduceCooltimeMIN = 0.0f;
 const float _define_StatBonusReduceCooltimeMAX = 0.75f;
 const float _define_StatDroneControlMIN = 0.0f;
-const float _define_StatDroneControlMAX = 20.0f;
+const float _define_StatDroneControlMAX = 1000.0f;
+const float _define_StatDroneBayMIN = 0.0f;
+const float _define_StatDroneBayMAX = 5000.0f;
 
-const float _define_DamagedMin = 1.0f;
+const float _define_DamagedMIN = 1.0f;
 const float _define_DamagedMAX = 10000.0f;
+const float _define_DamagePercentageMIN = 0.15f;
+const float _define_DamagePercentageMAX = 4.15f;
 #pragma endregion
 
 UCLASS()
@@ -95,6 +99,7 @@ protected:
 			FText objectName;
 		Faction faction;
 		float lengthToLongAsix;
+		float strategicPoint;
 
 		float maxDurability;
 		float currentDurability;

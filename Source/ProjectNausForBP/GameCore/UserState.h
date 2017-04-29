@@ -11,6 +11,15 @@
 #pragma region Constant Value UserState Type - Real
 const int _define_SkillLevelMIN = 0;
 const int _define_SkillLevelMAX = 5;
+
+const float _define_CreditMIN = -999999999999.0f;
+const float _define_CreditMAX = 999999999999.0f;
+
+const float _define_RenownMIN = -1000.0f;
+const float _define_RenownMAX = 1000.0f;
+const float _define_SPToRenownHostile = 0.01f;
+const float _define_SPToRenownNotHostile = -0.05f;
+
 #pragma endregion
 UCLASS()
 class PROJECTNAUSFORBP_API AUserState : public APlayerState
@@ -25,7 +34,7 @@ protected:
 
 #pragma endregion
 
-#pragma region Save/Load
+#pragma region Save/Load & Player Death
 public:
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool NewGameSetting(const Faction selectedFaction, const FText& userName);
@@ -35,6 +44,7 @@ public:
 		bool TotalSave(const bool isBeforeWarp = false);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool TotalLoad();
+	void PlayerDeath();
 
 private:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Player")
@@ -79,7 +89,7 @@ public:
 		/**	유저에게 명성을 부여합니다.
 		*	@param varianceRenown - 명성. 범위는 -1000.0f ~ 1000.0f
 		*/
-		void ChangeRenown(float varianceRenown);
+		void ChangeRenown(const Peer peer, float varianceRenown);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		/**	유저의 명성을 확인합니다.
 		*	@return 명성 수치

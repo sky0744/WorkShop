@@ -179,7 +179,6 @@ private:
 
 	float lengthToLongAsix;
 	float lengthRadarRange;
-	float strategyPoint;
 	float bounty;
 
 	UPROPERTY()

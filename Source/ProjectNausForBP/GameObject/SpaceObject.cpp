@@ -54,25 +54,48 @@ void ASpaceObject::Tick( float DeltaTime )
 }
 
 float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
+	Faction _dealingFaction;
 
-	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
-	float effectDamage = 0.0f;
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		_dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		_dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
+		return 0.0f;
 
-	if (currentDurability > remainDamage) {
-		effectDamage = remainDamage;
-		currentDurability -= remainDamage;
-		remainDamage = 0.0f;
+	float _remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
+	float _effectDamage = 0.0f;
+
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (USafeENGINE::IsValid(_spaceState))
+		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+
+	if (currentDurability > _remainDamage) {
+		_effectDamage = _remainDamage;
+		currentDurability -= _remainDamage;
+		_remainDamage = 0.0f;
 	}
 	else {
-		effectDamage = currentDurability;
+		_effectDamage = currentDurability;
 		currentDurability = 0.0f;
+
+		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+		Peer _peerResult = Peer::Neutral;
+
+		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState)) {
+			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
+			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
+			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			if (_dealingFaction == Faction::Player)
+				_userState->ChangeRenown(_peerResult, strategicPoint);
+		}
 		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceObject][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"), 
-		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectDamage);
+		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectDamage);
 
-	return effectDamage;
+	return _effectDamage;
 }
 
 void ASpaceObject::BeginDestroy() {
@@ -100,11 +123,11 @@ ObjectType ASpaceObject::GetObjectType() const {
 }
 
 Faction ASpaceObject::GetFaction() const {
-	return Faction::Neutral;
+	return faction;
 }
 
 void ASpaceObject::SetFaction(const Faction setFaction) {
-
+	faction = setFaction;
 }
 
 BehaviorState ASpaceObject::GetBehaviorState() const {
@@ -112,12 +135,10 @@ BehaviorState ASpaceObject::GetBehaviorState() const {
 }
 
 bool ASpaceObject::InitObject(const int objectId) {
-
 	return false;
 }
 
 bool ASpaceObject::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
-
 	return false;
 }
 

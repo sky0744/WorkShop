@@ -45,15 +45,14 @@ void ADrone::Tick(float DeltaSeconds) {
 }
 
 float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	Faction dealingFaction;
+	Faction _dealingFaction;
 
-	if (DamageCauser->IsA(ABeam::StaticClass())) 
-		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
-	else if (DamageCauser->IsA(AProjectiles::StaticClass())) 
-		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
-	else 
+	if (DamageCauser->IsA(ABeam::StaticClass()))
+		_dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
+		_dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+	else
 		return 0.0f;
-	
 
 	FHitResult _hitResult;
 	FVector _hitDirect;
@@ -65,48 +64,80 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	float _effectShieldDamage = 0.0f;
 	float _effectArmorDamage = 0.0f;
 	float _effectHullDamage = 0.0f;
+	float _effectReduceDamage = 0.0f;
 	bool _isCritical = false;
 
 	if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) > 0.95f) {
 		_remainDamage *= 2.0f;
 		_isCritical = true;
-	}
-	else if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) < -0.95f) {
+	} else if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) < -0.95f) {
 		_remainDamage *= 3.0f;
 		_isCritical = true;
 	}
 
-	//remainDamage = sDefShield.GetValue();
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (USafeENGINE::IsValid(_spaceState))
+		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+
+	/*
+	*	데미지 경감 공식 : 경감률 = (def -1)^2 + 0.15,
+	*	Def 범위 : -1000.0f ~ 1000.0f -> 최대 경감률 : -4.15f(역경감) ~ 0.15f
+	*/
 	if (currentShield > _remainDamage) {
+		_effectReduceDamage = FMath::Pow((FMath::Clamp(defShield, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+		_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+		_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
 		_effectShieldDamage = _remainDamage;
 		currentShield -= _remainDamage;
 		_remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		_effectShieldDamage = currentShield;
 		_remainDamage -= _effectShieldDamage;
 		currentShield = 0.0f;
+
+		if (currentArmor > _remainDamage) {
+			_effectReduceDamage = FMath::Pow((FMath::Clamp(defArmor, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+			_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+			_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+			_effectArmorDamage = _remainDamage;
+			currentArmor -= _remainDamage;
+			_remainDamage = 0.0f;
+		} else {
+			_effectArmorDamage = currentArmor;
+			_remainDamage -= _effectArmorDamage;
+			currentArmor = 0.0f;
+
+			_effectReduceDamage = FMath::Pow((FMath::Clamp(defHull, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+			_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+			_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+			_effectHullDamage = _remainDamage;
+			currentHull -= _remainDamage;
+			_remainDamage = 0.0f;
+		}
 	}
 
-	if (currentArmor > _remainDamage) {
-		_effectArmorDamage = _remainDamage;
-		currentArmor -= _remainDamage;
-		_remainDamage = 0.0f;
-	}
-	else {
-		_effectArmorDamage = currentArmor;
-		_remainDamage -= _effectArmorDamage;
-		currentArmor = 0.0f;
-	}
-
-	if (currentHull > _remainDamage) {
-		_effectHullDamage = _remainDamage;
-		currentHull -= _remainDamage;
-		_remainDamage = 0.0f;
-	}
-	else {
+	if (currentHull <= 0.0f) {
 		_effectHullDamage = currentHull;
 		currentHull = 0.0f;
+
+
+		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+		Peer _peerResult = Peer::Neutral;
+
+		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState)) {
+			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
+			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
+			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			if (_dealingFaction == Faction::Player) {
+				_userState->ChangeRenown(_peerResult, strategicPoint);
+			}
+		}
+		//카고 드랍
+		ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
+			FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+
+		_cargoContanier->SetCargoFromData(ObjectType::Drone, objectID);
+		UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
 		Destroy();
 	}
 

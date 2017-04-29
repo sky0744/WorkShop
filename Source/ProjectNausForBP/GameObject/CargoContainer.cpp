@@ -41,24 +41,24 @@ void ACargoContainer::Tick(float DeltaTime)
 
 float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
 
-	float remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
-	float effectDamage = 0.0f;
+	float _remainDamage = DamageAmount * FMath::FRandRange(0.85f, 1.15f);
+	float _effectDamage = 0.0f;
 
-	if (currentDurability > remainDamage) {
-		effectDamage = remainDamage;
-		currentDurability -= remainDamage;
-		remainDamage = 0.0f;
+	if (currentDurability > _remainDamage) {
+		_effectDamage = _remainDamage;
+		currentDurability -= _remainDamage;
+		_remainDamage = 0.0f;
 	}
 	else {
-		effectDamage = currentDurability;
+		_effectDamage = currentDurability;
 		currentDurability = 0.0f;
 		Destroy();
 	}
 
 	UE_LOG(LogClass, Log, TEXT("[Info][CargoContainer][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : %.0f"),
-		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), remainDamage, *DamageCauser->GetName(), effectDamage);
+		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectDamage);
 
-	return effectDamage;
+	return _effectDamage;
 }
 
 void ACargoContainer::BeginDestroy() {
@@ -135,9 +135,9 @@ void ACargoContainer::SetCargoFromData(const ObjectType objectType, const int Ob
 	switch (objectType) {
 	case ObjectType::Ship:
 		_tempNPCData = _tempInstance->GetNPCData(objectID);
-		cargo.Reserve(_tempNPCData.dropItems.Num());
+		cargo.Reserve(_tempNPCData.DropItems.Num());
 
-		for (FNPCDropData& dropData : _tempNPCData.dropItems)
+		for (FNPCDropData& dropData : _tempNPCData.DropItems)
 			if (FMath::Clamp(dropData.dropChance, _define_DropChance_MIN, _define_DropChance_MAX) > FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX)) {
 				minAmount = FMath::Max(1, dropData.dropAmountMin);
 				cargo.Emplace(FItem(dropData.dropItemID, FMath::RandRange(minAmount, FMath::Max(minAmount, dropData.dropAmountMax))));

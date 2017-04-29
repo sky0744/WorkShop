@@ -290,10 +290,10 @@ float USafeENGINE::CalculateCreditForTrade(int itemID, int lowerAmount, int uppe
 	float _SellValueMax;			float _SellValueMin;
 	FItemData _itemData = this->GetItemData(itemID);
 
-	_SellValueMaxAmount = FMath::Max(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
-	_SellValueMinAmount = FMath::Min(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
-	_SellValueMax = FMath::Max(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
-	_SellValueMin = FMath::Min(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
+	_SellValueMaxAmount = FMath::Max(_itemData.AmountPointRange.X, _itemData.AmountPointRange.Y);
+	_SellValueMinAmount = FMath::Min(_itemData.AmountPointRange.X, _itemData.AmountPointRange.Y);
+	_SellValueMax = FMath::Max(_itemData.ValuePointRange.X, _itemData.ValuePointRange.Y);
+	_SellValueMin = FMath::Min(_itemData.ValuePointRange.X, _itemData.ValuePointRange.Y);
 
 	_tempValue = FMath::Min(lowerAmount, upperAmount);
 	upperAmount = FMath::Max(lowerAmount, upperAmount);
@@ -322,10 +322,10 @@ float USafeENGINE::CalculateCredit(int itemID, int Amount, bool isBuy) const {
 	float _SellValueMax;			float _SellValueMin;
 	FItemData _itemData = this->GetItemData(itemID);
 
-	_SellValueMaxAmount = FMath::Max(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
-	_SellValueMinAmount = FMath::Min(_itemData.amountPointRange.X, _itemData.amountPointRange.Y);
-	_SellValueMax = FMath::Max(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
-	_SellValueMin = FMath::Min(_itemData.valuePointRange.X, _itemData.valuePointRange.Y);
+	_SellValueMaxAmount = FMath::Max(_itemData.AmountPointRange.X, _itemData.AmountPointRange.Y);
+	_SellValueMinAmount = FMath::Min(_itemData.AmountPointRange.X, _itemData.AmountPointRange.Y);
+	_SellValueMax = FMath::Max(_itemData.ValuePointRange.X, _itemData.ValuePointRange.Y);
+	_SellValueMin = FMath::Min(_itemData.ValuePointRange.X, _itemData.ValuePointRange.Y);
 
 	_result = _SellValueMin + (_SellValueMax - _SellValueMin) * FMath::Clamp((_SellValueMaxAmount - Amount) / (float)(_SellValueMaxAmount - _SellValueMinAmount), .0f, 1.0f);
 	if (isBuy)

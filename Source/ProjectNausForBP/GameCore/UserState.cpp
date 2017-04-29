@@ -162,6 +162,15 @@ bool AUserState::TotalLoad() {
 	//Sector load -> execute with/by UserState's PlayBegin
 	return true;
 }
+void AUserState::PlayerDeath() {
+	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+		return;
+	ASpaceObject* _playerPawn = Cast<ASpaceObject>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
+	if (!USafeENGINE::IsValid(_playerPawn) || _playerPawn->GetValue(GetStatType::currentHull) > 0.0f)
+		return;
+
+	
+}
 
 bool AUserState::PlayerSave(USaveLoader* _saver) {
 
@@ -263,7 +272,12 @@ bool AUserState::ShipBuy(const int newShipID) {
 		return false;
 	}
 
-	if (CheckSkill(_tempShipData.RequireSkills) > false) {
+	if (currentCargo > _tempShipData.Cargo) {
+		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][ShipBuy] The current cargo volume is larger than the cargo of the ship to be purchased. Can't buying this ship."));
+		return false;
+	}
+
+	if (CheckSkill(_tempShipData.RequireSkills) == false) {
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][ShipBuy] There is not enough skill to operate the ship. Can't buying this ship."));
 		return false;
 	}
@@ -271,25 +285,25 @@ bool AUserState::ShipBuy(const int newShipID) {
 	_obj->GetModule(ItemType::TargetModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
 		if (_moduleToBeRemoved[index] != 0) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Target Module Not Empty, please Check Module Equip State."));
 			return false;
 		}
 	_obj->GetModule(ItemType::ActiveModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
 		if (_moduleToBeRemoved[index] != 0) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Active Module Not Empty, please Check Module Equip State."));
 			return false;
 		}
 	_obj->GetModule(ItemType::PassiveModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
 		if (_moduleToBeRemoved[index] != 0) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Passive Module Not Empty, please Check Module Equip State."));
 			return false;
 		}
 	_obj->GetModule(ItemType::SystemModule, _moduleToBeRemoved);
 	for (int index = 0; index < _moduleToBeRemoved.Num(); index++)
 		if (_moduleToBeRemoved[index] != 0) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] Module Not Empty please Check Module Equip State."));
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ShipBuy] System Module Not Empty, please Check Module Equip State."));
 			return false;
 		}
 
@@ -310,21 +324,21 @@ bool AUserState::ChangeCredit(float varianceCredit) {//, FText category, FText c
 	if (sCredit < 0.0f && varianceCredit < 0.0f)
 		return false;
 
-	sCredit = FMath::Clamp(sCredit + varianceCredit, -9999999999999999.0f, 9999999999999999.0f);
+	sCredit = FMath::Clamp(sCredit + varianceCredit, _define_CreditMIN, _define_CreditMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeCredit] Credit %s : %.0f."), varianceCredit >= 0.0f ? TEXT("Get") : TEXT("Lost"), varianceCredit);
 	return true;
 }
 
-float AUserState::GetCredit()  const {
+float AUserState::GetCredit() const {
 
 	return sCredit;
 }
 
 bool AUserState::ChangeBounty(float varianceBounty) {//, FText category, FText contents) {
-	if (sBounty + varianceBounty > 9999999999999999.0f && varianceBounty > 0.0f)
+	if (sBounty + varianceBounty > _define_CreditMAX && varianceBounty > 0.0f)
 		varianceBounty = 0.0f;
 
-	sBounty = FMath::Clamp(sBounty + varianceBounty, 0.0f, 9999999999999999.0f);
+	sBounty = FMath::Clamp(sBounty + varianceBounty, 0.0f, _define_CreditMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeBounty] Bounty %s : %.0f."), varianceBounty >= 0.0f ? TEXT("Add") : TEXT("Cancellation"), varianceBounty);
 	return true;
 }
@@ -334,9 +348,14 @@ float AUserState::GetBounty() const {
 	return sBounty;
 }
 
-void AUserState::ChangeRenown(float varianceRenown) {
+void AUserState::ChangeRenown(const Peer peer, float varianceRenown) {
 
-	sRenown = FMath::Clamp(sBounty + varianceRenown, -1000.0f, 1000.0f);
+	if (peer > Peer::Enemy)
+		varianceRenown *= _define_SPToRenownNotHostile;
+	else
+		varianceRenown *= _define_SPToRenownHostile;
+
+	sRenown = FMath::Clamp(sRenown + varianceRenown, _define_RenownMIN, _define_RenownMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][ChangeBounty] Renown %s : %.0f."), varianceRenown > 0.0f ? TEXT("Add") : TEXT("Cancellation"), varianceRenown);
 }
 

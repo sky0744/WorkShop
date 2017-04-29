@@ -9,7 +9,7 @@
  * 
  */
 
-#pragma region Constant Value SpaceObject Type
+#pragma region Constant Value In SpaceObject
 const float _define_LimitSectorSizeMIN = -99000.0f;
 const float _define_LimitSectorSizeMAX = 99000.0f;
 #pragma endregion
@@ -276,7 +276,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		float maxProductTime;
 };
-
 USTRUCT(BlueprintType)		//인덱스 자체가 ID(중복 X)
 struct PROJECTNAUSFORBP_API FStructureInfo
 {
@@ -362,7 +361,7 @@ public:
 		TArray<FSkill> RequireSkills;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		Faction Shipfaction;
+		Faction FactionOfProduction;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		ShipClass Shipclass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
@@ -371,6 +370,8 @@ public:
 		float LengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float LengthRadarRange;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		float StrategicPoint;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float Shield;
@@ -426,9 +427,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float MaxRotateRate;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float rotateAcceleraion;
+		float RotateAcceleraion;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float rotateDeceleraion;
+		float RotateDeceleraion;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<FBonusStat> bonusStats;
@@ -450,13 +451,13 @@ public:
 		FText Desc;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		Faction faction;
+		Faction FactionOfProduction;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		BehaviorType behaviorType;
+		BehaviorType BehaviorTypeOfNPC;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float strategyPoint;
+		float NpcBounty;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float npcBounty;
+		float StrategicPointBonus;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<int> EquipedSlotTarget;
@@ -464,11 +465,11 @@ public:
 		TArray<int> EquipedAmmoForTarget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FBonusStat> bonusStats;
+		TArray<FBonusStat> BonusStats;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FNPCTradeData> tradeItems;
+		TArray<FNPCTradeData> TradeItems;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FNPCDropData> dropItems;
+		TArray<FNPCDropData> DropItems;
 
 	FNPCData() {}
 };
@@ -487,14 +488,16 @@ public:
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		Faction faction;
+		Faction FactionOfProduction;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		StructureType Type;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float lengthToLongAsix;
+		float LengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float respawnTime;
+		float StrategicPoint;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		float RespawnTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float Shield;
@@ -547,7 +550,7 @@ public:
 		ResourceType Type;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float lengthToLongAsix;
+		float LengthToLongAsix;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FVector2D DurabilityRange;
@@ -573,9 +576,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		TArray<FSkill> RequireSkill;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
-		TArray<FItem> requireItems;
+		TArray<FItem> RequireItems;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		float ProductTime;
 
@@ -631,9 +633,9 @@ public:
 		bool isCanReprocess;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		FVector2D valuePointRange;
+		FVector2D ValuePointRange;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		FVector2D amountPointRange;
+		FVector2D AmountPointRange;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
 		float BuyValueMultiple;
 
@@ -705,7 +707,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		int ItemID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
-		int itemLinkedID;
+		int ItemLinkedID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		FName MeshPath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Proejctile Data")

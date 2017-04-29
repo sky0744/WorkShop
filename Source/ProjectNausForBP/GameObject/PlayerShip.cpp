@@ -115,12 +115,12 @@ void APlayerShip::Tick(float DeltaTime)
 }
 
 float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
-	Faction dealingFaction;
+	Faction _dealingFaction;
 
 	if (DamageCauser->IsA(ABeam::StaticClass()))
-		dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
+		_dealingFaction = Cast<ABeam>(DamageCauser)->GetLaunchingFaction();
 	else if (DamageCauser->IsA(AProjectiles::StaticClass()))
-		dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
+		_dealingFaction = Cast<AProjectiles>(DamageCauser)->GetLaunchingFaction();
 	else
 		return 0.0f;
 
@@ -134,57 +134,78 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	float _effectShieldDamage = 0.0f;
 	float _effectArmorDamage = 0.0f;
 	float _effectHullDamage = 0.0f;
+	float _effectReduceDamage = 0.0f;
 	bool _isCritical = false;
 
-	//Hited된 방향으로 크리티컬 계산.
-	//Front : multiply x2
-	//back : multiply x3
 	if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) > 0.95f) {
 		_remainDamage *= 2.0f;
 		_isCritical = true;
-	}
-	else if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) < -0.95f) {
+	} else if (FVector::DotProduct(GetActorForwardVector(), _hitDirect) < -0.95f) {
 		_remainDamage *= 3.0f;
 		_isCritical = true;
 	}
 
-	//방어 및 데미지 계산. 방어체계 소진시 남은 데미지량은 다음 방어체계로.
-	//remainDamage = sDefShield;
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (USafeENGINE::IsValid(_spaceState))
+		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+
+	/*
+	*	데미지 경감 공식 : 경감률 = (def -1)^2 + 0.15,
+	*	Def 범위 : -1000.0f ~ 1000.0f -> 최대 경감률 : -4.15f(역경감) ~ 0.15f
+	*/
 	if (sCurrentShield > _remainDamage) {
+		_effectReduceDamage = FMath::Pow((FMath::Clamp(sDefShield, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+		_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+		_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
 		_effectShieldDamage = _remainDamage;
-		sCurrentShield = sCurrentShield - _remainDamage;
+		sCurrentShield -= _remainDamage;
 		_remainDamage = 0.0f;
-	}
-	else {
+	} else {
 		_effectShieldDamage = sCurrentShield;
 		_remainDamage -= _effectShieldDamage;
 		sCurrentShield = 0.0f;
+
+		if (sCurrentArmor > _remainDamage) {
+			_effectReduceDamage = FMath::Pow((FMath::Clamp(sDefArmor, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+			_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+			_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+			_effectArmorDamage = _remainDamage;
+			sCurrentArmor -= _remainDamage;
+			_remainDamage = 0.0f;
+		} else {
+			_effectArmorDamage = sCurrentArmor;
+			_remainDamage -= _effectArmorDamage;
+			sCurrentArmor = 0.0f;
+
+			_effectReduceDamage = FMath::Pow((FMath::Clamp(sDefHull, _define_StatDefMIN, _define_StatDefMAX) / _define_StatDefMAX - 1.0f), 2.0f);
+			_effectReduceDamage = FMath::Clamp(_effectReduceDamage + 0.15f, _define_DamagePercentageMIN, _define_DamagePercentageMAX);
+			_remainDamage = FMath::Clamp(_remainDamage * _effectReduceDamage, _define_DamagedMIN, _define_DamagedMAX);
+			_effectHullDamage = _remainDamage;
+			sCurrentHull -= _remainDamage;
+			_remainDamage = 0.0f;
+		}
 	}
 
-	if (sCurrentArmor > _remainDamage) {
-		_effectArmorDamage = _remainDamage;
-		sCurrentArmor = sCurrentArmor - _remainDamage;
-		_remainDamage = 0.0f;
-	}
-	else {
-		_effectArmorDamage = sCurrentArmor;
-		_remainDamage -= _effectArmorDamage;
-		sCurrentArmor = 0.0f;
-	}
-
-	if (sCurrentHull > _remainDamage) {
-		_effectHullDamage = _remainDamage;
-		sCurrentHull = sCurrentHull - _remainDamage;
-		_remainDamage = 0.0f;
-	}
-	else {
+	if (sCurrentHull <= 0.0f) {
 		_effectHullDamage = sCurrentHull;
 		sCurrentHull = 0.0f;
-		UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
+		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
+		Peer _peerResult = Peer::Neutral;
+
+		if (USafeENGINE::IsValid(_userState)) {
+			_userState->ChangeBounty(-_userState->GetBounty());
+
+			Peer _peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
+			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
+			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			//사망 처리
+			_userState->PlayerDeath();
+		}
 	}
 
-	UE_LOG(LogClass, Log, TEXT("[Info][Drone][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),
-		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectShieldDamage, _effectArmorDamage, _effectHullDamage, _isCritical ? TEXT("Critical") : TEXT("Non Critical"));
+	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),
+		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectShieldDamage, _effectArmorDamage, _effectHullDamage,
+		_isCritical ? TEXT("Critical") : TEXT("Non Critical"));
 
 	return _effectShieldDamage + _effectArmorDamage + _effectHullDamage;
 }
@@ -235,11 +256,12 @@ bool APlayerShip::InitObject(const int objectId) {
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
 	if (newMesh) 
 		objectMesh->SetStaticMesh(newMesh);
-	slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
-	targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
-	slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
-	slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
-	slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, _define_StatModuleSlotMAX, _define_StatModuleSlotMAX));
+
+	slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Init Module Slots : %d, %d, %d, %d"), slotTargetModule.Num(), slotActiveModule.Num(), slotPassiveModule.Num(), slotSystemModule.Num());
 
@@ -271,8 +293,8 @@ bool APlayerShip::InitObject(const int objectId) {
 	sStartAccelAngle = FMath::Clamp(_tempShipData.StartAccelAngle, _define_StatRotateMIN, _define_StatRotateMAX);
 
 	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, _define_StatRotateMIN, _define_StatRotateMAX);
-	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
-	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateAcceleration = FMath::Clamp(_tempShipData.RotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateDeceleration = FMath::Clamp(_tempShipData.RotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 
 	if (TotalStatsUpdate() == false)
 		return false;
@@ -470,8 +492,8 @@ bool APlayerShip::TotalStatsUpdate() {
 	sStartAccelAngle = FMath::Clamp(_tempShipData.StartAccelAngle, _define_StatRotateMIN, _define_StatRotateMAX);
 
 	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, _define_StatRotateMIN, _define_StatRotateMAX);
-	sRotateAcceleration = FMath::Clamp(_tempShipData.rotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
-	sRotateDeceleration = FMath::Clamp(_tempShipData.rotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateAcceleration = FMath::Clamp(_tempShipData.RotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	sRotateDeceleration = FMath::Clamp(_tempShipData.RotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 
 	for (int index = 0; index < slotPassiveModule.Num(); index++) {
 		if (slotPassiveModule[index] > 0) {
