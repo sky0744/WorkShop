@@ -42,7 +42,7 @@ void ABeam::Tick(float DeltaTime) {
 	DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, DeltaTime);
 
 	//거리 판단상 사거리 이내
-	if (beamRange < USafeENGINE::CheckDistanceConsiderSize(beamOwner, target)) {
+	if (beamRange > USafeENGINE::CheckDistanceConsiderSize(beamOwner, target)) {
 		launchedFaction = beamOwner->GetFaction();
 		resultLocation = target->GetActorLocation();
 		isHited = true;
@@ -94,7 +94,7 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 		DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, aliveTime);
 
 		//거리 판단상 사거리 이내
-		if (setedrange < USafeENGINE::CheckDistanceConsiderSize(launchActor, targetActor)) {
+		if (setedrange > USafeENGINE::CheckDistanceConsiderSize(launchActor, targetActor)) {
 			launchedFaction = launchActor->GetFaction();
 			UGameplayStatics::ApplyPointDamage(targetActor, setedDamage, resultLocation, FHitResult(), nullptr, this, UDamageType::StaticClass());
 			resultLocation = targetActor->GetActorLocation();

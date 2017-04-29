@@ -68,8 +68,8 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState))
-		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	/*
 	*	데미지 경감 공식 : 경감률 = (def -1)^2 + 0.15,
@@ -115,10 +115,10 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState)) {
+		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player) {
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
-			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
 			if (_dealingFaction == Faction::Player)
 				_userState->ChangeRenown(_peerResult, strategicPoint);
 		}
@@ -282,31 +282,33 @@ bool AStation::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	if (isInited)
 		return false;
 
-	USafeENGINE* tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FStationData tempStationData;
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	FStationData _tempStationData;
 
 	structureInfo = &structureData;
-	tempStationData = tempInstance->GetStationData((structureInfo->structureID));
-	objectName = tempStationData.Name;
+	_tempStationData = _tempInstance->GetStationData((structureInfo->structureID));
+	objectName = _tempStationData.Name;
 
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempStationData.MeshPath.ToString()));
-	objectMesh->SetStaticMesh(newMesh);
-	lengthToLongAsix = tempStationData.LengthToLongAsix;
+	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempStationData.MeshPath.ToString()));
+	if (_newMesh)
+		objectMesh->SetStaticMesh(_newMesh);
+	lengthToLongAsix = _tempStationData.LengthToLongAsix;
+	strategicPoint = FMath::Clamp(_tempStationData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 
-	maxShield = tempStationData.Shield;
+	maxShield = _tempStationData.Shield;
 	currentShield = structureInfo->structureShieldRate * maxShield;
-	rechargeShield = tempStationData.RechargeShield;
-	defShield = tempStationData.DefShield;
+	rechargeShield = _tempStationData.RechargeShield;
+	defShield = _tempStationData.DefShield;
 
-	maxArmor = tempStationData.Armor;
+	maxArmor = _tempStationData.Armor;
 	currentArmor = structureInfo->structureArmorRate * maxArmor;
-	repairArmor = tempStationData.RepairArmor;
-	defArmor = tempStationData.DefArmor;
+	repairArmor = _tempStationData.RepairArmor;
+	defArmor = _tempStationData.DefArmor;
 
-	maxHull = tempStationData.Hull;
+	maxHull = _tempStationData.Hull;
 	currentHull = structureInfo->structureHullRate * maxHull;
-	repairHull = tempStationData.RepairHull;
-	defHull = tempStationData.DefHull;
+	repairHull = _tempStationData.RepairHull;
+	defHull = _tempStationData.DefHull;
 
 	isInited = true;
 	return true;

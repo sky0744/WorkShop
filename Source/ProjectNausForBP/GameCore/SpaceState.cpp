@@ -322,7 +322,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				break;
 			}
 		}
-		saver->relation = realFactionRelationship;
+		saver->relation = factionRelationship;
 		saver->playerFactionName = playerFactionName;
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] GameSave Create Finish!"));
 		return true;
@@ -330,7 +330,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		//Just Save Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By Warp!"));
 		saver->sectorInfo = sectorInfo;
-		saver->relation = realFactionRelationship;
+		saver->relation = factionRelationship;
 		saver->playerFactionName = playerFactionName;
 
 		saver->position = FVector(0.0f, 0.0f, 0.0f);
@@ -512,21 +512,13 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 	}
 
 	playerFactionName = loader->playerFactionName;
-	tempFactionRelationship = loader->relation;
-	if (!USafeENGINE::IsValid(factionEnumPtr))
-		factionEnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
+	factionRelationship = loader->relation;
+	tempFactionRelationship = factionRelationship;
 
-	if (tempFactionRelationship.Num() < factionEnumPtr->NumEnums()) {
-		UE_LOG(LogClass, Log, TEXT("[Warning][SpaceState][LoadSpaceState] There is a discrepancy between the save file and system faction relationship. The lost information will be initialized.."));
-		tempFactionRelationship.AddDefaulted(factionEnumPtr->NumEnums() - tempFactionRelationship.Num());
-	}
-	tempFactionRelationship.HeapSort([](const FFactionRelationship& inner1, const FFactionRelationship& inner2) { return inner1.targetFaction < inner2.targetFaction; });
-	realFactionRelationship = tempFactionRelationship;
-
-	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship In save file : %d"), realFactionRelationship.Num());
-	for (FFactionRelationship& relation : tempFactionRelationship) {
-		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship Target : %s, Relationship Num : %d"), *factionEnumPtr->GetEnumText((int)relation.targetFaction).ToString(), relation.factionRelation.Num());
-		relation.factionRelation.SetNum(factionEnumPtr->NumEnums());
+	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship In save file : %d"), factionRelationship.Num());
+	if (factionRelationship.Num() != factionEnumPtr->NumEnums() - 4) {
+		factionRelationship.SetNum(factionEnumPtr->NumEnums() - 4);
+		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship Init not Matching with save file! Some Relationship Data Will be Damaged! Set To %d."), factionRelationship.Num());
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
 	return true;
@@ -553,97 +545,103 @@ void ASpaceState::AccumulateToShipCapacity(const bool isDestroying) {
 }
 
 Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, const bool isRealRelation) const {
-	const TArray<FFactionRelationship>* _selectedRelationship;
-	Peer _result = Peer::Neutral;
-	float _relation = 0.0f;
 
 	if (target == Faction::Neutral)
 		return Peer::Neutral;
-
 	if (requestor == target)
 		return Peer::AllyStrong;
 
-	if (target == Faction::Pirate || requestor == Faction::Pirate) {
-		return Peer::EnemyStrong;
-	}
+	Peer _result = Peer::Neutral;
+	float _relation = 0.0f;
 
-	if (isRealRelation)
-		_selectedRelationship = &tempFactionRelationship;
-	else 
-		_selectedRelationship = &realFactionRelationship;
-
-	for (const FFactionRelationship& relation : *_selectedRelationship) {
-		if (relation.targetFaction == requestor) {
-			_relation = relation.factionRelation[FMath::Min(relation.factionRelation.Max() - 1, (int)(target))];
-			if (_relation >= _define_RelationThresholdAllyStrong)
-				_result = Peer::AllyStrong;
-			else if (_relation >= _define_RelationThresholdAlly && _relation < _define_RelationThresholdAllyStrong)
-				_result = Peer::Ally;
-			else if (_relation >= _define_RelationThresholdFriend && _relation <_define_RelationThresholdAlly)
-				_result = Peer::Friendship;
-			else if (_relation <= _define_RelationThresholdBoundary && _relation > _define_RelationThresholdEnemy)
-				_result = Peer::Boundary;
-			else if (_relation <= _define_RelationThresholdEnemy && _relation > _define_RelationThresholdEnemyStrong)
-				_result = Peer::Enemy;
-			else if (_relation <= _define_RelationThresholdEnemyStrong)
-				_result = Peer::EnemyStrong;
+	if (requestor > Faction::PlayerFoundingFaction && target > Faction::PlayerFoundingFaction) {
+		switch (requestor) {
+		case Faction::PrimusEmpire:
+			switch (target) {
+			case Faction::ValenciaProtectorate:		_result = Peer::Ally;	break;
+			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
+			default:								_result = Peer::Enemy; break;
+			}
 			break;
+		case Faction::FlorenceTradeCoalition:
+			switch (target) {
+			case Faction::FreeCitizenFederation:	_result = Peer::Ally;	break;
+			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
+			default:								_result = Peer::Enemy; break;
+			}
+			break;
+		case Faction::FreeCitizenFederation:
+			switch (target) {
+			case Faction::FlorenceTradeCoalition:	_result = Peer::Ally;	break;
+			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
+			default:								_result = Peer::Enemy; break;
+			}
+		case Faction::ValenciaProtectorate:
+			switch (target) {
+			case Faction::PrimusEmpire:				_result = Peer::Ally;	break;
+			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
+			default:								_result = Peer::Enemy; break;
+			}
+		case Faction::HeartOfLiberty:
+			switch (target) {
+			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
+			default:								_result = Peer::Enemy; break;
+			}
+		case Faction::Pirate:
+			_result = Peer::Enemy; break;
+		default: break;
 		}
+	} else {
+		Faction _targetFaction;
+
+		if ((requestor == Faction::Player || requestor == Faction::PlayerFoundingFaction) && (target == Faction::Player || target == Faction::PlayerFoundingFaction))
+			_relation = relationwithPlayerEmpire;
+		else {
+			if (requestor > Faction::PlayerFoundingFaction)
+				_targetFaction = requestor;
+			else if (target > Faction::PlayerFoundingFaction)
+				_targetFaction = target;
+			else return _result;
+
+			if (isRealRelation)
+				_relation = FMath::Clamp(factionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::PrimusEmpire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+			else
+				_relation = FMath::Clamp(tempFactionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::PrimusEmpire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+		}
+		if (_relation >= _define_RelationThresholdAllyStrong)
+			_result = Peer::AllyStrong;
+		else if (_relation >= _define_RelationThresholdAlly && _relation < _define_RelationThresholdAllyStrong)
+			_result = Peer::Ally;
+		else if (_relation >= _define_RelationThresholdFriend && _relation < _define_RelationThresholdAlly)
+			_result = Peer::Friendship;
+		else if (_relation <= _define_RelationThresholdBoundary && _relation > _define_RelationThresholdEnemy)
+			_result = Peer::Boundary;
+		else if (_relation <= _define_RelationThresholdEnemy && _relation > _define_RelationThresholdEnemyStrong)
+			_result = Peer::Enemy;
+		else if (_relation <= _define_RelationThresholdEnemyStrong)
+			_result = Peer::EnemyStrong;
 	}
 	return _result;
 }
 
-void ASpaceState::ChangeRelationship(const Faction requestor, const Faction target, const float damagePoint) {
-	if ((requestor == target) && requestor == Faction::Player)
-		return;
+void ASpaceState::ApplyRelation(const Faction targetFaction, float damageForConvertRelation) {
 
-	InterApplyRelation(requestor, target, false, -damagePoint * FMath::FRandRange(_define_DamagetoRelationFactorMIN, _define_DamagetoRelationFactorMAX));
+	damageForConvertRelation = FMath::Clamp(damageForConvertRelation * FMath::FRandRange(_define_DamagetoRelationFactorMIN, _define_DamagetoRelationFactorMAX),
+		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
+	tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] += damageForConvertRelation;
+
 	return;
 }
 
-void ASpaceState::ChangeRelationship(const Faction requestor, const Faction target, const bool isRealRelation, const float strategicPoint) {
-	if ((requestor == target) && requestor == Faction::Player)
-		return;
+void ASpaceState::ApplyRelation(const Faction targetFaction, float SPForConvertRelation, const bool isRealRelation) {
 
-	//실제 관계에 적용시 섹터 내 관계까지 적용
+	SPForConvertRelation = FMath::Clamp(SPForConvertRelation * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX),
+		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
+
 	if (isRealRelation) 
-		InterApplyRelation(requestor, target, false, -strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
-	InterApplyRelation(requestor, target, isRealRelation, -strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
-	return;
-}
-
-void ASpaceState::InterApplyRelation(const Faction applyFaction1, const Faction applyFaction2, float relation) {
-
-	InterApplyRelation(applyFaction1, applyFaction2, false, relation);
-	return;
-}
-
-void ASpaceState::InterApplyRelation(const Faction applyFaction1, const Faction applyFaction2, const bool isRealRelation, float relation) {
-
-	float _applyingRelationship = 0.0f;
-	relation = FMath::Clamp(relation, _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
-	TArray<FFactionRelationship>& _selectedRelationship = realFactionRelationship;
-	if (isRealRelation)
-		_selectedRelationship = tempFactionRelationship;
-
-	for (FFactionRelationship& relationship : _selectedRelationship)
-		if (relationship.targetFaction == applyFaction2) {
-			if (applyFaction1 != applyFaction2) {
-				_applyingRelationship = relationship.factionRelation[FMath::Min(relationship.factionRelation.Max() - 1, (int)(applyFaction2))];
-				_applyingRelationship = FMath::Clamp(_applyingRelationship + relation, _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
-				if(relationship.factionRelation.Num() > (int)(applyFaction2))
-					relationship.factionRelation[(int)(applyFaction2)] = _applyingRelationship;
-				else {
-					return;
-				}
-			}
-			break;
-		}
-	for (FFactionRelationship& relationship : _selectedRelationship)
-		if (relationship.targetFaction == applyFaction1) {
-			if (applyFaction1 != applyFaction2) 
-				relationship.factionRelation[FMath::Min(relationship.factionRelation.Max() - 1, (int)(applyFaction1))] = _applyingRelationship;
-			break;
-		}
+		factionRelationship[FMath::Min3(factionRelationship.Num(), (int)targetFaction, 0)] += SPForConvertRelation;
+	else 
+		tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] += SPForConvertRelation;
+		
 	return;
 }

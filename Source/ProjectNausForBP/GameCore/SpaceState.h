@@ -29,6 +29,8 @@ const float _define_DamagetoRelationFactorMIN = 0.01f;
 const float _define_DamagetoRelationFactorMAX = 0.02f;
 const float _define_SPtoRelationFactorMIN = 0.002f;
 const float _define_SPtoRelationFactorMAX = 0.005f;
+const float _define_LimitApplyRelationPerOnceMIN = -2.0f;
+const float _define_LimitApplyRelationPerOnceMAX = 2.0f;
 #pragma endregion
 
 #pragma region Constant Value In SpaceState - Not Use Now
@@ -36,7 +38,6 @@ const float _define_SPtoRelationFactorMAX = 0.005f;
 //const float _define_TransSubHostileRelationship = -0.15f;
 //const float _define_TransHostileRelationship = -0.7f;
 #pragma endregion
-
 
 UCLASS()
 class PROJECTNAUSFORBP_API ASpaceState : public AGameStateBase {
@@ -67,37 +68,21 @@ public:
 		/** 임시 관계/실질 관계를 기준으로 팩션간의 피아를 반환합니다.
 		*	@param requestor - 피아 식별 요청 팩션
 		*	@param target - 식별 대상 팩션
-		*	@param isRealRelation - true : 실질 관계로 판단, false : 섹터 내 임시 관계로 판단
+		*	@param isRealRelation - true : 실질 관계로 판단, false : 섹터 내 임시 관계로 판단(requestor가 플레이어일 때만 유효)
 		*	@return - 식별된 피아
 		*/
 		Peer PeerIdentify(const Faction requestor, const Faction target, const bool isRealRelation) const;
-	/** 타격을 받은 오브젝트에 대한 데미지를 변환하여 팩션간의 임시 관계 변화에 반영합니다.
-	*	@param requestor - 관계 변화를 요구하는 팩션
-	*	@param target - 관계 변화 대상 팩션
-	*	@param damagePoint - 전략 포인트.
+	/**	가해진 데미지를 팩션의 관계로 변환하여 관계도에 적용. 현재 섹터 내에서 유효
+	*	@Param targetFaction - 관계 대상 팩션
+	*	@Param damageForConvertRelation - 관계도에 적용할 데미지
 	*/
-	void ChangeRelationship(const Faction requestor, const Faction target, const float damagePoint);
-	/** 전투 결과, 파괴된 오브젝트의 전략 포인트를 변환하여 팩션간의 임시 관계/실질 관계 변화에 반영합니다.
-	*	@param requestor - 관계 변화를 요구하는 팩션
-	*	@param target - 관계 변화 대상 팩션
-	*	@param isRealRelation - true : 실질/섹터 내 임기 관계에 모두 적용, false : 섹터 내 임시 관계에만 적용
-	*	@param strategicPoint - 전략 포인트.
-	*/
-	void ChangeRelationship(const Faction requestor, const Faction target, const bool isRealRelation, const float strategicPoint);
-private:
-	/**	팩션의 관계도 처리를 상호 적용. 섹터 내 임시 관계도에 영향.(이벤트, 퀘스트 트리거 등)
-	*	@Param applyFaction1 - 관계 대상 팩션 1
-	*	@Param applyFaction2 - 관계 대상 팩션 2
-	*	@Param relation - 적용할 관계성
-	*/
-	void InterApplyRelation(const Faction applyFaction1, const Faction applyFaction2, float relation);
-	/**	팩션의 관계도 처리를 상호 적용.
-	*	@Param applyFaction1 - 관계 대상 팩션 1
-	*	@Param applyFaction2 - 관계 대상 팩션 2
+	void ASpaceState::ApplyRelation(const Faction targetFaction, float damageForConvertRelation);
+	/**	전략 포인트를 팩션의 관계로 변환하여 관계도에 적용.
+	*	@Param targetFaction - 관계 대상 팩션
+	*	@Param SPForConvertRelation - 관계도에 적용할 전략 포인트
 	*	@Param isRealRelation - true : 실질 관계에만 적용, false : 섹터 내 임시 관계에만 적용
-	*	@Param relation - 적용할 관계성
 	*/
-	void InterApplyRelation(const Faction applyFaction1, const Faction applyFaction2, const bool isRealRelation, float relation);
+	void ASpaceState::ApplyRelation(const Faction targetFaction, float SPForConvertRelation, const bool isRealRelation);
 #pragma endregion
 
 #pragma region ObjectTMap
@@ -108,9 +93,10 @@ private:
 	UPROPERTY()
 		UEnum* factionEnumPtr;
 	UPROPERTY()
-		TArray<FFactionRelationship> realFactionRelationship;
+		TArray<float> tempFactionRelationship;
 	UPROPERTY()
-		TArray<FFactionRelationship> tempFactionRelationship;
+		TArray<float> factionRelationship;
+	float relationwithPlayerEmpire;
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Data In State")
 		FText playerFactionName;

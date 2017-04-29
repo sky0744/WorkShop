@@ -16,7 +16,7 @@ const float _define_LimitSectorSizeMAX = 99000.0f;
 
 #pragma region Sub Data Structure in DataTable Set or Instance
 USTRUCT(BlueprintType)
-struct PROJECTNAUSFORBP_API FNPCTradeData : public FTableRowBase
+struct PROJECTNAUSFORBP_API FNPCTradeData
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -34,7 +34,7 @@ public:
 	FNPCTradeData() {}
 };
 USTRUCT(BlueprintType)
-struct PROJECTNAUSFORBP_API FNPCDropData : public FTableRowBase
+struct PROJECTNAUSFORBP_API FNPCDropData
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -50,7 +50,7 @@ public:
 	FNPCDropData() {}
 };
 USTRUCT(BlueprintType)
-struct PROJECTNAUSFORBP_API FItemSellData : public FTableRowBase
+struct PROJECTNAUSFORBP_API FItemSellData
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -96,20 +96,6 @@ public:
 		BonusStatType bonusStatType;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
 		float bonusStat;
-};
-USTRUCT(BlueprintType)
-struct PROJECTNAUSFORBP_API FFactionRelationship {
-	GENERATED_USTRUCT_BODY()
-public:
-	FFactionRelationship()
-		: targetFaction(Faction::Neutral)
-		, factionRelation(TArray<float>()) {
-	}
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Faction Relationship")
-		Faction targetFaction;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Faction Relationship")
-		TArray<float> factionRelation;
 };
 #pragma endregion
 
@@ -790,7 +776,7 @@ public:
 		TArray<FItem> StartItemList;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		TArray<FFactionRelationship> StartFactionRelation;
+		TArray<float> StartFactionRelation;
 	FNewStartPlayerData() {}
 };
 #pragma endregion

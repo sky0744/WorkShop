@@ -77,7 +77,7 @@ public:
 
 #pragma region Sector Data
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<FFactionRelationship> relation;
+		TArray<float> relation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		TArray<FSectorData> sectorInfo;
 

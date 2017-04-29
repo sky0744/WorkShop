@@ -67,8 +67,8 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 	float _effectDamage = 0.0f;
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState))
-		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	if (currentDurability > _remainDamage) {
 		_effectDamage = _remainDamage;
@@ -82,10 +82,10 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState)) {
+		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player) {
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
-			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
 			if (_dealingFaction == Faction::Player)
 				_userState->ChangeRenown(_peerResult, strategicPoint);
 		}

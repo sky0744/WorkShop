@@ -49,7 +49,6 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	_saver->itemList = _tempStartInfo.StartItemList;
 
 	FShipData _tempShipData = _tempInstance->GetShipData(_tempStartInfo.StartShipID);
-
 	_saver->shield = _tempShipData.Shield;// *(1.0f + tempShipData.BonusShield);
 	_saver->armor = _tempShipData.Armor;// *(1.0f + tempShipData.BonusArmor);
 	_saver->hull = _tempShipData.Hull;// *(1.0f + tempShipData.BonusHull);

@@ -11,17 +11,14 @@ enum class Faction : uint8 {
 	Neutral					UMETA(DisplayName = "Neutral"),
 	Player					UMETA(DisplayName = "Player"),
 	PlayerFoundingFaction		UMETA(DisplayName = "Founded Faction By Player"),
+
 	PrimusEmpire			UMETA(DisplayName = "Primus Empire"),
 	FlorenceTradeCoalition	UMETA(DisplayName = "Florence Trade Coalition"),
 	FreeCitizenFederation	UMETA(DisplayName = "Free Citizen Federation"),
 	ValenciaProtectorate	UMETA(DisplayName = "Valencia Protectorate"),
-
-	Faction6		UMETA(DisplayName = "Faction6"),
-	Faction7		UMETA(DisplayName = "Faction7"),
-	Faction8		UMETA(DisplayName = "Faction8"),
-	Faction9		UMETA(DisplayName = "Faction9"),
-
+	HeartOfLiberty		UMETA(DisplayName = "Heart Of Liberty"),
 	Pirate			UMETA(DisplayName = "Pirate")
+
 };
 UENUM(BlueprintType)
 enum class Peer : uint8 {

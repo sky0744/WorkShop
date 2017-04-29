@@ -146,8 +146,8 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState))
-		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	/*
 	*	데미지 경감 공식 : 경감률 = (def -1)^2 + 0.15,
@@ -192,12 +192,12 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState)) {
+		if (USafeENGINE::IsValid(_userState) && _dealingFaction == Faction::Player) {
 			_userState->ChangeBounty(-_userState->GetBounty());
 
-			Peer _peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
+			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
-			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
 			//사망 처리
 			_userState->PlayerDeath();
 		}
@@ -253,9 +253,9 @@ bool APlayerShip::InitObject(const int objectId) {
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
 	objectName = _tempShipData.Name;
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-	if (newMesh) 
-		objectMesh->SetStaticMesh(newMesh);
+	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
+	if (_newMesh) 
+		objectMesh->SetStaticMesh(_newMesh);
 
 	slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 	targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
@@ -286,6 +286,7 @@ bool APlayerShip::InitObject(const int objectId) {
 
 	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);

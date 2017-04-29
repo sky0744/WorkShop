@@ -103,11 +103,12 @@ bool AResource::InitObject(const int objectId) {
 	if (resourceID != objectId) {
 		resourceID = objectId;
 		if(_isRich)
-			objectName = FText::Format(NSLOCTEXT("FTextField", "FTextField", "Rich {name}"), _tempResourceData.Name);
+			objectName = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "Rich {name}"), _tempResourceData.Name);
 		else objectName = _tempResourceData.Name;
 
-		UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath.ToString()));
-		objectMesh->SetStaticMesh(newMesh);
+		UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath.ToString()));
+		if (_newMesh)
+			objectMesh->SetStaticMesh(_newMesh);
 
 		resourceType = _tempResourceData.Type;
 		lengthToLongAsix = _tempResourceData.LengthToLongAsix;

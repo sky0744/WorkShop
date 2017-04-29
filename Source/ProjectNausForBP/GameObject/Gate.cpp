@@ -72,8 +72,8 @@ float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState))
-		_spaceState->ChangeRelationship(faction, _dealingFaction, _remainDamage);
+	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	/*
 	*	데미지 경감 공식 : 경감률 = (def -1)^2 + 0.15,
@@ -119,10 +119,10 @@ float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState)) {
+		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player) {
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
-			_spaceState->ChangeRelationship(faction, _dealingFaction, true, strategicPoint * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX));
+			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
 			if (_dealingFaction == Faction::Player)
 				_userState->ChangeRenown(_peerResult, strategicPoint);
 		}
@@ -295,9 +295,11 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	_tempStationData = _tempInstance->GetStationData(structureInfo->structureID);
 	objectName = _tempStationData.Name;
 
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempStationData.MeshPath.ToString()));
-	objectMesh->SetStaticMesh(newMesh);
+	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempStationData.MeshPath.ToString()));
+	if (_newMesh)
+		objectMesh->SetStaticMesh(_newMesh);
 	lengthToLongAsix = _tempStationData.LengthToLongAsix;
+	strategicPoint = FMath::Clamp(_tempStationData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 
 	maxShield = _tempStationData.Shield;
 	currentShield = structureInfo->structureShieldRate * maxShield;

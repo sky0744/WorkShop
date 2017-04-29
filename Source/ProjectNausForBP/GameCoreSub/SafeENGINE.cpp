@@ -28,28 +28,28 @@ USafeENGINE::USafeENGINE() {
 
 #pragma region Get DataTable
 const FShipData& USafeENGINE::GetShipData(const int& id) const {
-	FShipData* _data = ShipData->FindRow<FShipData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FShipData* _data = ShipData->FindRow<FShipData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ShipData->FindRow<FShipData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
 const FNPCData& USafeENGINE::GetNPCData(const int& id) const {
-	FNPCData* _data = NPCData->FindRow<FNPCData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FNPCData* _data = NPCData->FindRow<FNPCData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *NPCData->FindRow<FNPCData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
 const FStationData& USafeENGINE::GetStationData(const int& id) const {
-	FStationData* _data = StationData->FindRow<FStationData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FStationData* _data = StationData->FindRow<FStationData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *StationData->FindRow<FStationData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
 const FResourceData& USafeENGINE::GetResourceData(const int& id) const {
-	FResourceData* _data = ResourceData->FindRow<FResourceData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FResourceData* _data = ResourceData->FindRow<FResourceData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ResourceData->FindRow<FResourceData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
@@ -57,21 +57,21 @@ const FResourceData& USafeENGINE::GetResourceData(const int& id) const {
 
 
 const FSkillData& USafeENGINE::GetSkillData(const int& id) const {
-	FSkillData* _data = SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FSkillData* _data = SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
 const FItemData& USafeENGINE::GetItemData(const int& id) const {
-	FItemData* _data = ItemData->FindRow<FItemData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FItemData* _data = ItemData->FindRow<FItemData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ItemData->FindRow<FItemData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
 const FProjectileData& USafeENGINE::GetProjectileData(const int& id) const {
-	FProjectileData* _data = ProjectileData->FindRow<FProjectileData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FProjectileData* _data = ProjectileData->FindRow<FProjectileData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *ProjectileData->FindRow<FProjectileData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
@@ -107,7 +107,7 @@ void USafeENGINE::GetAllSectorNameData(TArray<FString>& sectorNameArray) const {
 }
 
 const FNewStartPlayerData& USafeENGINE::GetStartProfileData(const int& id) const {
-	FNewStartPlayerData* _data = StartPlayerData->FindRow<FNewStartPlayerData>(*FString::Printf(TEXT("%d"), id), TEXT("DataTableLoadError"));
+	FNewStartPlayerData* _data = StartPlayerData->FindRow<FNewStartPlayerData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
 	if (_data)
 		return *_data;
 	else return *StartPlayerData->FindRow<FNewStartPlayerData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
