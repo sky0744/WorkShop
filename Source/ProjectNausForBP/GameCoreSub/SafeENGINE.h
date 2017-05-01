@@ -16,6 +16,8 @@ const float _define_LimitSectorSizeMAX = 99000.0f;
 
 #pragma region Sub Data Structure in DataTable Set or Instance
 USTRUCT(BlueprintType)
+/**	AI 함선의 무역 데이터입니다. 이는 스테이션에 도킹하여 보급품을 처리하는 데이터를 포함합니다.
+*/
 struct PROJECTNAUSFORBP_API FNPCTradeData
 {
 	GENERATED_USTRUCT_BODY()
@@ -554,6 +556,27 @@ public:
 	FResourceData() {}
 };
 USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FObjectData : public FTableRowBase {
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		FText Name;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		FText Desc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		FName MeshPath;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
+		UTexture2D* Icon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		float LengthToLongAsix;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		float Durability;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
+		float DurabilityDef;
+	FObjectData() {}
+};
+USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FProductData : public FTableRowBase {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -789,31 +812,86 @@ public:
 		USafeENGINE();
 
 #pragma region Get DataTable
-	/**
-	* Get Ship Data.
-	* @param id - The id of the ship.
-	* @return Ship Data.
-	*/
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 함선의 데이터를 획득합니다.
+		*	@param id - 획득하고자 하는 함선의 ID입니다.
+		*	@return 획득한 함선의 데이터.
+		*/
 		const struct FShipData& GetShipData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 NPC의 데이터를 획득합니다.
+		*	@param id - 획득하고자 하는 NPC의 ID입니다.
+		*	@return 획득한 NPC의 데이터.
+		*/
 		const struct FNPCData& GetNPCData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 스테이션 및 게이트의 데이터를 획득합니다.
+		*	FStructureInfo의 데이터와는 별개로, 스텟 및 메쉬 경로 등의 기초 데이터를 포함합니다.
+		*	@param id - 획득하고자 하는 구조물의 ID입니다.
+		*	@return 획득한 구조물의 데이터.
+		*/
 		const struct FStationData& GetStationData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 자원 오브젝트의 데이터를 획득합니다.
+		*	@param id - 획득하고자 하는 자원 오브젝트의 ID입니다.
+		*	@return 획득한 자원 오브젝트의 데이터.
+		*/
 		const struct FResourceData& GetResourceData(const int& id) const;
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 카고 컨테이너 오브젝트의 데이터를 획득합니다.
+		*	- 일반 오브젝트와 동일한 구성이지만, 구분을 위해 별도의 데이터 테이블로 처리합니다.
+		*	@param id - 획득하고자 하는 카고 컨테이너 오브젝트의 ID입니다.
+		*	@return 획득한 카고 컨테이너 오브젝트의 데이터.
+		*/
+		const struct FObjectData& GetCargoContainerData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 일반 오브젝트의 데이터를 획득합니다.
+		*	이름 및 설명, 메쉬 경로, 인식 크기, 내구도에 대한 단순 데이터만을 필요로 하는 단순 오브젝트에 사용하십시오.
+		*	@param id - 획득하고자 하는 오브젝트의 ID입니다.
+		*	@return 획득한 오브젝트의 데이터.
+		*/
+		const struct FObjectData& GetObjectData(const int& id) const;
+
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 스킬의 데이터를 획득합니다.
+		*	스킬의 효과 및 선행 조건 등의 데이터를 포함합니다.
+		*	@param id - 획득하고자 하는 스킬의 ID입니다.
+		*	@return 획득한 스킬의 데이터.
+		*/
 		const struct FSkillData& GetSkillData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 아이템의 데이터를 획득합니다.
+		*	모든 타입의 아이템에 대한 데이터를 포함합니다. 아이템 타입에 무관한 데이터는 Zero-Inited Value
+		*	@param id - 획득하고자 하는 오브젝트의 ID입니다.
+		*	@return 획득한 오브젝트의 데이터.
+		*/
 		const struct FItemData& GetItemData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 프로젝타일 오브젝트의 데이터를 획득합니다.
+		*	메쉬 경로, 아이템 링크 ID 등에 대한 단순 데이터만을 포함합니다.
+		*	@param id - 획득하고자 하는 프로젝타일 오브젝트의 ID입니다.
+		*	@return 획득한 프로젝타일 오브젝트의 데이터.
+		*/
 		const struct FProjectileData& GetProjectileData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 섹터의 데이터를 획득합니다.
+		*	모든 섹터의 데이터를 관리하기 위한 시스템에서도 이와 동일한 구조체로 구성되어 있으므로 이에 유의하여 사용하십시오.
+		*	New Game에서 섹터 데이터를 셋업하는 용도 및 섹터의 기본 데이터에 접근하는 행위 이 외에는 권장하지 않습니다.
+		*	@param id - 획득하고자 하는 섹터의 ID입니다.
+		*	@return 획득한 섹터의 데이터.
+		*/
 		const struct FSectorData& GetSectorData(const FString& SectorName) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 모든 섹터의 이름을 TArray<String>으로 획득합니다.
+		*	@param sectorNameArray(out) - 모든 섹터의 이름을 복사할 배열입니다.
+		*/
 		void GetAllSectorNameData(TArray<FString>& sectorNameArray) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 플레이어의 새로운 시작과 관련된 데이터를 획득합니다.
+		*	@param id - 획득하고자 하는 플레이어 데이터의 ID입니다.
+		*	@return 획득한 플레이어 데이터.
+		*/
 		const struct FNewStartPlayerData& GetStartProfileData(const int& id) const;
 #pragma endregion
 
@@ -868,6 +946,10 @@ private:
 		UDataTable* GateData;
 	UPROPERTY()
 		UDataTable* ResourceData;
+	UPROPERTY()
+		UDataTable* ContainerData;
+	UPROPERTY()
+		UDataTable* ObjectData;
 
 	UPROPERTY()
 		UDataTable* SkillData;

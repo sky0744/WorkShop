@@ -624,12 +624,21 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 	return _result;
 }
 
+float ASpaceState::GetRelationshipArray(TArray<float>& relationshipArray, bool isRealRelation) const {
+
+	if (isRealRelation)
+		relationshipArray = factionRelationship;
+	else
+		relationshipArray = tempFactionRelationship;
+	return relationwithPlayerEmpire;
+}
+
 void ASpaceState::ApplyRelation(const Faction targetFaction, float damageForConvertRelation) {
 
 	damageForConvertRelation = FMath::Clamp(damageForConvertRelation * FMath::FRandRange(_define_DamagetoRelationFactorMIN, _define_DamagetoRelationFactorMAX),
 		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
-	tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] += damageForConvertRelation;
 
+	tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] -= damageForConvertRelation;
 	return;
 }
 
@@ -639,9 +648,9 @@ void ASpaceState::ApplyRelation(const Faction targetFaction, float SPForConvertR
 		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
 
 	if (isRealRelation) 
-		factionRelationship[FMath::Min3(factionRelationship.Num(), (int)targetFaction, 0)] += SPForConvertRelation;
+		factionRelationship[FMath::Min3(factionRelationship.Num(), (int)targetFaction, 0)] -= SPForConvertRelation;
 	else 
-		tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] += SPForConvertRelation;
+		tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] -= SPForConvertRelation;
 		
 	return;
 }

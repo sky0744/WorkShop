@@ -19,7 +19,7 @@ ACargoContainer::ACargoContainer()
 	objectMesh->Mobility = EComponentMobility::Movable;
 	RootComponent = objectMesh;
 
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
@@ -31,12 +31,18 @@ void ACargoContainer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	containerRotator = FRotator();
+	containerRotator.Pitch = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
+	containerRotator.Yaw = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
+	containerRotator.Roll = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][CargoContainer][Spawn] Spawn Finish!"));
 }
 
 void ACargoContainer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	AddActorWorldRotation(containerRotator);
 }
 
 float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -94,6 +100,17 @@ BehaviorState ACargoContainer::GetBehaviorState() const {
 }
 
 bool ACargoContainer::InitObject(const int objectId) {
+
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (!USafeENGINE::IsValid(_tempInstance))
+		return false;
+
+	FObjectData _tempObjectData = _tempInstance->GetObjectData(objectId);
+	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempObjectData.MeshPath.ToString()));
+	if (_newMesh)
+		objectMesh->SetStaticMesh(_newMesh);
+
+	lengthToLongAsix = _tempObjectData.LengthToLongAsix;
 	return false;
 }
 

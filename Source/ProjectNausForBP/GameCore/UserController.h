@@ -4,6 +4,7 @@
 
 #include "GameFramework/PlayerController.h"
 #include "ProjectNausForBP.h"
+#include "SpaceHUDBase.h"
 #include "../GameCoreSub/Enums.h"
 #include "../GameObject/PlayerShip.h"
 #include "UserController.generated.h"
@@ -92,16 +93,16 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player Controller")
 		ASpaceObject* GetTargetInfo() const;
-protected:
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void SetTarget(ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void SettingInteraction(const ASpaceObject* target) const;
 #pragma endregion
 
 #pragma region Components & Variables
 private:
-	APlayerShip* ControlledPawn;
+	ASpaceHUDBase* controlledHUD;
+	APlayerShip* controlledPawn;
 	ASpaceObject* tObj;
 
 	FVector mousePositionInWorld;

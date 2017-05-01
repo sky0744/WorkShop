@@ -130,13 +130,13 @@ bool AUserState::TotalSave(const bool isBeforeWarp) {
 }
 bool AUserState::TotalLoad() {
 
-	USaveLoader* loader = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
-	if (!USafeENGINE::IsValid(loader)) {
+	USaveLoader* _loader = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
+	if (!USafeENGINE::IsValid(_loader)) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Can't Find Save Files or casting SaveLoader"));
 		return false;
 	}
 
-	FSectorData _tempSectorData = Cast<USafeENGINE>(GetGameInstance())->GetSectorData(loader->sectorName);
+	FSectorData _tempSectorData = Cast<USafeENGINE>(GetGameInstance())->GetSectorData(_loader->sectorName);
 	if (&_tempSectorData == nullptr) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Can't Access Sector Data."));
 		return false;
@@ -146,13 +146,13 @@ bool AUserState::TotalLoad() {
 	if (!USafeENGINE::IsValid(spaceState))
 		return false;
 
-	if (spaceState->LoadSpaceState(loader) != true) {
+	if (spaceState->LoadSpaceState(_loader) != true) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Space Info Load Fail."));
 		return false;
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][TotalLoad] Space Info Load Finish."));
 
-	if (PlayerLoad(loader) == false) {
+	if (PlayerLoad(_loader) == false) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Player Load Fail."));
 		return false;
 	}
@@ -162,13 +162,37 @@ bool AUserState::TotalLoad() {
 	return true;
 }
 void AUserState::PlayerDeath() {
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (!USafeENGINE::IsValid(_tempInstance))
+		return;
+	FItemData _tempItemData;
 	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
 		return;
 	ASpaceObject* _playerPawn = Cast<ASpaceObject>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
 	if (!USafeENGINE::IsValid(_playerPawn) || _playerPawn->GetValue(GetStatType::currentHull) > 0.0f)
 		return;
 
-	
+	sShipID = 0;
+	for (int index = 0; index < listItem.Num(); index++) {
+		_tempItemData = _tempInstance->GetItemData(listItem[index].itemID);
+		if (!_tempItemData.isCanDrop)
+			continue;
+		listItem.RemoveAtSwap(index);
+	}
+	sBounty = 0.0f;
+	sCredit *= FMath::FRandRange(0.2f, 0.9f);
+
+	TotalSave(true);
+	USaveLoader* _Repositioning = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
+	TArray<AActor*> _stationsInSector;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStation::StaticClass(), _stationsInSector);
+
+	if (_stationsInSector.Num() < 1)
+		_Repositioning->position = FVector::ZeroVector;
+	else
+		_Repositioning->position = _stationsInSector[FMath::RandRange(0, _stationsInSector.Num())]->GetActorLocation();
+
+	UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 }
 
 bool AUserState::PlayerSave(USaveLoader* _saver) {

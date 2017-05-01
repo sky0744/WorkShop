@@ -22,6 +22,8 @@ const float _define_StatRadarRangeMIN = 10.0f;
 const float _define_StatRadarRangeMAX = 100000.0f;
 const float _define_StatStrategicPointMIN = 0.0f;
 const float _define_StatStrategicPointMAX = 1000.0f;
+const float _define_StatBountyMIN = 0.0f;
+const float _define_StatBountyMAX = 5000000.0f;
 
 const float _define_StatSpeedMIN = 0.0f;
 const float _define_StatSpeedMAX = 10000.0f;

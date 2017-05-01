@@ -37,10 +37,12 @@ void ABeam::Tick(float DeltaTime) {
 	if (!USafeENGINE::IsValid(target) || !target->IsA(ASpaceObject::StaticClass()))
 		return;
 
-	resultLocation = target->GetActorLocation() - GetActorLocation();
-	resultLocation.Normalize();
-	DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, DeltaTime);
-
+	startLocation = target->GetActorLocation() - beamOwner->GetActorLocation();
+	startLocation.Normalize();
+	resultLocation = startLocation;
+	startLocation = beamOwner->GetActorLocation() + resultLocation.Rotation().RotateVector(FVector::RightVector) * locationOffset;
+	
+	DrawDebugPoint(GetWorld(), startLocation, 6, FColor(255, 255, 255), false, DeltaTime);
 	//거리 판단상 사거리 이내
 	if (beamRange > USafeENGINE::CheckDistanceConsiderSize(beamOwner, target)) {
 		launchedFaction = beamOwner->GetFaction();
@@ -80,7 +82,7 @@ void ABeam::Tick(float DeltaTime) {
 }
 
 //발사 전에 빔의 속성을 지정.
-void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime) {
+void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime, float locOffset) {
 
 	if (!USafeENGINE::IsValid(targetActor) || !targetActor->IsA(ASpaceObject::StaticClass()))
 		return;
@@ -111,6 +113,7 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 			beamRange = setedrange;
 			beamDamage = setedDamage;
 			PrimaryActorTick.TickInterval = 0.333333f;
+			locationOffset = locOffset;
 		}
 		break;
 	case ModuleType::TractorBeam:
@@ -120,6 +123,7 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 			beamRange = setedrange;
 			beamDamage = FMath::Clamp(setedDamage, -250.0f, 250.0f);
 			PrimaryActorTick.TickInterval = 0.0f;
+			locationOffset = locOffset;
 		}
 		break;
 	default:

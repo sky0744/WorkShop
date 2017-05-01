@@ -209,6 +209,8 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
+	UPROPERTY()
+		TArray<ASpaceObject*> targetingObject;
 
 	float maxSpeed;
 	float targetSpeed;

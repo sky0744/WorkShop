@@ -175,6 +175,7 @@ Faction AGate::GetFaction() const {
 }
 
 void AGate::SetFaction(const Faction setFaction) {
+
 	return;
 }
 
@@ -245,7 +246,7 @@ float AGate::GetValue(const GetStatType statType) const {
 
 void AGate::GetRepaired(const GetStatType statType, float repairValue) {
 
-	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
+	repairValue = FMath::Clamp(repairValue, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	switch (statType) {
 	case GetStatType::currentShield:
 		currentShield = FMath::Clamp(currentShield + repairValue, 0.0f, maxShield);
