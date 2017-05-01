@@ -59,6 +59,28 @@ public:
 
 #pragma region On/Off UI
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_Profile();
+	virtual void TriggerUI_Profile_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_Ship();
+	virtual void TriggerUI_Ship_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_Cargo();
+	virtual void TriggerUI_Cargo_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_Contract();
+	virtual void TriggerUI_Contract_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_WorldView();
+	virtual void TriggerUI_WorldView_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_Station();
+	virtual void TriggerUI_Station_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void TriggerUI_Menu();
+	virtual void TriggerUI_Menu_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void OnUITarget(const ASpaceObject* object, const FColor color, const float lifeTime);
 	virtual void OnUITarget_Implementation(const ASpaceObject* object, const FColor color, const float lifeTime);
 

@@ -13,6 +13,10 @@ USafeENGINE::USafeENGINE() {
 	StationData = _StationDataTable.Object;
 	static ConstructorHelpers::FObjectFinder<UDataTable> _ResourceDataTable(TEXT("DataTable'/Game/DataTable/ResourceData.ResourceData'"));
 	ResourceData = _ResourceDataTable.Object;
+	ConstructorHelpers::FObjectFinder<UDataTable> _ContainerDataTable(TEXT("DataTable'/Game/DataTable/CargoContainerData.CargoContainerData'"));
+	ContainerData = _ContainerDataTable.Object;
+	static ConstructorHelpers::FObjectFinder<UDataTable> _ObjectDataTable(TEXT("DataTable'/Game/DataTable/ObjectData.ObjectData'"));
+	ObjectData = _ObjectDataTable.Object;
 
 	static ConstructorHelpers::FObjectFinder<UDataTable> _SkillDataTable(TEXT("DataTable'/Game/DataTable/SkillData.SkillData'"));
 	SkillData = _SkillDataTable.Object;
@@ -55,6 +59,21 @@ const FResourceData& USafeENGINE::GetResourceData(const int& id) const {
 	else return *ResourceData->FindRow<FResourceData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
+const FObjectData& USafeENGINE::GetCargoContainerData(const int& id) const {
+
+	FObjectData* _data = ContainerData->FindRow<FObjectData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
+	if (_data)
+		return *_data;
+	else return *ContainerData->FindRow<FObjectData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
+}
+
+const FObjectData& USafeENGINE::GetObjectData(const int& id) const {
+	
+	FObjectData* _data = ObjectData->FindRow<FObjectData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
+	if (_data)
+		return *_data;
+	else return *ObjectData->FindRow<FObjectData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
+}
 
 const FSkillData& USafeENGINE::GetSkillData(const int& id) const {
 	FSkillData* _data = SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));

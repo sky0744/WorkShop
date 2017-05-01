@@ -49,6 +49,34 @@ void ASpaceHUDBase::UpdateUIStationOnRequest_Implementation() {
 #pragma endregion
 
 #pragma region On/Off UI
+void ASpaceHUDBase::TriggerUI_Profile_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::TriggerUI_Ship_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::TriggerUI_Cargo_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::TriggerUI_Contract_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::TriggerUI_WorldView_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::TriggerUI_Station_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::TriggerUI_Menu_Implementation() {
+	return;
+}
+
 void ASpaceHUDBase::OnUITarget_Implementation(const ASpaceObject* object, const FColor color, const float lifeTime) {
 	return;
 }

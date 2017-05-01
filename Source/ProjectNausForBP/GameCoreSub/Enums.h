@@ -180,7 +180,7 @@ enum class BonusStatType : uint8 {
 
 	BonusMaxHull			UMETA(DisplayName = "BonusMaxHull"),
 	BonusRepaireHull		UMETA(DisplayName = "BonusRepaireHull"),
-	BonusDefHull			UMETA(DisplayName = "BonusFefHull"),
+	BonusDefHull			UMETA(DisplayName = "BonusDefHull"),
 
 	BonusMaxPower			UMETA(DisplayName = "BonusMaxPower"),
 	BonusRechargePower		UMETA(DisplayName = "BonusRechargePower"),

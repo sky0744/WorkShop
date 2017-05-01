@@ -56,7 +56,5 @@ private:
 	bool isHoming;
 
 	float setedDamage;
-	float setedMaxSpeed;
-	float currentSpeed;
 #pragma endregion
 };

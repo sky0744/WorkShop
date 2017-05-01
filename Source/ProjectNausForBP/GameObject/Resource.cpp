@@ -17,7 +17,7 @@ AResource::AResource()
 	objectMesh->Mobility = EComponentMobility::Movable;
 	RootComponent = objectMesh;
 
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
@@ -29,12 +29,18 @@ void AResource::BeginPlay()
 {
 	Super::BeginPlay();
 
+	asteroidRotator = FRotator();
+	asteroidRotator.Pitch = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
+	asteroidRotator.Yaw = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
+	asteroidRotator.Roll = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][Resource][Spawn] Spawn Finish!"));
 }
 
 void AResource::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
+
+	AddActorWorldRotation(asteroidRotator);
 }
 
 float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {

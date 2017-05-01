@@ -31,6 +31,7 @@ AShip::AShip()
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
 	npcShipID = -1;
+	isInited = false;
 }
 
 #pragma region Event Calls
@@ -229,7 +230,7 @@ bool AShip::InitObject(const int npcID) {
 		return false;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (_tempInstance == nullptr)
+	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 
 	FNPCData _tempNpcShipData = _tempInstance->GetNPCData(npcID);
@@ -248,9 +249,11 @@ bool AShip::InitObject(const int npcID) {
 	behaviorType = _tempNpcShipData.BehaviorTypeOfNPC;
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, 10.0f, 100000.0f);
 
-	int tempModuleSlotNumber = FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num());
-	slotTargetModule.Empty();
-	for (int index = 0; index < tempModuleSlotNumber; index++) {
+	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
+	slotTargetModule.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	targetingObject.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+
+	for (int index = 0; index < _tempModuleSlotNumber; index++) {
 		_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
 		if (_tempModuleData.Type == ItemType::TargetModule) {
 			slotTargetModule[index].moduleID = _tempModuleData.ItemID;
@@ -263,169 +266,177 @@ bool AShip::InitObject(const int npcID) {
 			slotTargetModule[index].damageMultiple = _tempModuleData.DamageMultiple;
 			slotTargetModule[index].launchSpeedMultiple = _tempModuleData.LaunchSpeedMultiple;
 			slotTargetModule[index].accaucy = _tempModuleData.Accaucy;
-			slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
-
-			slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo[FMath::RandRange(0, _tempModuleData.UsageAmmo.Num() - 1)], FMath::RandRange(0, _tempModuleData.AmmoCapacity));
 			slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
+			slotTargetModule[index].compatibleAmmo = _tempModuleData.UsageAmmo;
+			slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
+			if(_tempModuleData.UsageAmmo.Num() > 0)
+				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo[FMath::RandRange(0, _tempModuleData.UsageAmmo.Num() - 1)], FMath::RandRange(0, _tempModuleData.AmmoCapacity));
 		}
 	}
-
-	if (&_tempNpcShipData == nullptr || &_tempShipData == nullptr)
-		return false;
-
-	lengthToLongAsix = _tempShipData.LengthToLongAsix;
-	lengthRadarRange = _tempShipData.LengthRadarRange;
+	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
+	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint + _tempNpcShipData.StrategicPointBonus, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
-	bounty = _tempNpcShipData.NpcBounty;
+	bounty = FMath::Clamp(_tempNpcShipData.NpcBounty, _define_StatBountyMIN, _define_StatBountyMAX);
 
-	maxShield = FMath::Clamp(_tempShipData.Shield, 10.0f, 1000000.0f);
-	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield, 0.0f, 500.0f);
-	defShield = FMath::Clamp(_tempShipData.DefShield, 0.0f, 1000.0f);
+	maxShield = FMath::Clamp(_tempShipData.Shield, _define_StatDamperMIN, _define_StatDamperMAX);
+	rechargeShield = FMath::Clamp(_tempShipData.RechargeShield, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	defShield = FMath::Clamp(_tempShipData.DefShield, _define_StatDefMIN, _define_StatDefMAX);
 	currentShield = maxShield;
 
-	maxArmor = FMath::Clamp(_tempShipData.Armor, 10.0f, 1000000.0f);
-	repairArmor = FMath::Clamp(_tempShipData.RepairArmor, 0.0f, 500.0f);
-	defArmor = FMath::Clamp(_tempShipData.DefArmor, 0.0f, 1000.0f);
+	maxArmor = FMath::Clamp(_tempShipData.Armor, _define_StatDamperMIN, _define_StatDamperMAX);
+	repairArmor = FMath::Clamp(_tempShipData.RepairArmor, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	defArmor = FMath::Clamp(_tempShipData.DefArmor, _define_StatDefMIN, _define_StatDefMAX);
 	currentArmor = maxArmor;
 
-	maxHull = FMath::Clamp(_tempShipData.Hull, 10.0f, 1000000.0f);
-	repairHull = FMath::Clamp(_tempShipData.RepairHull, 0.0f, 500.0f);
-	defHull = FMath::Clamp(_tempShipData.DefHull, 0.0f, 1000.0f);
+	maxHull = FMath::Clamp(_tempShipData.Hull, _define_StatDamperMIN, _define_StatDamperMAX);
+	repairHull = FMath::Clamp(_tempShipData.RepairHull, _define_StatRestoreMIN, _define_StatRestoreMAX);
+	defHull = FMath::Clamp(_tempShipData.DefHull, _define_StatDefMIN, _define_StatDefMAX);
 	currentHull = maxHull;
 
-	maxPower = FMath::Clamp(_tempShipData.Power, 10.0f, 1000000.0f);
-	rechargePower = FMath::Clamp(_tempShipData.RechargePower, 0.0f, 5000.0f);
+	maxPower = FMath::Clamp(_tempShipData.Power, _define_StatDamperMIN, _define_StatDamperMAX);
+	rechargePower = FMath::Clamp(_tempShipData.RechargePower, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	currentPower = maxPower;
 
-	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, 0.0f, 10000.0f);
-	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, 0.0f, 10000.0f);
-	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 10000.0f);
-	startAccelAngle = FMath::Clamp(_tempShipData.MaxAcceleration, 0.0f, 180.0f);
+	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
+	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
+	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
+	startAccelAngle = FMath::Clamp(_tempShipData.StartAccelAngle, _define_StatRotateMIN, _define_StatRotateMAX);
 
-	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
-	rotateAcceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
-	rotateDeceleration = FMath::Clamp(_tempShipData.MaxRotateRate, 0.0f, 90.0f);
+	maxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, _define_StatRotateMIN, _define_StatRotateMAX);
+	rotateAcceleration = FMath::Clamp(_tempShipData.RotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
+	rotateDeceleration = FMath::Clamp(_tempShipData.RotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 
-	for (FBonusStat& bonusStat : _tempShipData.bonusStats) {
-
-		switch (bonusStat.bonusStatType) {
+	TArray<FBonusStat> _bonusStatsForWork = _tempShipData.bonusStats;
+	_bonusStatsForWork.Append(_tempNpcShipData.BonusStats);
+	//보너스 스텟의 배열에서 동일 보너스 타입의 엘리먼트들을 1개로 통합하고 나머지는 제거
+	for (int index = 0; index < _bonusStatsForWork.Num(); index++) {
+		for (int subIndex = 0; subIndex < _bonusStatsForWork.Num(); subIndex++)
+			if (_bonusStatsForWork[index].bonusStatType == _bonusStatsForWork[subIndex].bonusStatType && index != subIndex) {
+				_bonusStatsForWork[FMath::Min(index, subIndex)].bonusStat = _bonusStatsForWork[FMath::Max(index, subIndex)].bonusStat;
+				_bonusStatsForWork.RemoveAtSwap(FMath::Max(index, subIndex));
+			}
+	}
+	_bonusStatsForWork.Shrink();
+	for (FBonusStat& tBonusStat : _bonusStatsForWork) {
+		switch (tBonusStat.bonusStatType) {
 		case BonusStatType::BonusMaxShield:
-			maxShield = FMath::Clamp(maxShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			maxShield = FMath::Clamp(maxShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRechargeShield:
-			rechargeShield = FMath::Clamp(rechargeShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			rechargeShield = FMath::Clamp(rechargeShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusDefShield:
-			defShield = FMath::Clamp(defShield * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			defShield = FMath::Clamp(defShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
 			break;
 		case BonusStatType::BonusMaxArmor:
-			maxArmor = FMath::Clamp(maxArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			maxArmor = FMath::Clamp(maxArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRepaireArmor:
-			repairArmor = FMath::Clamp(repairArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			repairArmor = FMath::Clamp(repairArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusDefArmor:
-			defArmor = FMath::Clamp(defArmor * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			defArmor = FMath::Clamp(defArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
 			break;
 		case BonusStatType::BonusMaxHull:
-			maxHull = FMath::Clamp(maxHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			maxHull = FMath::Clamp(maxHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRepaireHull:
-			repairHull = FMath::Clamp(repairHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			repairHull = FMath::Clamp(repairHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusDefHull:
-			defHull = FMath::Clamp(defHull * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			defHull = FMath::Clamp(defHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
 			break;
 		case BonusStatType::BonusMaxPower:
-			maxPower = FMath::Clamp(maxPower * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 10.0f, 1000000.0f);
+			maxPower = FMath::Clamp(maxPower * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRechargePower:
-			rechargePower = FMath::Clamp(rechargePower * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 500.0f);
+			rechargePower = FMath::Clamp(rechargePower * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusMobilitySpeed:
-			maxSpeed = FMath::Clamp(maxSpeed * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 10000.0f);
+			maxSpeed = FMath::Clamp(maxSpeed * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatSpeedMIN, _define_StatSpeedMAX);
 			break;
 		case BonusStatType::BonusMobilityAcceleration:
-			maxAcceleration = FMath::Clamp(maxAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
-			minAcceleration = FMath::Clamp(minAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 1000.0f);
+			maxAcceleration = FMath::Clamp(maxAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
+			minAcceleration = FMath::Clamp(minAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
 			break;
 		case BonusStatType::BonusMobilityRotation:
-			maxRotateRate = FMath::Clamp(maxRotateRate * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			maxRotateRate = FMath::Clamp(maxRotateRate * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			break;
 		case BonusStatType::BonusMobilityRotateAcceleration:
-			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
-			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(bonusStat.bonusStat, 0.0f, 5.0f)), 0.0f, 90.0f);
+			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			break;
+
+		case BonusStatType::BonusMaxRadarRange:
+			lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+			break;
+		case BonusStatType::BonusTargetModuleUsagePower:
+			for (FTargetModule& module : slotTargetModule)
+				module.maxUsagePower *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReducePowerMAX, 1.0f - _define_StatBonusReducePowerMIN);
 			break;
 		default:
-			for (int index = 0; index < slotTargetModule.Num(); index++) {
+			for (int index = 0; index < slotTargetModule.Num(); index++)
 				if (slotTargetModule[index].moduleID > 0) {
 					switch (slotTargetModule[index].moduleType) {
 					case ModuleType::Beam:
-						if (bonusStat.bonusStatType == BonusStatType::BonusBeamDamage)
-							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamPower)
-							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamCoolTime)
-							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamAccuracy)
-							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusBeamRange)
-							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						if (tBonusStat.bonusStatType == BonusStatType::BonusBeamDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						slotTargetModule[index].ammoLifeSpanBonus = FMath::Clamp(slotTargetModule[index].ammoLifeSpanBonus, 0.0f, slotTargetModule[index].maxCooltime);
 						break;
 					case ModuleType::Cannon:
-						if (bonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
-							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonCoolTime)
-							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonAccuracy)
-							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonLifeTime)
-							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusCannonLaunchVelocity)
-							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						if (tBonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					case ModuleType::Railgun:
-						if (bonusStat.bonusStatType == BonusStatType::BonusRailGunDamage)
-							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunPower)
-							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunCoolTime)
-							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunAccuracy)
-							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunLifeTime)
-							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusRailGunLaunchVelocity)
-							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					case ModuleType::MissileLauncher:
-						if (bonusStat.bonusStatType == BonusStatType::BonusMissileDamage)
-							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileCoolTime)
-							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileAccuracy)
-							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileLifeTime)
-							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMissileLaunchVelocity)
-							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						if (tBonusStat.bonusStatType == BonusStatType::BonusMissileDamage)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileAccuracy)
+							slotTargetModule[index].accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileLifeTime)
+							slotTargetModule[index].ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileLaunchVelocity)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					case ModuleType::MinerLaser:
-						if (bonusStat.bonusStatType == BonusStatType::BonusMiningAmount)
-							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningPower)
-							slotTargetModule[index].maxUsagePower *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningCoolTime)
-							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - bonusStat.bonusStat, 0.0f, 5.0f);
-						else if (bonusStat.bonusStatType == BonusStatType::BonusMiningRange)
-							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.bonusStat, 1.0f, 5.0f);
+						if (tBonusStat.bonusStatType == BonusStatType::BonusMiningAmount)
+							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMiningCoolTime)
+							slotTargetModule[index].maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.bonusStatType == BonusStatType::BonusMiningRange)
+							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					default:
 						break;
 					}
 				}
-			}
 			break;
 		}
 	}
@@ -433,7 +444,12 @@ bool AShip::InitObject(const int npcID) {
 }
 
 bool AShip::LoadBaseObject(const float shield, const float armor, const float hull, const float power) {
-	
+	if (isInited)
+		return false;
+	currentShield = FMath::Clamp(shield, 0.0f, maxShield);
+	currentArmor = FMath::Clamp(armor, 0.0f, maxArmor);
+	currentHull = FMath::Clamp(hull, 0.0f, maxHull);
+	currentPower = FMath::Clamp(power, 0.0f, maxPower);
 	return true;
 }
 
@@ -522,7 +538,7 @@ float AShip::GetValue(const GetStatType statType) const {
 
 void AShip::GetRepaired(const GetStatType statType, float repairValue) {
 
-	repairValue = FMath::Clamp(repairValue, 0.0f, 500.0f);
+	repairValue = FMath::Clamp(repairValue, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	switch (statType) {
 	case GetStatType::currentShield:
 		currentShield = FMath::Clamp(currentShield + repairValue, 0.0f, maxShield);
@@ -789,7 +805,7 @@ void AShip::ModuleCheck() {
 
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
-		if (currentPower < 5.0f)
+		if (currentPower < 5.0f || !targetingObject.IsValidIndex(index))
 			slotTargetModule[index].isBookedForOff = true;
 
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
@@ -800,34 +816,36 @@ void AShip::ModuleCheck() {
 
 			//쿨타임 완료시 행동 실시
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
+				if (slotTargetModule[index].isBookedForOff)
+					slotTargetModule[index].moduleState = ModuleState::NotActivate;
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
-					if (targetObject != nullptr && targetObject != this) {
+					if (USafeENGINE::IsValid(targetingObject[index]) && targetingObject[index] != this && targetingObject[index]->IsA(ASpaceObject::StaticClass())) {
 						//목표 지점 및 방향 계산
-						FVector _targetedLocation = targetObject->GetActorLocation();
+						FVector _targetedLocation = targetingObject[index]->GetActorLocation();
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
+						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
 
 						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
-							+ _targetedRotation.RotateVector(FVector::RightVector) * FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+							+ _targetedRotation.RotateVector(FVector::RightVector) * _fireOffset;
 						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 
 						//빔계열 모듈의 경우
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
-							slotTargetModule[index].moduleType == ModuleType::MinerLaser) {
+							slotTargetModule[index].moduleType == ModuleType::MinerLaser ||
+							slotTargetModule[index].moduleType == ModuleType::TractorBeam) {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
 								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-							if (_beam == nullptr)
+							if (!USafeENGINE::IsValid(_beam))
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
 
-							if (targetObject->IsA(ASpaceObject::StaticClass()))
-								_beam->SetBeamProperty(this, targetObject, slotTargetModule[index].launchSpeedMultiple,
-									slotTargetModule[index].moduleType, slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus);
-							else slotTargetModule[index].moduleState = ModuleState::NotActivate;
+							_beam->SetBeamProperty(this, targetingObject[index], slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].moduleType,
+								slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus, _fireOffset);
 						}
 						//탄도 무기류의 경우
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
@@ -842,7 +860,7 @@ void AShip::ModuleCheck() {
 
 								AProjectiles* _projectile = Cast<AProjectiles>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AProjectiles::StaticClass(),
 									_spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-								if (_projectile == nullptr)
+								if (!USafeENGINE::IsValid(_projectile))
 									return;
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
 
@@ -875,11 +893,10 @@ void AShip::ModuleCheck() {
 
 						//재장전 실시. 모듈 동작은 재장전이 완료되면 자동으로 시작.
 							slotTargetModule[index].ammo.itemAmount = slotTargetModule[index].ammoCapacity;
-							if (targetObject != nullptr)
+							if (USafeENGINE::IsValid(targetingObject[index]))
 								slotTargetModule[index].moduleState = ModuleState::Activate;
 							else 
 								slotTargetModule[index].moduleState = ModuleState::NotActivate;
-						 
 						slotTargetModule[index].isBookedForOff = false;
 					}
 					break;

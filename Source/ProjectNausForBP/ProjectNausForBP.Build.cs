@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:88fd66b474beb4dd7ba0d1b48fab73457cc40b137f4f4ae7b4f68e604dd746d0
-size 794
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+
+public class ProjectNausForBP : ModuleRules
+{
+	public ProjectNausForBP(TargetInfo Target)
+	{
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AIModule" });
+
+		PrivateDependencyModuleNames.AddRange(new string[] {  });
+
+        // Uncomment if you are using Slate UI
+        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+
+        // Uncomment if you are using online features
+        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
+
+        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+    }
+}

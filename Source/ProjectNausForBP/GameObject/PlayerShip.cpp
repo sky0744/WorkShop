@@ -75,10 +75,10 @@ void APlayerShip::Tick(float DeltaTime)
 		checkTime = 0.0f;
 	}
 
-	sCurrentHull = FMath::Clamp(sCurrentHull + FMath::Clamp((sRepairHull + moduleStatHullRepair), 0.0f, 500.0f) * DeltaTime, 0.0f, sMaxHull);
-	sCurrentArmor = FMath::Clamp(sCurrentArmor + FMath::Clamp((sRepairArmor + moduleStatArmorRepair), 0.0f, 500.0f) * DeltaTime, 0.0f, sMaxArmor);
-	sCurrentShield = FMath::Clamp(sCurrentShield + FMath::Clamp((sRechargeShield + moduleStatShieldRegen), 0.0f, 500.0f) * DeltaTime, 0.0f, sMaxShield);
-	sCurrentPower = FMath::Clamp(sCurrentPower + FMath::Clamp(sRechargePower - moduleConsumptPower, -500.0f, 500.0f) * DeltaTime, 0.0f, sMaxPower);
+	sCurrentHull = FMath::Clamp(sCurrentHull + FMath::Clamp(sRepairHull + moduleStatHullRepair, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxHull);
+	sCurrentArmor = FMath::Clamp(sCurrentArmor + FMath::Clamp(sRepairArmor + moduleStatArmorRepair, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxArmor);
+	sCurrentShield = FMath::Clamp(sCurrentShield + FMath::Clamp(sRechargeShield + moduleStatShieldRegen, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxShield);
+	sCurrentPower = FMath::Clamp(sCurrentPower + FMath::Clamp(sRechargePower - moduleConsumptPower, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxPower);
 
 	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + SmoothZoomRemain * 0.05f, 100.0f, playerViewpointArm->CameraLagMaxDistance);
 	SmoothZoomRemain -= SmoothZoomRemain * 0.75f * DeltaTime;
@@ -250,6 +250,8 @@ bool APlayerShip::InitObject(const int objectId) {
 	sShipID = objectId;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (!USafeENGINE::IsValid(_tempInstance))
+		return false;
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
 	objectName = _tempShipData.Name;
@@ -609,6 +611,8 @@ void APlayerShip::CheckBonusStat(const TArray<FBonusStat>& bonusStatArray) {
 				_bonusStatsForWork.RemoveAtSwap(FMath::Max(index, subIndex));
 			}
 	}
+	_bonusStatsForWork.Shrink();
+
 	for (FBonusStat& tBonusStat : _bonusStatsForWork) {
 		switch (tBonusStat.bonusStatType) {
 		case BonusStatType::BonusMaxShield:
@@ -1573,7 +1577,7 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
-		if (sCurrentPower < 5.0f)
+		if (sCurrentPower < 5.0f || !targetingObject.IsValidIndex(index))
 			slotTargetModule[index].isBookedForOff = true;
 
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
@@ -1584,6 +1588,8 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 
 			//쿨타임 완료시 행동 실시
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
+				if (slotTargetModule[index].isBookedForOff)
+					slotTargetModule[index].moduleState = ModuleState::NotActivate;
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
@@ -1593,8 +1599,10 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
+						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
 						
-						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix;
+						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
+							+ _targetedRotation.RotateVector(FVector::RightVector) * _fireOffset;
 						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 
 						//빔계열 모듈의 경우
@@ -1608,8 +1616,8 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
 
-							_beam->SetBeamProperty(this, targetingObject[index], slotTargetModule[index].launchSpeedMultiple,
-								slotTargetModule[index].moduleType, slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus);
+							_beam->SetBeamProperty(this, targetingObject[index], slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].moduleType,
+								slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus, _fireOffset);
 						}
 						//탄도 무기류의 경우
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||

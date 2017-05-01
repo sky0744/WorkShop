@@ -103,6 +103,7 @@ public:
 #pragma region Variables
 private:
 	int cargoContainerID;
+	FRotator containerRotator;
 public:
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Container Data")
 		TArray<FItem> cargo;

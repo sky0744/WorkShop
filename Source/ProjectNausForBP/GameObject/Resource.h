@@ -19,6 +19,8 @@ const float _define_DamagedMAX = 10000.0f;
 */
 const float _define_StatResourceAmountMIN = 0.0f;
 const float _define_StatResourceAmountMAX = 10000.0f;
+const float _define_RandomRotateSpeedMIN = -3.0f;
+const float _define_RandomRotateSpeedMAX = 3.0f;
 #pragma endregion
 
 UCLASS()
@@ -80,9 +82,9 @@ private:
 	float resourceID;
 
 	ResourceType resourceType;
-	float lengthToLongAsix;
-
 	FItem currentResource;
 	float defResource;
+
+	FRotator asteroidRotator;
 #pragma endregion
 };
