@@ -33,8 +33,10 @@ ASpaceObject::ASpaceObject()
 void ASpaceObject::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(false);
+	if (GetWorld()) {
+		if(Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld())))
+			Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(false);
+		if(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass()) && this != UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->AddToObjectList(this);
 	}
 	lengthToLongAsix = 0.0f;

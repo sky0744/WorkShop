@@ -531,7 +531,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		FName MeshPath;
+		TArray<FName> MeshPath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
 		UTexture2D* Icon;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")

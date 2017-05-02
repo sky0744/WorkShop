@@ -5,8 +5,7 @@
 #include "ProjectNausForBP.h"
 #include "Ship.h"
 
-AShip::AShip()
-{
+AShip::AShip() {
 	objectMesh->SetCanEverAffectNavigation(true);
 	objectMesh->SetEnableGravity(false);
 	objectMesh->SetSimulatePhysics(true);
@@ -22,7 +21,7 @@ AShip::AShip()
 	objectMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("ObjectMovement"));
 	objectMovement->SetPlaneConstraintEnabled(true);
 	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
-	
+
 	AIControllerClass = ASpaceAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -32,6 +31,9 @@ AShip::AShip()
 	PrimaryActorTick.TickInterval = 0.0f;
 	npcShipID = -1;
 	isInited = false;
+
+	slotTargetModule = TArray<FTargetModule>();
+	targetingObject = TArray<ASpaceObject*>();
 }
 
 #pragma region Event Calls
@@ -49,13 +51,13 @@ void AShip::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	tempDeltaTime = DeltaTime;
 	checkTime += DeltaTime;
-	if (checkTime > 0.5f) {
+	if (checkTime > _define_ModuleANDPathTick) {
 		checkTime = 0.0f;
 
-		currentShield = FMath::Clamp(currentShield + rechargeShield * 0.5f, 0.0f, maxShield);
-		currentArmor = FMath::Clamp(currentArmor + repairArmor * 0.5f, 0.0f, maxArmor);
-		currentHull = FMath::Clamp(currentHull + repairHull * 0.5f, 0.0f, maxHull);
-		currentPower = FMath::Clamp(currentPower + rechargePower * 0.5f, 0.0f, maxPower);
+		currentShield = FMath::Clamp(currentShield + rechargeShield * _define_ModuleANDPathTick, 0.0f, maxShield);
+		currentArmor = FMath::Clamp(currentArmor + repairArmor * _define_ModuleANDPathTick, 0.0f, maxArmor);
+		currentHull = FMath::Clamp(currentHull + repairHull * _define_ModuleANDPathTick, 0.0f, maxHull);
+		currentPower = FMath::Clamp(currentPower + rechargePower * _define_ModuleANDPathTick, 0.0f, maxPower);
 
 		CheckPath();
 		ModuleCheck();
@@ -596,8 +598,13 @@ bool AShip::CommandAttack(ASpaceObject* target) {
 		targetObject = target;
 		behaviorState = BehaviorState::Battle;
 
-		for (FTargetModule& module : slotTargetModule) 
-			module.moduleState = ModuleState::Activate;
+		int _tmepRange = FMath::Min(slotTargetModule.Num(), targetingObject.Num());
+		for (int index = 0; index < _tmepRange; index++) {
+			if (slotTargetModule[index].maxUsagePower * slotTargetModule[index].maxCooltime > currentPower)
+				continue;
+			slotTargetModule[index].moduleState = ModuleState::Activate;
+			targetingObject[index] = target;
+		}
 		return true;
 	}
 	else return false;
@@ -807,17 +814,14 @@ void AShip::ModuleCheck() {
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
 		if (currentPower < 5.0f || !targetingObject.IsValidIndex(index))
 			slotTargetModule[index].isBookedForOff = true;
-
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
-			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * 0.5f,
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * _define_ModuleANDPathTick,
 				0.0f, slotTargetModule[index].maxUsagePower);
-			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - 0.5f, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - _define_ModuleANDPathTick, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
 			//쿨타임 완료시 행동 실시
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
-				if (slotTargetModule[index].isBookedForOff)
-					slotTargetModule[index].moduleState = ModuleState::NotActivate;
 				switch (slotTargetModule[index].moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
@@ -827,7 +831,7 @@ void AShip::ModuleCheck() {
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
-						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * _define_TargetLocationOffset, lengthToLongAsix * _define_TargetLocationOffset);
 
 						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
 							+ _targetedRotation.RotateVector(FVector::RightVector) * _fireOffset;
@@ -885,6 +889,11 @@ void AShip::ModuleCheck() {
 						targetObject = nullptr;
 						slotTargetModule[index].isBookedForOff = false;
 					}
+					if (slotTargetModule[index].isBookedForOff) {
+						slotTargetModule[index].moduleState = ModuleState::NotActivate;
+						targetObject = nullptr;
+						slotTargetModule[index].isBookedForOff = false;
+					}
 					break;
 				case ModuleState::ReloadAmmo:
 					if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
@@ -915,7 +924,7 @@ void AShip::ModuleCheck() {
 		}
 		//모듈이 꺼져있을 경우 power 소모량 감소
 		else
-			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * 0.5f,
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * _define_ModuleANDPathTick,
 				0.0f, slotTargetModule[index].maxUsagePower);
 		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
 	}

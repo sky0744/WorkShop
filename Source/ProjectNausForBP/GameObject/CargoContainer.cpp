@@ -24,6 +24,8 @@ ACargoContainer::ACargoContainer()
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
 	cargoContainerID = -1;
+
+	cargo = TArray<FItem>();
 }
 
 #pragma region Event Calls
@@ -42,7 +44,7 @@ void ACargoContainer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	AddActorWorldRotation(containerRotator);
+	AddActorLocalRotation(containerRotator);
 }
 
 float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {

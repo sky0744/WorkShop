@@ -8,6 +8,10 @@ ASpaceState::ASpaceState() {
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 60.0f;
+
+	sectorInfo = TArray<FSectorData>();
+	tempFactionRelationship = TArray<float>();
+	factionRelationship = TArray<float>();
 }
 
 void ASpaceState::BeginPlay() {
@@ -271,19 +275,20 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By User Request!"));
 		saver->sectorInfo = sectorInfo;
 		TArray<AActor*> _getAllObj;
-		ASpaceObject* _obj;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpaceObject::StaticClass(), _getAllObj);
 
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpaceObject::StaticClass(), _getAllObj);
 		TScriptInterface<IStructureable> _transStruct;
+
+		ASpaceObject* _spaceObject;
+		ACargoContainer* _cargoContainer;
+		TArray<FItem> _cargoInContainer;
 		AResource* _resource;
 
-		saver->npcShipID.Reserve(_getAllObj.Num() - 1);
-		saver->npcShipLocation.Reserve(_getAllObj.Num() - 1);
-		saver->npcShipRotation.Reserve(_getAllObj.Num() - 1);
-		saver->npcShipShield.Reserve(_getAllObj.Num() - 1);
-		saver->npcShipArmor.Reserve(_getAllObj.Num() - 1);
-		saver->npcShipHull.Reserve(_getAllObj.Num() - 1);
-		saver->npcShipPower.Reserve(_getAllObj.Num() - 1);
+		saver->shipSaveInfo.Reserve(_getAllObj.Num());
+		saver->resourceSaveInfo.Reserve(_getAllObj.Num());
+		saver->containerSaveInfo.Reserve(_getAllObj.Num());
+		saver->objectSaveInfo.Reserve(_getAllObj.Num());
+		saver->droneSaveInfo.Reserve(_getAllObj.Num());
 
 		int _exceptObjectCount = 0;
 		//Save All Object...
@@ -292,31 +297,42 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				_exceptObjectCount++;
 				continue;
 			}
-			_obj = Cast<ASpaceObject>(_getAllObj[index]);
+			_spaceObject = Cast<ASpaceObject>(_getAllObj[index]);
+			if (!USafeENGINE::IsValid(_spaceObject))
+				continue;
 
-			switch (_obj->GetObjectType()) {
+			switch (_spaceObject->GetObjectType()) {
 			case ObjectType::Ship:
-				if (_obj != UGameplayStatics::GetPlayerPawn(GetWorld(), 0)) {
-					saver->npcShipID.Emplace(_obj->GetObjectID());
-					saver->npcShipLocation.Emplace(_obj->GetActorLocation());
-					saver->npcShipRotation.Emplace(_obj->GetActorRotation());
-					saver->npcShipShield.Emplace(_obj->GetValue(GetStatType::currentShield));
-					saver->npcShipArmor.Emplace(_obj->GetValue(GetStatType::currentArmor));
-					saver->npcShipHull.Emplace(_obj->GetValue(GetStatType::currentHull));
-					saver->npcShipPower.Emplace(_obj->GetValue(GetStatType::currentPower));
+				if (_spaceObject->IsA(AShip::StaticClass()))
+					saver->shipSaveInfo.Emplace(FSavedNPCShipData(_spaceObject->GetObjectID(), _spaceObject->GetFaction(), (FVector2D)_spaceObject->GetActorLocation(),
+						_spaceObject->GetActorRotation(), _spaceObject->GetValue(GetStatType::currentShield), _spaceObject->GetValue(GetStatType::currentArmor),
+						_spaceObject->GetValue(GetStatType::currentHull), _spaceObject->GetValue(GetStatType::currentPower)));
+				break;
+			case ObjectType::Drone:
+				if (_spaceObject->IsA(ADrone::StaticClass()))
+					saver->droneSaveInfo.Emplace(FSavedDroneData(_spaceObject->GetObjectID(), _spaceObject->GetFaction(), (FVector2D)_spaceObject->GetActorLocation(),
+						_spaceObject->GetActorRotation(), _spaceObject->GetValue(GetStatType::currentShield), _spaceObject->GetValue(GetStatType::currentArmor),
+						_spaceObject->GetValue(GetStatType::currentHull)));
+				break;
+			case ObjectType::SpaceObject:
+				if (_spaceObject->GetClass() == ASpaceObject::StaticClass())
+					saver->objectSaveInfo.Emplace(FSavedObjectData(_spaceObject->GetObjectID(), _spaceObject->GetFaction(), (FVector2D)_spaceObject->GetActorLocation(),
+						_spaceObject->GetActorRotation(), _spaceObject->GetValue(GetStatType::currentHull)));
+				break;
+			case ObjectType::Container:
+				if (_spaceObject->IsA(ACargoContainer::StaticClass())) {
+					_cargoContainer = Cast<ACargoContainer>(_spaceObject);
+					_cargoContainer->GetAllCargo(_cargoInContainer);
+					saver->containerSaveInfo.Emplace(FSavedContainerData(_cargoContainer->GetObjectID(), (FVector2D)_cargoContainer->GetActorLocation(),
+							_cargoContainer->GetActorRotation(), _cargoContainer->GetValue(GetStatType::currentHull), _cargoInContainer));
 				}
 				break;
 			case ObjectType::Resource:
-				_resource = Cast<AResource>(_obj);
-
-				saver->resourceID.Emplace(_resource->GetObjectID());
-				saver->resourceLocation.Emplace(_resource->GetActorLocation());
-				saver->resourceRotation.Emplace(_resource->GetActorRotation());
-				saver->resourceDurability.Emplace(_resource->GetValue(GetStatType::currentHull));
-				saver->resourceAmount.Emplace(_resource->GetResourceAmount());
-				break;
-			case ObjectType::Gate:
-			case ObjectType::Station:
+				if (_spaceObject->IsA(ACargoContainer::StaticClass())) {
+					_resource = Cast<AResource>(_spaceObject);
+					saver->resourceSaveInfo.Emplace(FSavedResourceData(_resource->GetObjectID(), (FVector2D)_resource->GetActorLocation(),
+						_resource->GetActorRotation(), _resource->GetValue(GetStatType::currentHull), _resource->GetResourceAmount()));
+				}
 				break;
 			default:
 				break;
@@ -326,7 +342,8 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		saver->playerFactionName = playerFactionName;
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] GameSave Create Finish!"));
 		return true;
-	} else if (saver->saveState == SaveState::BeforeWarp) {
+	} 
+	else if (saver->saveState == SaveState::BeforeWarp) {
 		//Just Save Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By Warp!"));
 		saver->sectorInfo = sectorInfo;
@@ -376,8 +393,11 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 
 	AActor* _obj;
 	AShip* _ship;
-	AResource* _resource;
 	IStructureable* _sObj;
+	ADrone* _drone;
+	ASpaceObject* _spaceObject;
+	ACargoContainer* _container;
+	AResource* _resource;
 	sectorInfo = loader->sectorInfo;
 
 	for (int index = 0; index < sectorInfo.Num(); index++) {
@@ -400,55 +420,88 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		//Load Sector Data
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Start Load File Create By User Request!"));
 
-		//Load Structure
-		for (int index = 0; index < currentSectorInfo->StationList.Num(); index++) {
-			if (!currentSectorInfo->StationList[index].isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, currentSectorInfo->StationList[index].structureRotation.Yaw, 0.0f),
-					FVector(currentSectorInfo->StationList[index].structureLocation, -1.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-				if (_obj != nullptr) {
-					_sObj = Cast<IStructureable>(_obj);
-					_sObj->SetStructureData(currentSectorInfo->StationList[index]);
-					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
-					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				}
-			}
-		}
-		for (int index = 0; index < currentSectorInfo->GateList.Num(); index++) {
-			if (!currentSectorInfo->GateList[index].isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, currentSectorInfo->GateList[index].structureRotation.Yaw, 0.0f),
-					FVector(currentSectorInfo->GateList[index].structureLocation, -1.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-				if (_obj != nullptr) {
-					_sObj = Cast<IStructureable>(_obj);
-					_sObj->SetStructureData(currentSectorInfo->GateList[index]);
-					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
-					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				}
-			}
-		}
-
-		//Load Objects
-		for (int index = 0; index < loader->npcShipID.Num(); index++) {
-
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(FRotator(loader->npcShipRotation[index]),
-				FVector((FVector2D)(loader->npcShipLocation[index]), -1.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+		//Load Ship Data
+		for (FSavedNPCShipData& shipData : loader->shipSaveInfo) {
+			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(FRotator(0.0f, shipData.npcShipRotation.Yaw, 0.0f),
+				FVector(shipData.npcShipLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 			if (_obj != nullptr) {
-				Cast<ASpaceObject>(_obj)->InitObject(loader->npcShipID[index]);
-				Cast<ASpaceObject>(_obj)->LoadBaseObject(loader->npcShipShield[index], loader->npcShipArmor[index], loader->npcShipHull[index], loader->npcShipPower[index]);
+				_ship = Cast<AShip>(_obj);
+				_ship->InitObject(shipData.npcShipID);
+				_ship->LoadBaseObject(shipData.npcShipShield, shipData.npcShipArmor, shipData.npcShipHull, shipData.npcShipPower);
+				_ship->SetFaction(shipData.npcShipFaction);
 				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 			}
 		}
-
-		//Load Resources
-		for (int index = 0; index < loader->resourceID.Num(); index++) {
-
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(FRotator(loader->resourceRotation[index]),
-				FVector((FVector2D)(loader->resourceLocation[index]), -1.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-
+		//Load Structure Data
+		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
+			if (!structureData.isDestroyed) {
+				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+				if (_obj != nullptr) {
+					_sObj = Cast<IStructureable>(_obj);
+					_sObj->SetStructureData(structureData);
+					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
+					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
+				}
+			}
+		}
+		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
+			if (!structureData.isDestroyed) {
+				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+				if (_obj != nullptr) {
+					_sObj = Cast<IStructureable>(_obj);
+					_sObj->SetStructureData(structureData);
+					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
+					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
+				}
+			}
+		}
+		//Load Drone Data - Player
+		//Load Drone Data
+		for (FSavedDroneData& droneData : loader->droneSaveInfo) {
+			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ADrone::StaticClass(), FTransform(FRotator(0.0f, droneData.droneRotation.Yaw, 0.0f),
+				FVector(droneData.droneLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 			if (_obj != nullptr) {
-				Cast<ASpaceObject>(_obj)->InitObject(loader->resourceID[index]);
+				_drone = Cast<ADrone>(_obj);
+				_drone->InitObject(droneData.droneID);
+				_drone->LoadBaseObject(droneData.droneShield, droneData.droneArmor, droneData.droneHull, 0.0f);
+				_drone->SetFaction(droneData.droneFaction);
+				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
+			}
+		}
+		//Load SpaceObject Data
+		for (FSavedObjectData& objectData : loader->objectSaveInfo){
+			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ASpaceObject::StaticClass(), FTransform(FRotator(0.0f, objectData.spaceObjectRotation.Yaw, 0.0f),
+				FVector(objectData.spaceObjectLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			if (_obj != nullptr) {
+				_spaceObject = Cast<ASpaceObject>(_obj);
+				_spaceObject->InitObject(objectData.spaceObjectID);
+				_spaceObject->LoadBaseObject(0.0f, 0.0f, 0.0f, objectData.spaceObjectDurability);
+				_spaceObject->SetFaction(objectData.spaceObjectFaction);
+				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
+			}
+		}
+		//Load Container Data
+		for (FSavedContainerData& containerData : loader->containerSaveInfo) {
+			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(), FTransform(FRotator(0.0f, containerData.containerRotation.Yaw, 0.0f),
+				FVector(containerData.containerLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			if (_obj != nullptr) {
+				_container = Cast<ACargoContainer>(_obj);
+				_container->InitObject(containerData.containerID);
+				_container->LoadBaseObject(0.0f, 0.0f, 0.0f, containerData.containerDurability);
+				_container->AddCargo(containerData.containerCargo);
+				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
+			}
+		}
+		//Load Resources
+		for (FSavedResourceData& resourceData : loader->resourceSaveInfo){
+			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(FRotator(0.0f, resourceData.resourceRotation.Yaw, 0.0f),
+				FVector(resourceData.resourceLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			if (_obj != nullptr) {
 				_resource = Cast<AResource>(_obj);
-				_resource->SetResource(loader->resourceID[index], loader->resourceDurability[index], loader->resourceAmount[index]);
+				_resource->InitObject(resourceData.resourceID);
+				_resource->SetResource(resourceData.resourceDurability, resourceData.resourceAmount);
 				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 			}
 		}
@@ -591,7 +644,8 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 			_result = Peer::Enemy; break;
 		default: break;
 		}
-	} else {
+	} 
+	else {
 		Faction _targetFaction;
 
 		if ((requestor == Faction::Player || requestor == Faction::PlayerFoundingFaction) && (target == Faction::Player || target == Faction::PlayerFoundingFaction))
@@ -638,7 +692,9 @@ void ASpaceState::ApplyRelation(const Faction targetFaction, float damageForConv
 	damageForConvertRelation = FMath::Clamp(damageForConvertRelation * FMath::FRandRange(_define_DamagetoRelationFactorMIN, _define_DamagetoRelationFactorMAX),
 		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
 
-	tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] -= damageForConvertRelation;
+	int _tempIndex = FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0);
+	tempFactionRelationship[_tempIndex] = FMath::Clamp(tempFactionRelationship[_tempIndex] - damageForConvertRelation,
+		_define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
 	return;
 }
 
@@ -647,10 +703,17 @@ void ASpaceState::ApplyRelation(const Faction targetFaction, float SPForConvertR
 	SPForConvertRelation = FMath::Clamp(SPForConvertRelation * FMath::FRandRange(_define_SPtoRelationFactorMIN, _define_SPtoRelationFactorMAX),
 		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
 
-	if (isRealRelation) 
-		factionRelationship[FMath::Min3(factionRelationship.Num(), (int)targetFaction, 0)] -= SPForConvertRelation;
-	else 
-		tempFactionRelationship[FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0)] -= SPForConvertRelation;
+	int _tempIndex = 0;
+	if (isRealRelation) {
+		_tempIndex = FMath::Min3(factionRelationship.Num(), (int)targetFaction, 0);
+		factionRelationship[_tempIndex] = FMath::Clamp(factionRelationship[_tempIndex] - SPForConvertRelation,
+			_define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+	}
+	else {
+		_tempIndex = FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0);
+		tempFactionRelationship[_tempIndex] = FMath::Clamp(tempFactionRelationship[_tempIndex] - SPForConvertRelation,
+			_define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+	}
 		
 	return;
 }

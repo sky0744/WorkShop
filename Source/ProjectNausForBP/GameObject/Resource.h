@@ -66,7 +66,7 @@ public:
 #pragma region Resource Functions
 public:
 	UFUNCTION(BlueprintCallable, Category = "Call to Resource")
-		void SetResource(const int resourceId, float durability, int amount);
+		void SetResource(float durability, int amount);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call to Resource")
 		float GetResourceAmount() const;
 	UFUNCTION(BlueprintCallable, Category = "Call to Resource")

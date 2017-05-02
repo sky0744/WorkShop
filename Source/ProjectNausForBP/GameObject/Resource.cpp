@@ -40,7 +40,7 @@ void AResource::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	AddActorWorldRotation(asteroidRotator);
+	AddActorLocalRotation(asteroidRotator);
 }
 
 float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -112,7 +112,11 @@ bool AResource::InitObject(const int objectId) {
 			objectName = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "Rich {name}"), _tempResourceData.Name);
 		else objectName = _tempResourceData.Name;
 
-		UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath.ToString()));
+		UStaticMesh* _newMesh;
+		if(_tempResourceData.MeshPath.Num() > 0)
+			_newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath[FMath::RandRange(0, _tempResourceData.MeshPath.Num() - 1)].ToString()));
+		else 
+			_newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, TEXT("")));
 		if (_newMesh)
 			objectMesh->SetStaticMesh(_newMesh);
 
@@ -160,12 +164,12 @@ float AResource::GetValue(const GetStatType statType) const {
 #pragma endregion
 
 #pragma region Resource Functions
-void AResource::SetResource(const int resourceId, float durability, int amount) {
+void AResource::SetResource(float durability, int amount) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FResourceData _tempResourceData = _tempInstance->GetResourceData(resourceId);
+	FResourceData _tempResourceData = _tempInstance->GetResourceData(resourceID);
 
 	currentDurability = FMath::Clamp(durability, 0.0f, maxDurability);
-	currentResource = FItem(_tempResourceData.ResourceItemID, FMath::Clamp(amount, 0, FMath::FloorToInt(FMath::Max(_tempResourceData.OreAmountRange.X, _tempResourceData.OreAmountRange.Y))));
+	currentResource.itemAmount = FMath::Clamp(amount, 0, FMath::FloorToInt(FMath::Max(_tempResourceData.OreAmountRange.X, _tempResourceData.OreAmountRange.Y)));
 }
 
 float AResource::GetResourceAmount() const {

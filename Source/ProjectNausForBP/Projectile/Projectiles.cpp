@@ -16,8 +16,6 @@ AProjectiles::AProjectiles()
 	projectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	projectileMovement->UpdatedComponent = projectileMesh;
 	projectileMovement->OnProjectileStop.AddDynamic(this, &AProjectiles::OnCollisionActor);
-	projectileMovement->bShouldBounce = true;
-	//projectileMovement->Bounciness = 0.0f;
 
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -38,10 +36,9 @@ void AProjectiles::Tick( float DeltaTime )
 }
 
 void AProjectiles::OnCollisionActor(const FHitResult& hitResult) {
-	if (hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) {
+	if (hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) 
 		UGameplayStatics::ApplyPointDamage(hitResult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f), hitResult, nullptr, this, UDamageType::StaticClass());
-		Destroy();
-	}
+	Destroy();
 }
 
 void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, float damageMultiple,

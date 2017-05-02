@@ -5,7 +5,9 @@
 
 
 AUserState::AUserState() {
-
+	listSkill = TArray<FSkill>();
+	queueSkillLearn = TArray<FSkill>();
+	listItem = TArray<FItem>();
 }
 
 void AUserState::BeginPlay() {

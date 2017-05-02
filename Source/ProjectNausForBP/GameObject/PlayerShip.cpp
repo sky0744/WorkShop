@@ -5,8 +5,7 @@
 #include "ProjectNausForBP.h"
 #include "PlayerShip.h"
 
-APlayerShip::APlayerShip()
-{
+APlayerShip::APlayerShip() {
 	objectMesh->SetCanEverAffectNavigation(true);
 	objectMesh->SetEnableGravity(false);
 	objectMesh->SetSimulatePhysics(true);
@@ -18,11 +17,11 @@ APlayerShip::APlayerShip()
 	objectMesh->BodyInstance.bLockYRotation = true;
 	objectMesh->Mobility = EComponentMobility::Movable;
 	RootComponent = objectMesh;
-	
+
 	objectMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("ObjectMovement"));
 	objectMovement->SetPlaneConstraintEnabled(true);
 	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
-	
+
 	playerViewpointArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FixArm"));
 	playerViewpointCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FixedCamera"));
 	playerViewpointArm->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
@@ -36,6 +35,12 @@ APlayerShip::APlayerShip()
 	sShipID = -1;
 	checkTime = 0.0f;
 	sIsInited = false;
+
+	slotTargetModule = TArray<FTargetModule>();
+	targetingObject = TArray<ASpaceObject*>();
+	slotActiveModule = TArray<FActiveModule>();
+	slotPassiveModule = TArray<int>();
+	slotSystemModule = TArray<int>();
 }
 
 #pragma region Event Calls
@@ -69,9 +74,9 @@ void APlayerShip::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	tempDeltaTime = DeltaTime;
 	checkTime += DeltaTime;
-	if (checkTime > 0.5f) {
+	if (checkTime >_define_ModuleANDPathTick) {
 		CheckPath();
-		ModuleCheck(checkTime);
+		ModuleCheck();
 		checkTime = 0.0f;
 	}
 
@@ -1157,13 +1162,16 @@ bool APlayerShip::ToggleTargetModule(const int slotIndex, ASpaceObject* target) 
 
 	//타게팅 모듈에 한해서만( < ModuleType::ShieldGenerator ) 함수 처리
 	if (slotIndex < slotTargetModule.Num() && slotIndex < targetingObject.Num() && slotTargetModule[slotIndex].moduleType < ModuleType::ShieldGenerator) {
+		//모듈의 예상 소모 전력보다 낮은 수준의 전력을 보유하였다면 활성화 거부
+		if (slotTargetModule[slotIndex].maxUsagePower * slotTargetModule[slotIndex].maxCooltime > sCurrentPower)
+			return false;
+
 		//현재 모듈이 활성화되어 있을 경우 -> 작동 중지 예약, 현재 켜져있는 상태임을 리턴
 		if (slotTargetModule[slotIndex].moduleState != ModuleState::NotActivate) {
 			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Request Off."), slotIndex);
 			slotTargetModule[slotIndex].isBookedForOff = true;
 			return true;
 		}
-
 		else {
 			if (!USafeENGINE::IsValid(target) || target == this) {
 				UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Can't find target"));
@@ -1269,6 +1277,9 @@ void APlayerShip::SettingAmmo(const int selectedAmmoID) {
 */
 bool APlayerShip::ToggleActiveModule(const int slotIndex) {
 	if (slotIndex < slotActiveModule.Num() && slotActiveModule[slotIndex].moduleType > ModuleType::HullRepairLaser && slotActiveModule[slotIndex].moduleType < ModuleType::PassiveModule) {
+		//모듈의 예상 소모 전력보다 낮은 수준의 전력을 보유하였다면 활성화 거부
+		if (slotActiveModule[slotIndex].maxUsagePower > sCurrentPower)
+			return false;
 
 		slotActiveModule[slotIndex].moduleState = (slotActiveModule[slotIndex].moduleState != ModuleState::NotActivate ? ModuleState::NotActivate : ModuleState::Activate);
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Active Module %d - Toggle : %s"),
@@ -1570,7 +1581,7 @@ void APlayerShip::Movement() {
 	AddActorWorldOffset(GetActorForwardVector() * currentSpeed * tempDeltaTime, true);
 }
 
-void APlayerShip::ModuleCheck(const float moduleCheckTime) {
+void APlayerShip::ModuleCheck() {
 	moduleStatShieldRegen = moduleStatArmorRepair = moduleStatHullRepair = 0.0f;
 	moduleStatEngine = moduleStatAcceleration = moduleStatThruster = 0.0f;
 	moduleConsumptPower = 0.0f;
@@ -1582,9 +1593,9 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
 		if (slotTargetModule[index].moduleState != ModuleState::NotActivate) {
-			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * moduleCheckTime,
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower + slotTargetModule[index].incrementUsagePower * _define_ModuleANDPathTick,
 				0.0f, slotTargetModule[index].maxUsagePower);
-			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - moduleCheckTime, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
+			slotTargetModule[index].remainCooltime = FMath::Clamp(slotTargetModule[index].remainCooltime - _define_ModuleANDPathTick, 0.0f, FMath::Max(1.0f, slotTargetModule[index].maxCooltime));
 
 			//쿨타임 완료시 행동 실시
 			if (slotTargetModule[index].remainCooltime <= 0.0f) {
@@ -1599,7 +1610,7 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 						FVector _targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
 						FRotator _targetedRotation = _targetedDirect.Rotation();
-						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * 0.35f, lengthToLongAsix * 0.35f);
+						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * _define_TargetLocationOffset, lengthToLongAsix * _define_TargetLocationOffset);
 						
 						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
 							+ _targetedRotation.RotateVector(FVector::RightVector) * _fireOffset;
@@ -1698,14 +1709,12 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 								slotTargetModule[index].moduleState = ModuleState::NotActivate;
 							}
 						}
-
 						slotTargetModule[index].isBookedForOff = false;
 					}
 					break;
 				default:
 					break;
 				}
-
 				slotTargetModule[index].remainCooltime = FMath::Max(1.0f, slotTargetModule[index].maxCooltime);
 				//모듈 동작 중지 예약이 활성화되어 있다면 동작 중지.
 				if (slotTargetModule[index].isBookedForOff) {
@@ -1718,7 +1727,7 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 		}
 		//모듈이 꺼져있을 경우 power 소모량 감소
 		else
-			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * moduleCheckTime,
+			slotTargetModule[index].currentUsagePower = FMath::Clamp(slotTargetModule[index].currentUsagePower - slotTargetModule[index].decrementUsagePower * _define_ModuleANDPathTick,
 				0.0f, slotTargetModule[index].maxUsagePower);
 		moduleConsumptPower += slotTargetModule[index].currentUsagePower;
 	}
@@ -1726,15 +1735,15 @@ void APlayerShip::ModuleCheck(const float moduleCheckTime) {
 		if (sCurrentPower < 5.0f)
 			slotActiveModule[index].moduleState = ModuleState::NotActivate;
 		if (slotActiveModule[index].moduleState == ModuleState::Activate) {
-			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower + slotActiveModule[index].incrementUsagePower * moduleCheckTime,
+			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower + slotActiveModule[index].incrementUsagePower * _define_ModuleANDPathTick,
 				0.0f, slotActiveModule[index].maxUsagePower);
-			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor + slotActiveModule[index].incrementActiveModuleFactor * moduleCheckTime,
+			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor + slotActiveModule[index].incrementActiveModuleFactor * _define_ModuleANDPathTick,
 				0.0f, slotActiveModule[index].maxActiveModuleFactor);
 		}
 		else {
-			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower - slotActiveModule[index].decrementUsagePower * moduleCheckTime,
+			slotActiveModule[index].currentUsagePower = FMath::Clamp(slotActiveModule[index].currentUsagePower - slotActiveModule[index].decrementUsagePower * _define_ModuleANDPathTick,
 				0.0f, slotActiveModule[index].maxUsagePower);
-			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor - slotActiveModule[index].decrementActiveModuleFactor * moduleCheckTime,
+			slotActiveModule[index].currentActiveModuleFactor = FMath::Clamp(slotActiveModule[index].currentActiveModuleFactor - slotActiveModule[index].decrementActiveModuleFactor * _define_ModuleANDPathTick,
 				0.0f, slotActiveModule[index].maxActiveModuleFactor);
 		}
 		moduleConsumptPower += slotActiveModule[index].currentUsagePower;
