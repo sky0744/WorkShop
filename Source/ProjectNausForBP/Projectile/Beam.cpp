@@ -10,7 +10,7 @@ ABeam::ABeam()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	beamParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleBeam"));
-	RootComponent = beamParticle ;
+	RootComponent = beamParticle;
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> particleSystem(TEXT("ParticleSystem'/Game/Resource/Particle/Beam/ParticleBeam.ParticleBeam'"));
 	if (particleSystem.Succeeded())
 		beamParticle->SetTemplate(particleSystem.Object);
@@ -37,11 +37,7 @@ void ABeam::Tick(float DeltaTime) {
 	if (!USafeENGINE::IsValid(target) || !target->IsA(ASpaceObject::StaticClass()))
 		return;
 
-	startLocation = target->GetActorLocation() - beamOwner->GetActorLocation();
-	startLocation.Normalize();
-	resultLocation = startLocation;
-	startLocation = beamOwner->GetActorLocation() + resultLocation.Rotation().RotateVector(FVector::RightVector) * locationOffset;
-	
+	startLocation = beamOwner->GetActorLocation() + beamOwner->GetActorRotation().RotateVector(startLocation);
 	DrawDebugPoint(GetWorld(), startLocation, 6, FColor(255, 255, 255), false, DeltaTime);
 	//거리 판단상 사거리 이내
 	if (beamRange > USafeENGINE::CheckDistanceConsiderSize(beamOwner, target)) {
@@ -50,11 +46,13 @@ void ABeam::Tick(float DeltaTime) {
 		isHited = true;
 		//빔이 블럭되지 않고 최대거리까지 진행
 	} else {
+		resultLocation = target->GetActorLocation() - beamOwner->GetActorLocation();
+		resultLocation.Normalize();
 		resultLocation = GetActorLocation() + resultLocation * beamRange;
 		isHited = false;
 	}
 	DrawDebugPoint(GetWorld(), resultLocation, 6, FColor(255, 255, 255), false, DeltaTime);
-	DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
+	DrawDebugLine(GetWorld(), startLocation, resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
 
 	FItem _collectedOre;
 	if (isHited) {
@@ -82,7 +80,7 @@ void ABeam::Tick(float DeltaTime) {
 }
 
 //발사 전에 빔의 속성을 지정.
-void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime, float locOffset) {
+void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, FVector locOffset, float aliveTime) {
 
 	if (!USafeENGINE::IsValid(targetActor) || !targetActor->IsA(ASpaceObject::StaticClass()))
 		return;
@@ -112,8 +110,8 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 			target = targetActor;
 			beamRange = setedrange;
 			beamDamage = setedDamage;
+			startLocation = locOffset;
 			PrimaryActorTick.TickInterval = 0.333333f;
-			locationOffset = locOffset;
 		}
 		break;
 	case ModuleType::TractorBeam:
@@ -122,8 +120,8 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 			target = targetActor;
 			beamRange = setedrange;
 			beamDamage = FMath::Clamp(setedDamage, -250.0f, 250.0f);
+			startLocation = locOffset;
 			PrimaryActorTick.TickInterval = 0.0f;
-			locationOffset = locOffset;
 		}
 		break;
 	default:

@@ -9,8 +9,7 @@ ADrone::ADrone() {
 	objectMesh->SetCanEverAffectNavigation(true);
 	objectMesh->SetEnableGravity(false);
 	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.MassScale = 100.0f;
-	objectMesh->BodyInstance.LinearDamping = 50.0f;
+	objectMesh->BodyInstance.LinearDamping = 500.0f;
 	objectMesh->BodyInstance.AngularDamping = 5000.0f;
 	objectMesh->BodyInstance.bLockZTranslation = true;
 	objectMesh->BodyInstance.bLockXRotation = true;

@@ -190,6 +190,7 @@ private:
 
 	float lengthToLongAsix;
 	float lengthRadarRange;
+	float lengthWeaponRange;
 	float bounty;
 
 	UPROPERTY()
@@ -237,6 +238,13 @@ private:
 	float rotateDeceleration;
 	float targetRotateRateFactor;
 	float realRotateRateFactor;
+
+	float bonusDroneBaseStats;
+	float bonusDroneControl;
+	float bonusDroneBay;
+	float bonusDroneDamage;
+	float bonusDroneRange;
+	float bonusDroneSpeed;
 
 	float bonusCannonLifeTime;
 	float bonusRailGunLifeTime;

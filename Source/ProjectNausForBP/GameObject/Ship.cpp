@@ -9,8 +9,7 @@ AShip::AShip() {
 	objectMesh->SetCanEverAffectNavigation(true);
 	objectMesh->SetEnableGravity(false);
 	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.MassScale = 100.0f;
-	objectMesh->BodyInstance.LinearDamping = 50.0f;
+	objectMesh->BodyInstance.LinearDamping = 500.0f;
 	objectMesh->BodyInstance.AngularDamping = 5000.0f;
 	objectMesh->BodyInstance.bLockZTranslation = true;
 	objectMesh->BodyInstance.bLockXRotation = true;
@@ -58,7 +57,6 @@ void AShip::Tick(float DeltaTime)
 		currentArmor = FMath::Clamp(currentArmor + repairArmor * _define_ModuleANDPathTick, 0.0f, maxArmor);
 		currentHull = FMath::Clamp(currentHull + repairHull * _define_ModuleANDPathTick, 0.0f, maxHull);
 		currentPower = FMath::Clamp(currentPower + rechargePower * _define_ModuleANDPathTick, 0.0f, maxPower);
-
 		CheckPath();
 		ModuleCheck();
 	}
@@ -182,9 +180,10 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		//카고 드랍
 		ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
 			FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-
-		_cargoContanier->SetCargoFromData(ObjectType::Ship, npcShipID);
-		UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
+		if (_cargoContanier) {
+			_cargoContanier->SetCargoFromData(ObjectType::Ship, npcShipID);
+			UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
+		}
 		Destroy();
 	}
 
@@ -200,7 +199,6 @@ void AShip::BeginDestroy() {
 		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
 	}
-
 	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
@@ -251,9 +249,11 @@ bool AShip::InitObject(const int npcID) {
 	behaviorType = _tempNpcShipData.BehaviorTypeOfNPC;
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, 10.0f, 100000.0f);
 
-	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
+	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min3(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num(), _tempShipData.HardPoints.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
 	slotTargetModule.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 	targetingObject.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	for (int index = 0; index < _tempModuleSlotNumber; index++)
+		slotTargetModule[index].hardPoint = _tempShipData.HardPoints[index];
 
 	for (int index = 0; index < _tempModuleSlotNumber; index++) {
 		_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
@@ -271,7 +271,7 @@ bool AShip::InitObject(const int npcID) {
 			slotTargetModule[index].ammoCapacity = _tempModuleData.AmmoCapacity;
 			slotTargetModule[index].compatibleAmmo = _tempModuleData.UsageAmmo;
 			slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
-			if(_tempModuleData.UsageAmmo.Num() > 0)
+			if (_tempModuleData.UsageAmmo.Num() > 0)
 				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo[FMath::RandRange(0, _tempModuleData.UsageAmmo.Num() - 1)], FMath::RandRange(0, _tempModuleData.AmmoCapacity));
 		}
 	}
@@ -368,9 +368,26 @@ bool AShip::InitObject(const int npcID) {
 			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			break;
-
 		case BonusStatType::BonusMaxRadarRange:
 			lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+			break;
+		case BonusStatType::BonusDroneBaseStats:
+			bonusDroneBaseStats = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusDroneControl:
+			bonusDroneControl = FMath::Clamp(tBonusStat.bonusStat, _define_StatDroneControlMIN, _define_StatDroneControlMAX);
+			break;
+		case BonusStatType::BonusDroneBay:
+			bonusDroneBay = FMath::Clamp(tBonusStat.bonusStat, _define_StatDroneBayMIN, _define_StatDroneBayMAX);
+			break;
+		case BonusStatType::BonusDroneDamage:
+			bonusDroneDamage = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusDroneRange:
+			bonusDroneRange = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			break;
+		case BonusStatType::BonusDroneSpeed:
+			bonusDroneSpeed = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
 		case BonusStatType::BonusTargetModuleUsagePower:
 			for (FTargetModule& module : slotTargetModule)
@@ -438,6 +455,13 @@ bool AShip::InitObject(const int npcID) {
 					default:
 						break;
 					}
+					if (slotTargetModule[index].moduleType == ModuleType::Beam && lengthWeaponRange < slotTargetModule[index].launchSpeedMultiple)
+						lengthWeaponRange = slotTargetModule[index].launchSpeedMultiple;
+					else if (_tempModuleData.ModuleType > ModuleType::Beam && slotTargetModule[index].moduleType < ModuleType::MinerLaser) {
+						lengthWeaponRange = slotTargetModule[index].launchSpeedMultiple;
+						_tempModuleData = _tempInstance->GetItemData(slotTargetModule[index].ammo.itemID);
+						lengthWeaponRange *= _tempModuleData.LaunchSpeed;
+					}
 				}
 			break;
 		}
@@ -466,7 +490,7 @@ float AShip::GetValue(const GetStatType statType) const {
 		_value = lengthRadarRange;
 		break;
 	case GetStatType::engageDistance:
-		_value = lengthRadarRange;
+		_value = lengthWeaponRange;
 		break;
 	case GetStatType::maxShield:
 		_value = maxShield;
@@ -693,8 +717,8 @@ bool AShip::MoveDistanceCheck() {
 	if (bIsStraightMove) {
 		targetVector = moveTargetVector;
 		realMoveFactor = targetVector - GetActorLocation();
-		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
-		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
+		//DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+		//DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
 	} else {
 		if (targetObject != nullptr)
 			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
@@ -704,7 +728,7 @@ bool AShip::MoveDistanceCheck() {
 		moveTargetVector -= GetActorLocation();
 		moveTargetVector.Normalize();
 		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
-		DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+		//DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
 
 		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
 		if (wayPoint.Num() > currentClosedPathIndex)
@@ -712,13 +736,12 @@ bool AShip::MoveDistanceCheck() {
 		else return false;
 
 		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
-			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
+			//DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
 			if (wayPoint.Num() > index + 1)
 				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
 		}
 	}
 	targetVector.Z = 0.0f;
-
 	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
 	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
 
@@ -732,8 +755,8 @@ bool AShip::MoveDistanceCheck() {
 	//arrive to Destination. use upper of Nyquist Rate for high precision.
 	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
 		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
-	
-	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+	//if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+	if (remainDistance < lengthToLongAsix * 0.25f) {
 		targetSpeed = 0.0f;
 		currentClosedPathIndex = 0;
 		bIsStraightMove = false;
@@ -807,8 +830,14 @@ void AShip::Movement() {
 }
 
 void AShip::ModuleCheck() {
-
 	moduleConsumptPower = 0.0f;
+
+	FVector _targetedLocation;
+	FVector _targetedDirect;
+	FRotator _targetedRotation;
+	FVector _launchLocation;
+	FVector _hardPointLocation;
+	FTransform _spawnedTransform;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
@@ -826,30 +855,36 @@ void AShip::ModuleCheck() {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
 					if (USafeENGINE::IsValid(targetingObject[index]) && targetingObject[index] != this && targetingObject[index]->IsA(ASpaceObject::StaticClass())) {
-						//목표 지점 및 방향 계산
-						FVector _targetedLocation = targetingObject[index]->GetActorLocation();
-						FVector _targetedDirect = _targetedLocation - GetActorLocation();
+						//목표 지점 및 발사 위치, 방향 계산
+						_targetedLocation = targetingObject[index]->GetActorLocation();
+						_targetedDirect = _targetedLocation - GetActorLocation();
 						_targetedDirect.Normalize();
-						FRotator _targetedRotation = _targetedDirect.Rotation();
-						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * _define_TargetLocationOffset, lengthToLongAsix * _define_TargetLocationOffset);
+						_targetedRotation = _targetedDirect.Rotation();
+						_launchLocation = GetActorLocation();
 
-						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
-							+ _targetedRotation.RotateVector(FVector::RightVector) * _fireOffset;
-						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
+						float _resultDotProduct = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), _targetedDirect));
+						if (_resultDotProduct < 0.0f && FMath::Abs(_resultDotProduct) > 0.05f) {
+							_launchLocation += GetActorRotation().RotateVector(slotTargetModule[index].hardPoint.leftLaunchPoint);
+							_hardPointLocation = slotTargetModule[index].hardPoint.leftLaunchPoint;
+						} else if (_resultDotProduct > 0.0f && FMath::Abs(_resultDotProduct) > 0.05) {
+							_launchLocation += GetActorRotation().RotateVector(slotTargetModule[index].hardPoint.rightLaunchPoint);
+							_hardPointLocation = slotTargetModule[index].hardPoint.rightLaunchPoint;
+						} else
+							break;
 
+						_spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 						//빔계열 모듈의 경우
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
 							slotTargetModule[index].moduleType == ModuleType::MinerLaser ||
 							slotTargetModule[index].moduleType == ModuleType::TractorBeam) {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
-								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
 							if (!USafeENGINE::IsValid(_beam))
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
-
 							_beam->SetBeamProperty(this, targetingObject[index], slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].moduleType,
-								slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus, _fireOffset);
+								slotTargetModule[index].damageMultiple, _hardPointLocation, slotTargetModule[index].ammoLifeSpanBonus);
 						}
 						//탄도 무기류의 경우
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
@@ -867,12 +902,8 @@ void AShip::ModuleCheck() {
 								if (!USafeENGINE::IsValid(_projectile))
 									return;
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
-
 								switch (slotTargetModule[index].moduleType) {
 								case ModuleType::Cannon:
-									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
-										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
-									break;
 								case ModuleType::Railgun:
 									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
 										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
@@ -884,7 +915,8 @@ void AShip::ModuleCheck() {
 								}
 							}
 						}
-					} else {
+					}
+					else {
 						slotTargetModule[index].moduleState = ModuleState::NotActivate;
 						targetObject = nullptr;
 						slotTargetModule[index].isBookedForOff = false;
@@ -956,10 +988,10 @@ void AShip::CheckPath() {
 	if (!CheckCanBehavior() || behaviorState == BehaviorState::Idle)
 		return;
 
-	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix + 10.0f)
+	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix * 1.2f)
 		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
 		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
-	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix + 10.0f)
+	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 1.2f)
 		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
 		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 

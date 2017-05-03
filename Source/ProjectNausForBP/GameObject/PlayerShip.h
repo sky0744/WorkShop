@@ -249,6 +249,7 @@ private:
 
 	float lengthToLongAsix;
 	float lengthRadarRange;
+	float lengthWeaponRange;
 
 	UPROPERTY()
 		ASpaceObject* targetObject;
@@ -309,10 +310,11 @@ private:
 	float realRotateRateFactor;
 
 	float bonusDroneBaseStats;
+	float bonusDroneControl;
+	float bonusDroneBay;
 	float bonusDroneDamage;
 	float bonusDroneRange;
 	float bonusDroneSpeed;
-	float bonusDroneControl;
 #pragma endregion
 
 #pragma region active module temp stats

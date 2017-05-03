@@ -192,7 +192,7 @@ void AUserState::PlayerDeath() {
 	if (_stationsInSector.Num() < 1)
 		_Repositioning->position = FVector::ZeroVector;
 	else
-		_Repositioning->position = _stationsInSector[FMath::RandRange(0, _stationsInSector.Num())]->GetActorLocation();
+		_Repositioning->position = _stationsInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation();
 
 	UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 }

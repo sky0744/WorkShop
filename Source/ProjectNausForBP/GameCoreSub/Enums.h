@@ -236,6 +236,7 @@ enum class BonusStatType : uint8 {
 
 	BonusDroneBaseStats		UMETA(DisplayName = "BonusDroneBaseStats"),
 	BonusDroneControl		UMETA(DisplayName = "BonusDroneControl"),
+	BonusDroneBay			UMETA(DisplayName = "BonusDroneBay"),
 	BonusDroneDamage		UMETA(DisplayName = "BonusDroneDamage"),
 	BonusDroneRange			UMETA(DisplayName = "BonusDroneRange"),
 	BonusDroneSpeed			UMETA(DisplayName = "BonusDroneSpeed"),

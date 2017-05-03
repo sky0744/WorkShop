@@ -27,7 +27,7 @@ public:
 	*	@param setedDamage - 빔의 강도
 	*	@param aliveTime - 빔 이펙트 시간
 	*/
-	void SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, float aliveTime = 1.0f, float locOffset = 0.0f);
+	void SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, FVector locOffset, float aliveTime = 1.0f);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, BlueprintPure, Category = "Beam Data")
 		Faction GetLaunchingFaction() const;
@@ -45,7 +45,6 @@ private:
 	Faction launchedFaction;
 	float beamRange;
 	float beamDamage;
-	float locationOffset;
 	FVector startLocation;
 	FVector resultLocation;
 	bool isHited;

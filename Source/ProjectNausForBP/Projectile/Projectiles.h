@@ -50,6 +50,8 @@ private:
 		UParticleSystemComponent* projectileParticle;
 
 	UPROPERTY()
+		ASpaceObject* projectileOwner;
+	UPROPERTY()
 		ASpaceObject* target;
 
 	Faction launchedFaction;

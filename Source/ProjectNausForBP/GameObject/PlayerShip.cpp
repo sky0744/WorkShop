@@ -9,8 +9,7 @@ APlayerShip::APlayerShip() {
 	objectMesh->SetCanEverAffectNavigation(true);
 	objectMesh->SetEnableGravity(false);
 	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.MassScale = 100.0f;
-	objectMesh->BodyInstance.LinearDamping = 50.0f;
+	objectMesh->BodyInstance.LinearDamping = 500.0f;
 	objectMesh->BodyInstance.AngularDamping = 5000.0f;
 	objectMesh->BodyInstance.bLockZTranslation = true;
 	objectMesh->BodyInstance.bLockXRotation = true;
@@ -197,9 +196,8 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState) && _dealingFaction == Faction::Player) {
+		if (USafeENGINE::IsValid(_userState)) {
 			_userState->ChangeBounty(-_userState->GetBounty());
-
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
 			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
@@ -264,14 +262,17 @@ bool APlayerShip::InitObject(const int objectId) {
 	if (_newMesh) 
 		objectMesh->SetStaticMesh(_newMesh);
 
-	slotTargetModule.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
-	targetingObject.SetNum(FMath::Clamp(_tempShipData.SlotTarget, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min(_tempShipData.SlotTarget, _tempShipData.HardPoints.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
+	slotTargetModule.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	targetingObject.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
+	for (int index = 0; index < _tempModuleSlotNumber; index++)
+		slotTargetModule[index].hardPoint = _tempShipData.HardPoints[index];
+	
 	slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 	slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 	slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][InitObject] Init Module Slots : %d, %d, %d, %d"), slotTargetModule.Num(), slotActiveModule.Num(), slotPassiveModule.Num(), slotSystemModule.Num());
-
 	sMaxShield = FMath::Clamp(_tempShipData.Shield, _define_StatDamperMIN, _define_StatDamperMAX);
 	sRechargeShield = FMath::Clamp(_tempShipData.RechargeShield, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	sDefShield = FMath::Clamp(_tempShipData.DefShield, _define_StatDefMIN, _define_StatDefMAX);
@@ -323,6 +324,9 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 		break;
 	case GetStatType::raderDistance:
 		_value = lengthRadarRange;
+		break;
+	case GetStatType::engageDistance:
+		_value = lengthWeaponRange;
 		break;
 	case GetStatType::maxShield:
 		_value = sMaxShield;
@@ -516,7 +520,6 @@ bool APlayerShip::TotalStatsUpdate() {
 		}
 	}
 
-	
 	Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->GetUserDataSkill(_skillList);
 	_tempbonusStats.Reserve(_skillList.Num() + 20);
 	for (int index = 0; index < _skillList.Num(); index++) {
@@ -527,6 +530,16 @@ bool APlayerShip::TotalStatsUpdate() {
 	_tempbonusStats.Shrink();
 	_tempbonusStats.Append(_tempShipData.bonusStats);
 	CheckBonusStat(_tempbonusStats);
+
+	for (FTargetModule& targetModule : slotTargetModule) {
+		if (targetModule.moduleType == ModuleType::Beam && lengthWeaponRange < targetModule.launchSpeedMultiple)
+			lengthWeaponRange = targetModule.launchSpeedMultiple;
+		else if (_tempModuleData.ModuleType > ModuleType::Beam && targetModule.moduleType < ModuleType::MinerLaser) {
+			lengthWeaponRange = targetModule.launchSpeedMultiple;
+			_tempModuleData = _tempInstance->GetItemData(targetModule.ammo.itemID);
+			lengthWeaponRange *= _tempModuleData.LaunchSpeed;
+		}
+	}
 
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIShip();
 	UE_LOG(LogClass, Log, TEXT("Ship Totaly Init complete!"));
@@ -667,7 +680,6 @@ void APlayerShip::CheckBonusStat(const TArray<FBonusStat>& bonusStatArray) {
 			sRotateAcceleration = FMath::Clamp(sRotateAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			sRotateDeceleration = FMath::Clamp(sRotateDeceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			break;
-
 		case BonusStatType::BonusMaxRadarRange:
 			lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 			break;
@@ -680,12 +692,14 @@ void APlayerShip::CheckBonusStat(const TArray<FBonusStat>& bonusStatArray) {
 		case BonusStatType::BonusMaxCargoSize:
 			sMaxCargo = FMath::Clamp(sMaxCargo + tBonusStat.bonusStat, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 			break;
-
 		case BonusStatType::BonusDroneBaseStats:
 			bonusDroneBaseStats = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
 		case BonusStatType::BonusDroneControl:
-			bonusDroneControl = FMath::Clamp(tBonusStat.bonusStat, 0.0f, 20.0f);
+			bonusDroneControl = FMath::Clamp(tBonusStat.bonusStat, _define_StatDroneControlMIN, _define_StatDroneControlMAX);
+			break;
+		case BonusStatType::BonusDroneBay:
+			bonusDroneBay = FMath::Clamp(tBonusStat.bonusStat, _define_StatDroneBayMIN, _define_StatDroneBayMAX);
 			break;
 		case BonusStatType::BonusDroneDamage:
 			bonusDroneDamage = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
@@ -696,7 +710,6 @@ void APlayerShip::CheckBonusStat(const TArray<FBonusStat>& bonusStatArray) {
 		case BonusStatType::BonusDroneSpeed:
 			bonusDroneSpeed = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
-
 		case BonusStatType::BonusActiveRechargeShield:
 			for(FActiveModule& module : slotActiveModule)
 				if(module.moduleType == ModuleType::ShieldGenerator)
@@ -1473,7 +1486,6 @@ bool APlayerShip::MoveDistanceCheck() {
 		}
 	}
 	targetVector.Z = 0.0f;
-
 	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
 	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
 
@@ -1488,8 +1500,8 @@ bool APlayerShip::MoveDistanceCheck() {
 	//arrive to Destination. use upper of Nyquist Rate for high precision.
 	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
 		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
-
-	if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+	//if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
+	if (remainDistance < lengthToLongAsix * 0.25f) {
 		setedTargetSpeed = 0.0f;
 		currentClosedPathIndex = 0;
 		bIsStraightMove = false;
@@ -1586,7 +1598,15 @@ void APlayerShip::ModuleCheck() {
 	moduleStatEngine = moduleStatAcceleration = moduleStatThruster = 0.0f;
 	moduleConsumptPower = 0.0f;
 
+	FVector _targetedLocation;
+	FVector _targetedDirect;
+	FRotator _targetedRotation;
+	FVector _launchLocation;
+	FVector _hardPointLocation;
+	FTransform _spawnedTransform;
+
 	for (int index = 0; index < slotTargetModule.Num(); index++) {
+
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
 		if (sCurrentPower < 5.0f || !targetingObject.IsValidIndex(index))
 			slotTargetModule[index].isBookedForOff = true;
@@ -1605,30 +1625,40 @@ void APlayerShip::ModuleCheck() {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
 					if (USafeENGINE::IsValid(targetingObject[index]) && targetingObject[index] != this && targetingObject[index]->IsA(ASpaceObject::StaticClass())) {
-						//목표 지점 및 방향 계산
-						FVector _targetedLocation = targetingObject[index]->GetActorLocation();
-						FVector _targetedDirect = _targetedLocation - GetActorLocation();
-						_targetedDirect.Normalize();
-						FRotator _targetedRotation = _targetedDirect.Rotation();
-						float _fireOffset = FMath::FRandRange(-lengthToLongAsix * _define_TargetLocationOffset, lengthToLongAsix * _define_TargetLocationOffset);
 						
-						_targetedLocation = GetActorLocation() + _targetedDirect * lengthToLongAsix
-							+ _targetedRotation.RotateVector(FVector::RightVector) * _fireOffset;
-						FTransform _spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
+						//목표 지점 및 발사 위치, 방향 계산
+						_targetedLocation = targetingObject[index]->GetActorLocation();
+						_targetedDirect = _targetedLocation - GetActorLocation();
+						_targetedDirect.Normalize();
+						_targetedRotation = _targetedDirect.Rotation();
+						_launchLocation = GetActorLocation();
 
+						float _resultDotProduct = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), _targetedDirect));
+						if (_resultDotProduct < 0.0f && FMath::Abs(_resultDotProduct) > 0.05f) {
+							_launchLocation += GetActorRotation().RotateVector(slotTargetModule[index].hardPoint.leftLaunchPoint);
+							_hardPointLocation = slotTargetModule[index].hardPoint.leftLaunchPoint;
+							DrawDebugPoint(GetWorld(), _launchLocation, 10, FColor::Red, false, 2.0f);
+						}
+						else if (_resultDotProduct > 0.0f && FMath::Abs(_resultDotProduct) > 0.05) {
+							_launchLocation += GetActorRotation().RotateVector(slotTargetModule[index].hardPoint.rightLaunchPoint);
+							_hardPointLocation = slotTargetModule[index].hardPoint.rightLaunchPoint;
+							DrawDebugPoint(GetWorld(), _launchLocation, 10, FColor::Green, false, 2.0f);
+						}
+						else
+							break;
+						_spawnedTransform = FTransform(_targetedRotation, _launchLocation);
 						//빔계열 모듈의 경우
 						if (slotTargetModule[index].moduleType == ModuleType::Beam ||
 							slotTargetModule[index].moduleType == ModuleType::MinerLaser || 
 							slotTargetModule[index].moduleType == ModuleType::TractorBeam ) {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
-								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
 							if (!USafeENGINE::IsValid(_beam))
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
-
 							_beam->SetBeamProperty(this, targetingObject[index], slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].moduleType,
-								slotTargetModule[index].damageMultiple, slotTargetModule[index].ammoLifeSpanBonus, _fireOffset);
+								slotTargetModule[index].damageMultiple, _hardPointLocation, slotTargetModule[index].ammoLifeSpanBonus);
 						}
 						//탄도 무기류의 경우
 						else if (slotTargetModule[index].moduleType == ModuleType::Cannon ||
@@ -1647,26 +1677,22 @@ void APlayerShip::ModuleCheck() {
 								if (  !USafeENGINE::IsValid(_projectile))
 									return;
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
-
 								switch (slotTargetModule[index].moduleType) {
 								case ModuleType::Cannon:
-									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
-										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
-									break;
 								case ModuleType::Railgun:
 									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
 										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus);
 									break;
 								case ModuleType::MissileLauncher:
 									_projectile->SetProjectileProperty(slotTargetModule[index].ammo.itemID, this,
-										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus, targetingObject[index]);
+										slotTargetModule[index].damageMultiple, slotTargetModule[index].launchSpeedMultiple, slotTargetModule[index].ammoLifeSpanBonus, targetObject);
 									break;
 								}
 							}
 						}
 					}
 					else {
-						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Target Module %d - Off."), index);
+						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][Tick] Some Reason, Target Module %d - Off."), index);
 						slotTargetModule[index].moduleState = ModuleState::NotActivate;
 						targetingObject[index] = nullptr;
 						slotTargetModule[index].isBookedForOff = false;
@@ -1844,10 +1870,10 @@ void APlayerShip::CheckPath() {
 	if (!CheckCanBehavior() || behaviorState == BehaviorState::Idle)
 		return;
 
-	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix + 10.0f)
+	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix * 1.2f)
 		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
 		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
-	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix + 10.0f)
+	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 1.2f)
 		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
 		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
 	

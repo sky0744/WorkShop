@@ -12,6 +12,8 @@ AProjectiles::AProjectiles()
 	projectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	RootComponent = projectileMesh;
 	projectileMesh->SetCollisionProfileName(TEXT("Projectile"));
+	projectileMesh->SetEnableGravity(false);
+	projectileMesh->SetSimulatePhysics(false);
 	projectileParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleBeam"));
 	projectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	projectileMovement->UpdatedComponent = projectileMesh;
@@ -36,9 +38,11 @@ void AProjectiles::Tick( float DeltaTime )
 }
 
 void AProjectiles::OnCollisionActor(const FHitResult& hitResult) {
-	if (hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) 
+	
+	if (hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass()) && hitResult.Actor.Get() != projectileOwner ) {
 		UGameplayStatics::ApplyPointDamage(hitResult.Actor.Get(), setedDamage, FVector(1.0f, 0.0f, 0.0f), hitResult, nullptr, this, UDamageType::StaticClass());
-	Destroy();
+		Destroy();
+	}
 }
 
 void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, float damageMultiple,
@@ -55,6 +59,7 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	launchedFaction = launchActor->GetFaction();
 	setedDamage = _tempItemData.Damage * damageMultiple;
 	
+	projectileOwner = launchActor;
 	target = targetObject;
 	if (_tempItemData.Type == ItemType::Ammo_Missile && targetObject) {
 		projectileMovement->bIsHomingProjectile = true;
@@ -66,6 +71,7 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	else 
 		projectileMovement->Velocity = _tempItemData.LaunchSpeed * maxSpeedMultiple * GetActorForwardVector();
 
+	projectileMesh->IgnoreActorWhenMoving(projectileOwner, true);
 	this->SetLifeSpan(_tempItemData.LifeTime * (1.0f + lifetimeMultiple));
 }
 

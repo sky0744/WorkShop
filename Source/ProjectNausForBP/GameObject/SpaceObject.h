@@ -13,6 +13,7 @@ const float _define_StatRestoreMAX = 500.0f;
 const float _define_StatDefMIN = -1000.0f;
 const float _define_StatDefMAX = 1000.0f;
 
+const float _define_ModuleANDPathTick = 0.5f;
 const int _define_StatModuleSlotMIN = 0;
 const int _define_StatModuleSlotMAX = 8;
 
@@ -42,9 +43,6 @@ const float _define_StatDroneControlMIN = 0.0f;
 const float _define_StatDroneControlMAX = 1000.0f;
 const float _define_StatDroneBayMIN = 0.0f;
 const float _define_StatDroneBayMAX = 5000.0f;
-
-const float _define_ModuleANDPathTick = 0.1f;
-const float _define_TargetLocationOffset = 0.35f;
 
 const float _define_DamagedMIN = 1.0f;
 const float _define_DamagedMAX = 10000.0f;

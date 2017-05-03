@@ -16,8 +16,6 @@ const float _define_LimitSectorSizeMAX = 99000.0f;
 
 #pragma region Sub Data Structure in DataTable Set or Instance
 USTRUCT(BlueprintType)
-/**	AI 함선의 무역 데이터입니다. 이는 스테이션에 도킹하여 보급품을 처리하는 데이터를 포함합니다.
-*/
 struct PROJECTNAUSFORBP_API FNPCTradeData
 {
 	GENERATED_USTRUCT_BODY()
@@ -117,6 +115,16 @@ public:
 		int itemAmount;
 };
 USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FHardpoint {
+	GENERATED_USTRUCT_BODY()
+public:
+	FHardpoint() {}
+	UPROPERTY(VisibleAnywhere, Category = "HardPoint Data")
+		FVector rightLaunchPoint;
+	UPROPERTY(VisibleAnywhere, Category = "HardPoint Data")
+		FVector leftLaunchPoint;
+};
+USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FTargetModule
 {
 	GENERATED_USTRUCT_BODY()
@@ -148,9 +156,12 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		ModuleType moduleType;
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
-		bool isBookedForOff;
-	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		ModuleState moduleState;
+	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
+		FHardpoint hardPoint;
+	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
+		bool isBookedForOff;
+
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		float maxCooltime;
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
@@ -387,6 +398,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float RechargePower;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		TArray<FHardpoint> HardPoints;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		int SlotTarget;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
