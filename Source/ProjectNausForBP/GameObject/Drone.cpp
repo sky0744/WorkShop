@@ -131,12 +131,25 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 				_userState->ChangeRenown(_peerResult, strategicPoint);
 			}
 		}
+		/*
 		//카고 드랍
-		ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
-			FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+		ACargoContainer* _cargoContanier;
+		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+		FNPCData _tempNPCData = _tempInstance->GetNPCData(npcShipID);
 
-		_cargoContanier->SetCargoFromData(ObjectType::Drone, objectID);
-		UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
+		for (FNPCDropData& dropData : _tempNPCData.DropItems) {
+			if (FMath::Clamp(dropData.dropChance, _define_DropChance_MIN, _define_DropChance_MAX) < FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX))
+				continue;
+
+			_cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
+				FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+
+			if (_cargoContanier) {
+			_cargoContainer->InitObject(FMath::RandRange(0, 13));
+				_cargoContanier->SetCargo(FItem(dropData.dropItemID, FMath::RandRange(dropData.dropAmountMin, dropData.dropAmountMax)));
+				UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
+			}
+		}*/
 		Destroy();
 	}
 

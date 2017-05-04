@@ -44,7 +44,7 @@ void ABeam::Tick(float DeltaTime) {
 		launchedFaction = beamOwner->GetFaction();
 		resultLocation = target->GetActorLocation();
 		isHited = true;
-		//빔이 블럭되지 않고 최대거리까지 진행
+	//빔이 블럭되지 않고 최대거리까지 진행
 	} else {
 		resultLocation = target->GetActorLocation() - beamOwner->GetActorLocation();
 		resultLocation.Normalize();

@@ -10,60 +10,6 @@
 #include "../Interface/Commandable.h"
 #include "PlayerShip.generated.h"
 
-#pragma region Constant Value Ship Type - Backup / Real
-/*
-const float _define_StatDamperMIN = 10.0f;
-const float _define_StatDamperMAX = 1000000.0f;
-const float _define_StatRestoreMIN = 0.0f;
-const float _define_StatRestoreMAX = 500.0f;
-const float _define_StatDefMIN = -1000.0f;
-const float _define_StatDefMAX = 1000.0f;
-
-const int _define_StatModuleSlotMIN = 0;
-const int _define_StatModuleSlotMAX = 8;
-*/
-const float _define_StatComputePerformanceMIN = 0.0f;
-const float _define_StatComputePerformanceMAX = 99999.0f;
-const float _define_StatPowerGridPerformanceMIN = 0.0f;
-const float _define_StatPowerGridPerformanceMAX = 99999.0f;
-const float _define_StatCargoSizeMIN = 0.0f;
-const float _define_StatCargoSizeMAX = 200000.0f;
-/*
-const float _define_StatLengthMIN = 10.0f;
-const float _define_StatLengthMAX = 10000.0f;
-const float _define_StatRadarRangeMIN = 10.0f;
-const float _define_StatRadarRangeMAX = 100000.0f;
-const float _define_StatStrategicPointMIN = 0.0f;
-const float _define_StatStrategicPointMAX = 1000.0f;
-
-const float _define_StatSpeedMIN = 0.0f;
-const float _define_StatSpeedMAX = 10000.0f;
-const float _define_StatAccelMIN = 0.0f;
-const float _define_StatAccelMAX = 1000.0f;
-const float _define_StatRotateMIN = 0.0f;
-const float _define_StatRotateMAX = 90.0f;
-
-const float _define_StatBonusMIN = 0.0f;
-const float _define_StatBonusMAX = 5.0f;
-const float _define_StatBonusReducePowerMIN = 0.0f;
-const float _define_StatBonusReducePowerMAX = 0.75f;
-const float _define_StatBonusReduceCooltimeMIN = 0.0f;
-const float _define_StatBonusReduceCooltimeMAX = 0.75f;
-const float _define_StatDroneControlMIN = 0.0f;
-const float _define_StatDroneControlMAX = 1000.0f;
-const float _define_StatDroneBayMIN = 0.0f;
-const float _define_StatDroneBayMAX = 5000.0f;
-
-const float _define_ModuleANDPathTick = 0.1f;
-const float _define_TargetLocationOffset = 0.35f;
-
-const float _define_DamagedMin = 1.0f;
-const float _define_DamagedMAX = 10000.0f;
-const float _define_DamagePercentageMIN = 0.15f;
-const float _define_DamagePercentageMAX = 4.15f;
-*/
-#pragma endregion
-
 UCLASS()
 class PROJECTNAUSFORBP_API APlayerShip : public ASpaceObject, public ICommandable
 {
@@ -279,8 +225,6 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
-	UPROPERTY()
-		TArray<ASpaceObject*> targetingObject;
 	UPROPERTY()
 		TArray<FActiveModule> slotActiveModule;
 	UPROPERTY()

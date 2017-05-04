@@ -8,19 +8,6 @@
 #include "../GameCoreSub/SaveLoader.h"
 #include "UserState.generated.h"
 
-#pragma region Constant Value UserState Type - Real
-const int _define_SkillLevelMIN = 0;
-const int _define_SkillLevelMAX = 5;
-
-const float _define_CreditMIN = -999999999999.0f;
-const float _define_CreditMAX = 999999999999.0f;
-
-const float _define_RenownMIN = -1000.0f;
-const float _define_RenownMAX = 1000.0f;
-const float _define_SPToRenownHostile = 0.01f;
-const float _define_SPToRenownNotHostile = -0.05f;
-
-#pragma endregion
 UCLASS()
 class PROJECTNAUSFORBP_API AUserState : public APlayerState
 {

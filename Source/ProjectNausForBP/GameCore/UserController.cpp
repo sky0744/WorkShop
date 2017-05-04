@@ -237,6 +237,8 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 
 	TScriptInterface<IStructureable> _sObj;
 	AResource* _resource;
+	ACargoContainer* _cargoContainer;
+	FItem _item;
 
 	_pObj->CommandStop();
 
@@ -275,6 +277,18 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 		break;
 	case InteractionType::Repair:
 		_pObj->CommandRepair(tObj);
+		break;
+	case InteractionType::GetCargo:
+		if (!tObj->IsA(ACargoContainer::StaticClass()))
+			return;
+		_cargoContainer = Cast<ACargoContainer>(tObj);
+		if (USafeENGINE::CheckDistanceConsiderSize(controlledPawn, _cargoContainer) > 250.0f)
+			return;
+		_item = _cargoContainer->GetCargo();
+		if (Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_item))
+			_cargoContainer->Destroy();
+		else
+			_cargoContainer->SetCargo(_item);
 		break;
 	default:
 		break;

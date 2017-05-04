@@ -380,7 +380,8 @@ enum class InteractionType : uint8 {
 	Jump				UMETA(DisplayName = "Jump"),
 	Warp				UMETA(DisplayName = "Warp"),
 	Collect				UMETA(DisplayName = "Collect"),
-	Repair				UMETA(DisplayName = "Repair")
+	Repair				UMETA(DisplayName = "Repair"),
+	GetCargo				UMETA(DisplayName = "GetCargo")
 };
 UENUM(BlueprintType)
 enum class ConfirmState : uint8 {

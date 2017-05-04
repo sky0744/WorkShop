@@ -7,20 +7,6 @@
 #include "../Interface/Structureable.h"
 #include "Station.generated.h"
 
-#pragma region Constant Value Station Type - Backup / Real
-/*
-const float _define_StatDamperMIN = 10.0f;
-const float _define_StatDamperMAX = 1000000.0f;
-const float _define_StatRestoreMIN = 0.0f;
-const float _define_StatRestoreMAX = 500.0f;
-const float _define_StatDefMIN = -1000.0f;
-const float _define_StatDefMAX = 1000.0f;
-
-const float _define_DamagedMin = 1.0f;
-const float _define_DamagedMAX = 10000.0f;
-*/
-#pragma endregion
-
 UCLASS()
 class PROJECTNAUSFORBP_API AStation : public ASpaceObject, public IStructureable {
 	GENERATED_BODY()

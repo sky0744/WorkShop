@@ -95,12 +95,12 @@ struct PROJECTNAUSFORBP_API FSavedContainerData {
 	GENERATED_USTRUCT_BODY()
 public:
 	FSavedContainerData(int id = 0, FVector2D location = FVector2D(), FRotator rotation = FRotator(),
-		float durability = .0f, TArray<FItem> cargo = TArray<FItem>())
+		float durability = .0f, FItem cargo = FItem())
 		: containerID(id)
 		, containerLocation(location)
 		, containerRotation(rotation)
 		, containerDurability(durability)
-		, containerCargo(TArray<FItem>(cargo)) {
+		, containerCargo(FItem(cargo)) {
 	}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
@@ -112,7 +112,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
 		float containerDurability;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<FItem> containerCargo;
+		FItem containerCargo;
 };
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FSavedResourceData {

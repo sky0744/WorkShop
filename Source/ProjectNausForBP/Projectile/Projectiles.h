@@ -13,18 +13,21 @@ class PROJECTNAUSFORBP_API AProjectiles : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AProjectiles();
-
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
 	UFUNCTION()
 		/** 엑터와 충돌시 호출
-		*	@param HitResult - 충돌 결과
+		*	@param OverlappedComp - 충돌된 컴포넌트
+		*	@param OtherActor - 충돌한 엑터
+		*	@param OtherComp - 충돌한 엑터의 컴포넌트
+		*	@param OtherBodyIndex - ?
+		*	@param bFromSweep - 스윕 여부
+		*	@param SweepResult - 충돌 물리 결과
 		*/
-		void OnCollisionActor(const FHitResult& hitResult);
+		void OnCollisionActor(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 		/** 프로젝타일 속성을 세팅
@@ -45,7 +48,7 @@ private:
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UStaticMeshComponent* projectileMesh;
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
-		UProjectileMovementComponent* projectileMovement;
+		USphereComponent* projectileHitSensor;
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UParticleSystemComponent* projectileParticle;
 
@@ -56,7 +59,8 @@ private:
 
 	Faction launchedFaction;
 	bool isHoming;
-
+	float activateTime;
 	float setedDamage;
+	float setedVelocity;
 #pragma endregion
 };

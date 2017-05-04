@@ -122,12 +122,23 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 				_userState->ChangeRenown(_peerResult, strategicPoint);
 		}
 		//카고 드랍
-		ACargoContainer* _cargoContanier = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
-			FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+		ACargoContainer* _cargoContainer;
+		if (structureInfo != nullptr) {
+			for (FItem& cargo : structureInfo->itemList) {
+				//모든 카고를 절반의 확률로 드랍
+				if (FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX) > 0.5f)
+					continue;
 
-		_cargoContanier->SetCargo(structureInfo->itemList, 2.0f);
-		UGameplayStatics::FinishSpawningActor(_cargoContanier, _cargoContanier->GetTransform());
-
+				_cargoContainer = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
+					FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+				if (_cargoContainer) {
+					_cargoContainer->InitObject(FMath::RandRange(0, 13));
+					_cargoContainer->SetCargo(cargo);
+					UGameplayStatics::FinishSpawningActor(_cargoContainer, _cargoContainer->GetTransform());
+				}
+			}
+			structureInfo->itemList.Empty();
+		}
 		Destroy();
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][Station][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),

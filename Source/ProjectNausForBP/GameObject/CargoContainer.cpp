@@ -10,8 +10,8 @@ ACargoContainer::ACargoContainer()
 	objectMesh->SetCanEverAffectNavigation(true);
 	objectMesh->SetEnableGravity(false);
 	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
+	objectMesh->BodyInstance.LinearDamping = 50.0f;
+	objectMesh->BodyInstance.AngularDamping = 500.0f;
 	objectMesh->BodyInstance.bLockZTranslation = true;
 	objectMesh->BodyInstance.bLockXRotation = true;
 	objectMesh->BodyInstance.bLockYRotation = true;
@@ -23,8 +23,6 @@ ACargoContainer::ACargoContainer()
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0f;
 	cargoContainerID = -1;
-
-	cargo = TArray<FItem>();
 }
 
 #pragma region Event Calls
@@ -85,7 +83,7 @@ int ACargoContainer::GetObjectID() const {
 }
 
 ObjectType ACargoContainer::GetObjectType() const {
-	return ObjectType::SpaceObject;
+	return ObjectType::Container;
 }
 
 Faction ACargoContainer::GetFaction() const {
@@ -106,12 +104,13 @@ bool ACargoContainer::InitObject(const int objectId) {
 	if (!USafeENGINE::IsValid(_tempInstance))
 		return false;
 
-	FObjectData _tempObjectData = _tempInstance->GetObjectData(objectId);
+	FObjectData _tempObjectData = _tempInstance->GetCargoContainerData(objectId);
+	objectName = _tempObjectData.Name;
+	lengthToLongAsix = _tempObjectData.LengthToLongAsix;
 	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempObjectData.MeshPath.ToString()));
 	if (_newMesh)
 		objectMesh->SetStaticMesh(_newMesh);
 
-	lengthToLongAsix = _tempObjectData.LengthToLongAsix;
 	return false;
 }
 
@@ -141,69 +140,18 @@ float ACargoContainer::GetValue(const GetStatType statType) const {
 #pragma endregion
 
 #pragma region Functions
-void ACargoContainer::SetCargoFromData(const ObjectType objectType, const int ObjectIDforDrop) {
-	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance)) {
-		Destroy();
+void ACargoContainer::SetCargo(const FItem& items) {
+
+	if (cargo.itemID < 0)
 		return;
-	}
-	FNPCData _tempNPCData;
-	int minAmount;
-
-	switch (objectType) {
-	case ObjectType::Ship:
-		_tempNPCData = _tempInstance->GetNPCData(objectID);
-		cargo.Reserve(_tempNPCData.DropItems.Num());
-
-		for (FNPCDropData& dropData : _tempNPCData.DropItems)
-			if (FMath::Clamp(dropData.dropChance, _define_DropChance_MIN, _define_DropChance_MAX) > FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX)) {
-				minAmount = FMath::Max(1, dropData.dropAmountMin);
-				cargo.Emplace(FItem(dropData.dropItemID, FMath::RandRange(minAmount, FMath::Max(minAmount, dropData.dropAmountMax))));
-			}
-		break;
-	case ObjectType::Drone:
-
-	default:
-		Destroy();
-		return;
-	}
-	cargo.Shrink();
+	cargo = FItem(items);
 }
 
-void ACargoContainer::SetCargo(const TArray<FItem>& items, float dropChance) {
-	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance)) {
-		Destroy();
-		return;
-	}
-	int minAmount = 1;
+FItem ACargoContainer::GetCargo() {
 
-	cargo.Reserve(items.Num());
-	dropChance = FMath::Clamp(dropChance, _define_DropChance_MIN, _define_DropChance_MAX);
-	for (const FItem& item : items) {
-		if (dropChance > FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX))
-			cargo.Emplace(FItem(item.itemID, FMath::RandRange(minAmount, FMath::Max(minAmount, item.itemAmount))));
+	FItem _retrunCargo = cargo;
+	cargo.itemID = -1;
 
-		cargo.Shrink();
-	}
-}
-
-void ACargoContainer::AddCargo(const TArray<FItem>& items) {
-
-	cargo.Append(items);
-}
-
-void ACargoContainer::GetAllCargo(TArray<FItem>& gettingItems) {
-
-	gettingItems = cargo;
-}
-
-bool ACargoContainer::GetCargo(int cargoSlot, FItem& gettingItem) {
-
-	if (cargo.Num() - 1 > cargoSlot)
-		return false;
-
-	gettingItem = cargo[cargoSlot];
-	return true;
+	return _retrunCargo;
 }
 #pragma endregion

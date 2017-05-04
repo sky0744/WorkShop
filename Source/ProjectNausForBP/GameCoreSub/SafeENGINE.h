@@ -5,13 +5,122 @@
 #include "Enums.h"
 #include "SafeENGINE.generated.h"
 
-/**
- * 
- */
 
-#pragma region Constant Value In SpaceObject
+#pragma region Constant Value In USafeENGINE
 const float _define_LimitSectorSizeMIN = -99000.0f;
 const float _define_LimitSectorSizeMAX = 99000.0f;
+#pragma endregion
+
+#pragma region Constant Value In SpaceState
+const float _define_FactionRelationshipMIN = -10.0f;
+const float _define_FactionRelationshipMAX = 10.0f;
+
+const float _define_RelationThresholdAllyStrong = 8.0f;
+const float _define_RelationThresholdAlly = 5.0f;
+const float _define_RelationThresholdFriend = 2.0f;
+const float _define_RelationThresholdBoundary = -2.0f;
+const float _define_RelationThresholdEnemy = -5.0f;
+const float _define_RelationThresholdEnemyStrong = -8.0f;
+
+const float _define_DamagetoRelationFactorMIN = 0.01f;
+const float _define_DamagetoRelationFactorMAX = 0.02f;
+const float _define_SPtoRelationFactorMIN = 0.002f;
+const float _define_SPtoRelationFactorMAX = 0.005f;
+const float _define_LimitApplyRelationPerOnceMIN = -2.0f;
+const float _define_LimitApplyRelationPerOnceMAX = 2.0f;
+
+//const float _define_TransAllyRelationship = 0.6f;
+//const float _define_TransSubHostileRelationship = -0.15f;
+//const float _define_TransHostileRelationship = -0.7f;
+#pragma endregion
+
+#pragma region Constant Value UserState Type
+const int _define_SkillLevelMIN = 0;
+const int _define_SkillLevelMAX = 5;
+
+const float _define_CreditMIN = -999999999999.0f;
+const float _define_CreditMAX = 999999999999.0f;
+
+const float _define_RenownMIN = -1000.0f;
+const float _define_RenownMAX = 1000.0f;
+const float _define_SPToRenownHostile = 0.01f;
+const float _define_SPToRenownNotHostile = -0.05f;
+#pragma endregion
+
+#pragma region Constant Value In SpaceObject
+const float _define_StatDamperMIN = 10.0f;
+const float _define_StatDamperMAX = 1000000.0f;
+const float _define_StatRestoreMIN = 0.0f;
+const float _define_StatRestoreMAX = 500.0f;
+const float _define_StatDefMIN = -1000.0f;
+const float _define_StatDefMAX = 1000.0f;
+
+const float _define_ModuleANDPathTick = 0.5f;
+const int _define_StatModuleSlotMIN = 0;
+const int _define_StatModuleSlotMAX = 8;
+
+const float _define_StatLengthMIN = 10.0f;
+const float _define_StatLengthMAX = 10000.0f;
+const float _define_StatRadarRangeMIN = 10.0f;
+const float _define_StatRadarRangeMAX = 100000.0f;
+const float _define_StatStrategicPointMIN = 0.0f;
+const float _define_StatStrategicPointMAX = 1000.0f;
+const float _define_StatBountyMIN = 0.0f;
+const float _define_StatBountyMAX = 5000000.0f;
+
+const float _define_StatSpeedMIN = 0.0f;
+const float _define_StatSpeedMAX = 10000.0f;
+const float _define_StatAccelMIN = 0.0f;
+const float _define_StatAccelMAX = 1000.0f;
+const float _define_StatRotateMIN = 0.0f;
+const float _define_StatRotateMAX = 90.0f;
+
+const float _define_StatBonusMIN = 0.0f;
+const float _define_StatBonusMAX = 5.0f;
+const float _define_StatBonusReducePowerMIN = 0.0f;
+const float _define_StatBonusReducePowerMAX = 0.75f;
+const float _define_StatBonusReduceCooltimeMIN = 0.0f;
+const float _define_StatBonusReduceCooltimeMAX = 0.75f;
+const float _define_StatDroneControlMIN = 0.0f;
+const float _define_StatDroneControlMAX = 1000.0f;
+const float _define_StatDroneBayMIN = 0.0f;
+const float _define_StatDroneBayMAX = 5000.0f;
+
+const float _define_DamagedMIN = 1.0f;
+const float _define_DamagedMAX = 10000.0f;
+const float _define_DamagePercentageMIN = 0.15f;
+const float _define_DamagePercentageMAX = 4.15f;
+#pragma endregion
+
+#pragma region Constant Value Ship Type
+const float _define_StatComputePerformanceMIN = 0.0f;
+const float _define_StatComputePerformanceMAX = 99999.0f;
+const float _define_StatPowerGridPerformanceMIN = 0.0f;
+const float _define_StatPowerGridPerformanceMAX = 99999.0f;
+const float _define_StatCargoSizeMIN = 0.0f;
+const float _define_StatCargoSizeMAX = 200000.0f;
+#pragma endregion
+
+#pragma region Constant Value Drone Type
+#pragma endregion
+
+#pragma region Constant Value Station Type
+#pragma endregion
+
+#pragma region Constant Value Gate Type
+const float _define_AvailableDistanceToJump = 500.0f;
+#pragma endregion
+
+#pragma region Constant Value Resource Type
+const float _define_StatResourceAmountMIN = 0.0f;
+const float _define_StatResourceAmountMAX = 10000.0f;
+const float _define_RandomRotateSpeedMIN = -3.0f;
+const float _define_RandomRotateSpeedMAX = 3.0f;
+#pragma endregion
+
+#pragma region Constant Value Cargo Type
+const float _define_DropChance_MIN = 0.0f;
+const float _define_DropChance_MAX = 100.0f;
 #pragma endregion
 
 #pragma region Sub Data Structure in DataTable Set or Instance
@@ -149,7 +258,8 @@ public:
 		
 		, ammo(FItem(-1, 0))
 		, compatibleAmmo(TArray<int>())
-		, ammoCapacity(0) {}
+		, ammoCapacity(0) 
+		, target(nullptr) {}
 
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		int moduleID;
@@ -193,6 +303,8 @@ public:
 		TArray<int> compatibleAmmo;
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
 		int ammoCapacity;
+	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
+		ASpaceObject* target;
 };
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FActiveModule
@@ -734,6 +846,8 @@ public:
 		FName MeshPath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Proejctile Data")
 		UTexture2D* Icon;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		float ExplosionSensorRange;
 
 	FProjectileData() {}
 };

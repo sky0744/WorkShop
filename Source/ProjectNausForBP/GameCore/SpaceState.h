@@ -14,31 +14,6 @@
 #include "../GameCoreSub/Enums.h"
 #include "SpaceState.generated.h"
 
-#pragma region Constant Value In SpaceState - Real
-const float _define_FactionRelationshipMIN = -10.0f;
-const float _define_FactionRelationshipMAX = 10.0f;
-
-const float _define_RelationThresholdAllyStrong = 8.0f;
-const float _define_RelationThresholdAlly = 5.0f;
-const float _define_RelationThresholdFriend = 2.0f;
-const float _define_RelationThresholdBoundary = -2.0f;
-const float _define_RelationThresholdEnemy = -5.0f;
-const float _define_RelationThresholdEnemyStrong = -8.0f;
-
-const float _define_DamagetoRelationFactorMIN = 0.01f;
-const float _define_DamagetoRelationFactorMAX = 0.02f;
-const float _define_SPtoRelationFactorMIN = 0.002f;
-const float _define_SPtoRelationFactorMAX = 0.005f;
-const float _define_LimitApplyRelationPerOnceMIN = -2.0f;
-const float _define_LimitApplyRelationPerOnceMAX = 2.0f;
-#pragma endregion
-
-#pragma region Constant Value In SpaceState - Not Use Now
-//const float _define_TransAllyRelationship = 0.6f;
-//const float _define_TransSubHostileRelationship = -0.15f;
-//const float _define_TransHostileRelationship = -0.7f;
-#pragma endregion
-
 UCLASS()
 class PROJECTNAUSFORBP_API ASpaceState : public AGameStateBase {
 	GENERATED_BODY()

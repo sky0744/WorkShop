@@ -145,6 +145,9 @@ bool USafeENGINE::IsValid(const UObject* obj) {
 }
 
 int USafeENGINE::FindItemSlot(const TArray<FItem>& itemList, const FItem items) {
+	if (items.itemID < 0)
+		return false;
+
 	for (int index = 0; index < itemList.Num(); index++) {
 		if (itemList[index].itemID == items.itemID) {
 			return index;
@@ -154,8 +157,10 @@ int USafeENGINE::FindItemSlot(const TArray<FItem>& itemList, const FItem items) 
 }
 
 bool USafeENGINE::AddCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem addItem) {
+	if (addItem.itemID < 0)
+		return false;
+
 	int _findItemSlot = -1;
-	
 	UE_LOG(LogClass, Log, TEXT("[AddCargo][ref Check] (&)%p"), &itemList);
 	if (addItem.itemAmount < 1)
 		return false;
@@ -174,8 +179,10 @@ bool USafeENGINE::AddCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem addI
 }
 
 bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dropItem) {
-	int _slotIndex = -1;
+	if (dropItem.itemID < 0)
+		return false;
 
+	int _slotIndex = -1;
 	if (dropItem.itemAmount < 1)
 		return false;
 

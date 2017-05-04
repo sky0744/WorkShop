@@ -281,7 +281,6 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 
 		ASpaceObject* _spaceObject;
 		ACargoContainer* _cargoContainer;
-		TArray<FItem> _cargoInContainer;
 		AResource* _resource;
 
 		saver->shipSaveInfo.Reserve(_getAllObj.Num());
@@ -322,9 +321,8 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 			case ObjectType::Container:
 				if (_spaceObject->IsA(ACargoContainer::StaticClass())) {
 					_cargoContainer = Cast<ACargoContainer>(_spaceObject);
-					_cargoContainer->GetAllCargo(_cargoInContainer);
 					saver->containerSaveInfo.Emplace(FSavedContainerData(_cargoContainer->GetObjectID(), (FVector2D)_cargoContainer->GetActorLocation(),
-							_cargoContainer->GetActorRotation(), _cargoContainer->GetValue(GetStatType::currentHull), _cargoInContainer));
+							_cargoContainer->GetActorRotation(), _cargoContainer->GetValue(GetStatType::currentHull), _cargoContainer->GetCargo()));
 				}
 				break;
 			case ObjectType::Resource:
@@ -447,7 +445,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		}
 		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
 			if (!structureData.isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 				if (_obj != nullptr) {
 					_sObj = Cast<IStructureable>(_obj);
@@ -490,7 +488,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 				_container = Cast<ACargoContainer>(_obj);
 				_container->InitObject(containerData.containerID);
 				_container->LoadBaseObject(0.0f, 0.0f, 0.0f, containerData.containerDurability);
-				_container->AddCargo(containerData.containerCargo);
+				_container->SetCargo(containerData.containerCargo);
 				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
 			}
 		}
