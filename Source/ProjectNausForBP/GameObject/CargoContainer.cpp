@@ -101,7 +101,7 @@ BehaviorState ACargoContainer::GetBehaviorState() const {
 bool ACargoContainer::InitObject(const int objectId) {
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 
 	FObjectData _tempObjectData = _tempInstance->GetCargoContainerData(objectId);

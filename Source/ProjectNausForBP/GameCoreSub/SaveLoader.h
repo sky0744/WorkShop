@@ -21,21 +21,21 @@ public:
 		, npcShipHull(hull)
 		, npcShipPower(power) {}
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int npcShipID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		Faction npcShipFaction;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector2D npcShipLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator npcShipRotation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float npcShipShield;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float npcShipArmor;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float npcShipHull;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float npcShipPower;
 };
 USTRUCT(BlueprintType)
@@ -52,19 +52,19 @@ public:
 		, droneArmor(armor)
 		, droneHull(hull) {}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int droneID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		Faction droneFaction;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector2D droneLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator droneRotation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float droneShield;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float droneArmor;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float droneHull;
 };
 USTRUCT(BlueprintType)
@@ -79,15 +79,15 @@ public:
 		, spaceObjectRotation(rotation)
 		, spaceObjectDurability(durability) {}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int spaceObjectID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		Faction spaceObjectFaction;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector2D spaceObjectLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator spaceObjectRotation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float spaceObjectDurability;
 };
 USTRUCT(BlueprintType)
@@ -103,15 +103,15 @@ public:
 		, containerCargo(FItem(cargo)) {
 	}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int containerID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector2D containerLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator containerRotation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float containerDurability;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FItem containerCargo;
 };
 USTRUCT(BlueprintType)
@@ -126,15 +126,15 @@ public:
 		, resourceDurability(durability)
 		, resourceAmount(resourceAmount) {}
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int resourceID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector2D resourceLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator resourceRotation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float resourceDurability;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int resourceAmount;
 };
 
@@ -146,83 +146,75 @@ class PROJECTNAUSFORBP_API USaveLoader : public USaveGame
 public:
 
 #pragma region Player Data
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FText name;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int shipID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FString sectorName;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
+		FString restartSector;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
+		FVector restartLocation;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FText playerFactionName;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float credit;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		SaveState saveState;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector position;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator rotation;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float hull;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float armor;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float shield;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float power;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<int> slotTargetModule;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<int> slotActiveModule;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<int> slotPassiveModule;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<int> slotSystemModule;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FItem> targetModuleAmmo;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSkill> skillList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FItem> itemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FItem> playerDronesInHanger;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSavedDroneData> playerDronesInSpace;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<int> skillIDList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<int> skillLevelList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<float> skillLearnList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<int> itemIDList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
-		TArray<int> itemAmountList;
-
 #pragma endregion
 
 #pragma region Sector Data
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<float> relation;
 	//sector Data -> Structure Data Include.
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSectorData> sectorInfo;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSavedNPCShipData> shipSaveInfo;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSavedDroneData> droneSaveInfo;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSavedObjectData> objectSaveInfo;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSavedContainerData> containerSaveInfo;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = SaveLoader)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FSavedResourceData> resourceSaveInfo;
 #pragma endregion
 

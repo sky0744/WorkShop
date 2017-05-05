@@ -250,6 +250,23 @@ enum class BonusStatType : uint8 {
 	BonusReprocessingTime		UMETA(DisplayName = "BonusReprocessingTime"),
 	BonusReprocessingAmount		UMETA(DisplayName = "BonusReprocessingAmount")
 };
+UENUM(BlueprintType)
+enum class SkillGroup : uint8 {
+	TypeOfShield			UMETA(DisplayName = "Type Of Shield"),
+	TypeOfSArmor			UMETA(DisplayName = "Type Of Armor"),
+	TypeOfHull				UMETA(DisplayName = "Type Of Hull"),
+	TypeOfPower				UMETA(DisplayName = "Type Of Power"),
+	TypeOfShipEnhance		UMETA(DisplayName = "Type Of ShipEnhance"),
+	TypeOfElectronics		UMETA(DisplayName = "Type Of Electronics"),
+	TypeOfMovement			UMETA(DisplayName = "Type Of Movement"),
+	TypeOfWeaponBeam		UMETA(DisplayName = "Type Of Weapon - Beam"),
+	TypeOfWeaponCannon		UMETA(DisplayName = "Type Of Weapon - Cannon"),
+	TypeOfWeaponRailGun		UMETA(DisplayName = "Type Of Weapon - RailGun"),
+	TypeOfWeaponMissile		UMETA(DisplayName = "Type Of Weapon - Missile"),
+	TypeOfDrone				UMETA(DisplayName = "Type Of Drone"),
+	TypeOfIndustry			UMETA(DisplayName = "Type Of Industry"),
+	TypeOfCommunity			UMETA(DisplayName = "Type Of Community")
+};
 
 UENUM(BlueprintType)
 enum class ItemType : uint8 {

@@ -34,7 +34,7 @@ void ABeam::BeginPlay()
 void ABeam::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	if (!USafeENGINE::IsValid(target) || !target->IsA(ASpaceObject::StaticClass()))
+	if (!IsValid(target) || !target->IsA(ASpaceObject::StaticClass()))
 		return;
 
 	startLocation = beamOwner->GetActorLocation() + beamOwner->GetActorRotation().RotateVector(startLocation);
@@ -58,7 +58,7 @@ void ABeam::Tick(float DeltaTime) {
 	if (isHited) {
 		switch (beamType) {
 		case ModuleType::MinerLaser:
-			if (!USafeENGINE::IsValid(target) || !target->IsA(AResource::StaticClass()))
+			if (!IsValid(target) || !target->IsA(AResource::StaticClass()))
 				return;
 
 			_collectedOre = Cast<AResource>(target)->CollectResource(beamDamage);
@@ -66,7 +66,7 @@ void ABeam::Tick(float DeltaTime) {
 				Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_collectedOre);
 			break;
 		case ModuleType::TractorBeam:
-			if (!USafeENGINE::IsValid(target) || !target->IsA(ACargoContainer::StaticClass()))
+			if (!IsValid(target) || !target->IsA(ACargoContainer::StaticClass()))
 				return;
 
 			resultLocation = (target->GetActorLocation() - beamOwner->GetActorLocation());
@@ -82,7 +82,7 @@ void ABeam::Tick(float DeltaTime) {
 //발사 전에 빔의 속성을 지정.
 void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor, float setedrange, ModuleType setedbeamType, float setedDamage, FVector locOffset, float aliveTime) {
 
-	if (!USafeENGINE::IsValid(targetActor) || !targetActor->IsA(ASpaceObject::StaticClass()))
+	if (!IsValid(targetActor) || !targetActor->IsA(ASpaceObject::StaticClass()))
 		return;
 	beamType = setedbeamType;
 

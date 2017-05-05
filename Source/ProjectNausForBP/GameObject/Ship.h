@@ -97,7 +97,6 @@ private:
 
 	UPROPERTY()
 		TArray<FVector> wayPoint;
-
 	//성능 테스트를 위해 전역변수 <-> 지역변수 스트레스 테스트 할 것임
 	UPROPERTY()
 		UNavigationPath* waypointData;

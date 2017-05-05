@@ -88,79 +88,75 @@ void AUserController::ControlCamReset() {
 }
 
 void AUserController::ControlTargetSpeed(float value) {
-	if(USafeENGINE::IsValid(controlledPawn))
+	if(IsValid(controlledPawn))
 		controlledPawn->SetTargetSpeed(value);
 }
 void AUserController::ControlAcceleration(float value) {
-	if (USafeENGINE::IsValid(controlledPawn))
+	if (IsValid(controlledPawn))
 		controlledPawn->SetAcceleration(value);
 }
 void AUserController::ControlRotateSpeed(float value) {
-	if (USafeENGINE::IsValid(controlledPawn))
+	if (IsValid(controlledPawn))
 		controlledPawn->SetRotateRate(value);
 }
 
 void AUserController::OpenInfoProfile() {
-	if (USafeENGINE::IsValid(controlledHUD))
+	if (IsValid(controlledHUD))
 		controlledHUD->TriggerUI_Profile();
 }
 void AUserController::OpenInfoShip() {
-	if (USafeENGINE::IsValid(controlledHUD))
+	if (IsValid(controlledHUD))
 		controlledHUD->TriggerUI_Ship();
 }
 void AUserController::OpenInfoItem() {
-	if (USafeENGINE::IsValid(controlledHUD))
+	if (IsValid(controlledHUD))
 		controlledHUD->TriggerUI_Cargo();
 }
 void AUserController::OpenInfoMap() {
-	if (USafeENGINE::IsValid(controlledHUD))
+	if (IsValid(controlledHUD))
 		controlledHUD->TriggerUI_Contract();
 }
 void AUserController::OpenInfoQuest() {
-	if (USafeENGINE::IsValid(controlledHUD))
+	if (IsValid(controlledHUD))
 		controlledHUD->TriggerUI_WorldView();
 }
 void AUserController::OpenInfoMenu() {
-	if (USafeENGINE::IsValid(controlledHUD))
+	if (IsValid(controlledHUD))
 		controlledHUD->TriggerUI_Menu();
 }
 void AUserController::KeyUndock() {
-	if (USafeENGINE::IsValid(controlledPawn) && controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
+	if (IsValid(controlledPawn) && controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
 		Cast<ICommandable>(controlledPawn)->CommandUndock();
 }
 #pragma endregion
 
 #pragma region Input Binding - Asix
 void AUserController::ControlCamX(float value) {
-	if (USafeENGINE::IsValid(controlledPawn))
+	if (IsValid(controlledPawn))
 		controlledPawn->ControlViewPointX(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
 }
 void AUserController::ControlCamY(float value) {
-	if (USafeENGINE::IsValid(controlledPawn))
+	if (IsValid(controlledPawn))
 		controlledPawn->ControlViewPointY(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
 }
 
 void AUserController::ControlMouseX(float value) {
-	if (USafeENGINE::IsValid(controlledPawn) && mouseLeftClicked == true) {
-		//GEngine->AddOnScreenDebugMessage(-1, 0.0333f, FColor::Yellow, "Control Cam X : " + FRotator(0.0f, value, 0.0f).ToString());
+	if (IsValid(controlledPawn) && mouseLeftClicked == true)
 		controlledPawn->ControlCamRotateX(value);
-	}
 }
 void AUserController::ControlMouseY(float value) {
-	if (USafeENGINE::IsValid(controlledPawn) && mouseLeftClicked == true) {
-		//GEngine->AddOnScreenDebugMessage(-1, 0.0333f, FColor::Yellow, "Control Cam Y : " + FRotator(-value, 0.0f, 0.0f).ToString());
+	if (IsValid(controlledPawn) && mouseLeftClicked == true)
 		controlledPawn->ControlCamRotateY(value);
-	}
 }
 void AUserController::ControlMouseWheel(float value) {
-	//GEngine->AddOnScreenDebugMessage(-1, 0.0333f, FColor::Yellow, "Control Zoom : " + FString::SanitizeFloat(value));
-	if (USafeENGINE::IsValid(controlledPawn))
+	if (IsValid(controlledPawn))
 		controlledPawn->ControlCamDistance(value * 10.0f);
 }
 
 void AUserController::ClickPressMouseLeft(FKey key) {
 	mouseLeftClicked = true;
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIInteraction();
+	if(IsValid(controlledHUD))
+		controlledHUD->OffUIInteraction();
 }
 void AUserController::ClickReleaseMouseLeft(FKey key) {
 	this->DeprojectMousePositionToWorld(mousePositionInWorld, mouseDirectionInWorld);
@@ -215,7 +211,8 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) 
 		SettingInteraction(Cast<ASpaceObject>(hitResult.Actor.Get()));
 	else {
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIInteraction();
+		if(IsValid(controlledHUD))
+			controlledHUD->OffUIInteraction();
 		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
 		mouseXYPlane.Z = 0.0f;
 		ICommandable* _possessPawn = Cast<ICommandable>(controlledPawn);
@@ -230,6 +227,9 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 #pragma region player flow control
 void AUserController::PlayerInterAction(const InteractionType interaction) {
 
+	if (!IsValid(controlledPawn))
+		return;
+
 	ICommandable* _pObj;
 	if (!controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
 		return;
@@ -241,7 +241,6 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 	FItem _item;
 
 	_pObj->CommandStop();
-
 	switch (interaction)
 	{
 	case InteractionType::DockRequest:
@@ -305,16 +304,20 @@ bool AUserController::SetWarpLocation(const FVector location) {
 }
 
 bool AUserController::ToggleTargetModule(const int slotIndex) {
-	return controlledPawn->ToggleTargetModule(slotIndex, tObj);
+	if (IsValid(controlledPawn))
+		return controlledPawn->ToggleTargetModule(slotIndex, tObj);
+	else return false;
 }
 
 bool AUserController::ToggleActiveModule(const int slotIndex) {
-	return controlledPawn->ToggleActiveModule(slotIndex);
+	if (IsValid(controlledPawn))
+		return controlledPawn->ToggleActiveModule(slotIndex);
+	else return false;
 }
 
 ASpaceObject* AUserController::GetTargetInfo() const {
 
-	if(USafeENGINE::IsValid(tObj) && tObj != controlledPawn)
+	if(IsValid(tObj) && tObj != controlledPawn)
 		return tObj;
 	else return nullptr;
 }
@@ -327,7 +330,7 @@ void AUserController::SetTarget(ASpaceObject* target) {
 		if (controlledPawn == target)
 			return;
 
-		if (!USafeENGINE::IsValid(tObj) || tObj != target) {
+		if (!IsValid(tObj) || tObj != target) {
 			tObj = target;
 			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction(), false)) {
 			case Peer::Neutral:
@@ -346,7 +349,8 @@ void AUserController::SetTarget(ASpaceObject* target) {
 				_peerColor = FColor::White;
 				break;
 			}
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUITarget(tObj, _peerColor, 5.0f);
+			if (IsValid(tObj) && IsValid(controlledHUD))
+				controlledHUD->OnUITarget(tObj, _peerColor, 5.0f);
 		} else if (tObj == target)
 			tObj = nullptr;
 		else
@@ -359,7 +363,7 @@ void AUserController::SettingInteraction(const ASpaceObject* target) const {
 	FColor peerColor;
 	if (controlledPawn == target)
 		return;
-	if (tObj == target)
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIInteraction(tObj, tObj->GetObjectType());
+	if (IsValid(tObj) && IsValid(controlledHUD) && tObj == target)
+		controlledHUD->OnUIInteraction(tObj, tObj->GetObjectType());
 }
 #pragma endregion

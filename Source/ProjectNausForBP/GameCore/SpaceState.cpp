@@ -18,19 +18,16 @@ void ASpaceState::BeginPlay() {
 	Super::BeginPlay();
 
 	factionEnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
-	skipingFirstTick = true;
 	currentShipCapacity = 0;
 }
 
 void ASpaceState::Tick(float DeltaSecondes) {
 	Super::Tick(DeltaSecondes);
 
-	if (currentSectorInfo == nullptr || skipingFirstTick) {
-		skipingFirstTick = false;
-		return;
-	}
-
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (currentSectorInfo == nullptr || !IsValid(_tempInstance))
+		return;
+
 	FStationData _tempStationData;
 	FNPCData _tempNPCData;
 	FShipData _tempShipData;
@@ -82,17 +79,41 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				AStation* _regenStation = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
 					FTransform(stationData.structureRotation, FVector(stationData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-				if (USafeENGINE::IsValid(_regenStation)) {
+				if (IsValid(_regenStation)) {
 					_regenStructure = Cast<IStructureable>(_regenStation);
-					_regenStructure->SetStructureData(stationData);
-					UGameplayStatics::FinishSpawningActor(_regenStation, _regenStation->GetActorTransform());
+					if (_regenStructure != nullptr) {
+						_regenStructure->SetStructureData(stationData);
+						UGameplayStatics::FinishSpawningActor(_regenStation, _regenStation->GetActorTransform());
+					} else 
+						_regenStation->Destroy();
 				}
 			}
-		} else {
+		} 
+		else {
 			if (stationData.remainItemListRefreshTime <= 0.0f) {
 				_findIndex = -1;
 				_addAmount = 0;
 				_item = FItem();
+
+				/*or (FItemSellData& sellData : stationData.itemSellListId) {
+					if (sellData.sellingChance >= FMath::RandRange(0.0, 100.0f)) {
+						_item = FItem(sellData.sellingItemID, 1);
+						USafeENGINE.
+						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, _item);
+						_addAmount = FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount);
+
+						if (_findIndex > -1)
+							stationData.itemList[_findIndex].itemAmount += _addAmount;
+						else if (_addAmount > 0)
+							stationData.itemList.Emplace(FItem(sellData.sellingItemID, _addAmount));
+					} else {
+						_item = FItem(stationData.itemSellListId[index].sellingItemID, 1);
+						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, _item);
+
+						if (_findIndex > -1)
+							stationData.itemList.RemoveAtSwap(_findIndex);
+					}
+				}*/
 
 				for (int index = 0; index < stationData.itemSellListId.Num(); index++) {
 					if (stationData.itemSellListId[index].sellingChance >= FMath::RandRange(0.0, 100.0f)) {
@@ -158,7 +179,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				AGate* _regenGate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(),
 					FTransform(gateData.structureRotation, FVector(gateData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-				if (USafeENGINE::IsValid(_regenGate)) {
+				if (IsValid(_regenGate)) {
 					_regenStructure = Cast<IStructureable>(_regenGate);
 					_regenStructure->SetStructureData(gateData);
 					UGameplayStatics::FinishSpawningActor(_regenGate, _regenGate->GetActorTransform());
@@ -297,7 +318,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				continue;
 			}
 			_spaceObject = Cast<ASpaceObject>(_getAllObj[index]);
-			if (!USafeENGINE::IsValid(_spaceObject))
+			if (!IsValid(_spaceObject))
 				continue;
 
 			switch (_spaceObject->GetObjectType()) {

@@ -67,13 +67,13 @@ void AShip::Tick(float DeltaTime)
 		if (MoveDistanceCheck()) {
 			behaviorState = BehaviorState::Idle;
 			bIsStraightMove = true;
-			moveTargetVector = GetActorLocation() + GetActorForwardVector() * 1000.0f;
+			moveTargetVector = GetActorLocation() + GetActorForwardVector() * _define_SetDistanceToRotateForward;
 		}
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
 			bIsStraightMove = true;
-			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
+			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
@@ -120,7 +120,7 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+	if (IsValid(_spaceState) && _dealingFaction == Faction::Player)
 		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	/*
@@ -166,7 +166,7 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player) {
+		if (IsValid(_userState) && IsValid(_spaceState) && _dealingFaction == Faction::Player) {
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
 			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
@@ -240,7 +240,7 @@ bool AShip::InitObject(const int npcID) {
 		return false;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 
 	FNPCData _tempNpcShipData = _tempInstance->GetNPCData(npcID);
@@ -682,12 +682,19 @@ bool AShip::CommandWarp(FVector location) {
 bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
-		if (target->RequestedDock(Faction::Player)) {
+		if (target->RequestedDock(faction)) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
+
+			if (USafeENGINE::CheckDistanceConsiderSize(this, targetObject) < _define_AvailableDistanceToDock) {
+				targetObject = nullptr;
+				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
+				behaviorState = BehaviorState::Docked;
+			} else {
+				RequestPathUpdate();
+				behaviorState = BehaviorState::Docking;
+			}
 			bIsStraightMove = true;
-			RequestPathUpdate();
-			behaviorState = BehaviorState::Docking;
 			return true;
 		}
 		else return false;
@@ -853,7 +860,7 @@ void AShip::ModuleCheck() {
 
 	for (FTargetModule& module : slotTargetModule) {
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
-		if (currentPower < 5.0f || !USafeENGINE::IsValid(module.target))
+		if (currentPower < 5.0f || !IsValid(module.target))
 			module.isBookedForOff = true;
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
 		if (module.moduleState != ModuleState::NotActivate) {
@@ -866,7 +873,7 @@ void AShip::ModuleCheck() {
 				switch (module.moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
-					if (USafeENGINE::IsValid(module.target) && module.target != this && module.target->IsA(ASpaceObject::StaticClass())) {
+					if (IsValid(module.target) && module.target != this && module.target->IsA(ASpaceObject::StaticClass())) {
 						//목표 지점 및 발사 위치, 방향 계산
 						_targetedLocation = module.target->GetActorLocation();
 						_targetedDirect = _targetedLocation - GetActorLocation();
@@ -896,7 +903,7 @@ void AShip::ModuleCheck() {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
 								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-							if (!USafeENGINE::IsValid(_beam))
+							if (!IsValid(_beam))
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
 							_beam->SetBeamProperty(this, module.target, module.launchSpeedMultiple, module.moduleType,
@@ -915,7 +922,7 @@ void AShip::ModuleCheck() {
 
 								AProjectiles* _projectile = Cast<AProjectiles>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AProjectiles::StaticClass(),
 									_spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-								if (!USafeENGINE::IsValid(_projectile))
+								if (!IsValid(_projectile))
 									return;
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
 								switch (module.moduleType) {
@@ -951,7 +958,7 @@ void AShip::ModuleCheck() {
 
 						//재장전 실시. 모듈 동작은 재장전이 완료되면 자동으로 시작.
 							module.ammo.itemAmount = module.ammoCapacity;
-							if (USafeENGINE::IsValid(module.target))
+							if (IsValid(module.target))
 								module.moduleState = ModuleState::Activate;
 							else 
 								module.moduleState = ModuleState::NotActivate;
@@ -1023,7 +1030,7 @@ void AShip::CheckPath() {
 */
 void AShip::RequestPathUpdate() {
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
-	if (USafeENGINE::IsValid(targetObject)) {
+	if (IsValid(targetObject)) {
 		moveTargetVector = targetObject->GetActorLocation();
 		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
 		moveTargetVector.Normalize();

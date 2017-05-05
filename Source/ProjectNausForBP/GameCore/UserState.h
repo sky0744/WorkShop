@@ -123,6 +123,9 @@ public:
 		float CheckCargoValue() const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		float CheckAddItemValue(const FItem item) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		bool SetRestartLocation();
 #pragma endregion
 
 #pragma region Components & Variables
@@ -134,6 +137,8 @@ private:
 	float sRenown;
 	float sBounty;
 
+	FString restartSector;
+	FVector restartLocation;
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
 	TArray<FSkill> listSkill;

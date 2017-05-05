@@ -77,14 +77,10 @@ void APlayerShip::Tick(float DeltaTime)
 		ModuleCheck();
 		checkTime = 0.0f;
 	}
-
 	sCurrentHull = FMath::Clamp(sCurrentHull + FMath::Clamp(sRepairHull + moduleStatHullRepair, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxHull);
 	sCurrentArmor = FMath::Clamp(sCurrentArmor + FMath::Clamp(sRepairArmor + moduleStatArmorRepair, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxArmor);
 	sCurrentShield = FMath::Clamp(sCurrentShield + FMath::Clamp(sRechargeShield + moduleStatShieldRegen, _define_StatRestoreMIN, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxShield);
 	sCurrentPower = FMath::Clamp(sCurrentPower + FMath::Clamp(sRechargePower - moduleConsumptPower, -_define_StatRestoreMAX, _define_StatRestoreMAX) * DeltaTime, 0.0f, sMaxPower);
-
-	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + SmoothZoomRemain * 0.05f, 100.0f, playerViewpointArm->CameraLagMaxDistance);
-	SmoothZoomRemain -= SmoothZoomRemain * 0.75f * DeltaTime;
 
 	switch (behaviorState) {
 	case BehaviorState::Idle:
@@ -93,14 +89,14 @@ void APlayerShip::Tick(float DeltaTime)
 		if (MoveDistanceCheck()) {
 			behaviorState = BehaviorState::Idle;
 			bIsStraightMove = true;
-			moveTargetVector = GetActorLocation() + GetActorForwardVector() * 1000.0f;
+			moveTargetVector = GetActorLocation() + GetActorForwardVector() * _define_SetDistanceToRotateForward;
 		}
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
 			targetObject = nullptr;
 			bIsStraightMove = true;
-			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
+			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
@@ -149,7 +145,7 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+	if (IsValid(_spaceState) && _dealingFaction == Faction::Player)
 		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	/*
@@ -195,7 +191,7 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState)) {
+		if (IsValid(_userState)) {
 			_userState->ChangeBounty(-_userState->GetBounty());
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
@@ -252,7 +248,7 @@ bool APlayerShip::InitObject(const int objectId) {
 	sShipID = objectId;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
@@ -293,6 +289,7 @@ bool APlayerShip::InitObject(const int objectId) {
 	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
+	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CamDistanceMAX, _tempShipData.LengthToLongAsix * 10.0f);
 
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -464,7 +461,7 @@ bool APlayerShip::TotalStatsUpdate() {
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	AUserState* _tempUserState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-	if (!USafeENGINE::IsValid(_tempInstance) || !USafeENGINE::IsValid(_tempUserState))
+	if (!IsValid(_tempInstance) || !IsValid(_tempUserState))
 		return false;
 	FShipData _tempShipData = _tempInstance->GetShipData(sShipID);
 	
@@ -838,7 +835,7 @@ bool APlayerShip::LoadFromSave(const USaveLoader* loader) {
 		sCurrentPower = FMath::Clamp(loader->power, _define_StatDamperMIN, _define_StatDamperMAX);
 
 		USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-		if (!USafeENGINE::IsValid(_tempInstance))
+		if (!IsValid(_tempInstance))
 			return false;
 
 		FItemData _tempModuleData;
@@ -915,7 +912,7 @@ bool APlayerShip::LoadFromSave(const USaveLoader* loader) {
 bool APlayerShip::EquipModule(const int moduleID) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData = _tempInstance->GetItemData(moduleID);
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 
 	if (behaviorState != BehaviorState::Docked) {
@@ -1127,8 +1124,8 @@ void APlayerShip::GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo) const {
 }
 
 void APlayerShip::ControlCamRotateX(const float factorX) {
-	playerViewpointArm->AddRelativeRotation(FRotator(0.0f, factorX, 0.0f) * GetWorld()->DeltaTimeSeconds * 5.0f);
-	playerViewpointArm->SetWorldRotation(FRotator(FMath::ClampAngle(playerViewpointArm->GetComponentRotation().Pitch, -75.0f, -10.0f), playerViewpointArm->GetComponentRotation().Yaw, 0.0f));
+	//playerViewpointArm->AddRelativeRotation(FRotator(0.0f, factorX, 0.0f) * GetWorld()->DeltaTimeSeconds * 5.0f);
+	//playerViewpointArm->SetWorldRotation(FRotator(FMath::ClampAngle(playerViewpointArm->GetComponentRotation().Pitch, -75.0f, -10.0f), playerViewpointArm->GetComponentRotation().Yaw, 0.0f));
 }
 
 void APlayerShip::ControlCamRotateY(const float factorY) {
@@ -1137,15 +1134,16 @@ void APlayerShip::ControlCamRotateY(const float factorY) {
 }
 
 void APlayerShip::ControlCamDistance(const float value) {
-	SmoothZoomRemain = value * 50.0f;
+	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CamZoomFactor * lengthToLongAsix,
+		FMath::Max(_define_CamDistanceMIN, lengthToLongAsix), playerViewpointArm->CameraLagMaxDistance);
 }
 
 void APlayerShip::ControlViewPointX(const float value) {
-	playerViewpointArm->AddWorldOffset(FVector(0.0f, value, 0.0f));
+	playerViewpointArm->AddWorldOffset(FVector(0.0f, value * _define_CamZoomFactor, 0.0f));
 }
 
 void APlayerShip::ControlViewPointY(const float value) {
-	playerViewpointArm->AddWorldOffset(FVector(-value, 0.0f, 0.0f));
+	playerViewpointArm->AddWorldOffset(FVector(-value * _define_CamZoomFactor, 0.0f, 0.0f));
 }
 
 void APlayerShip::ControlViewPointOrigin() {
@@ -1184,7 +1182,7 @@ bool APlayerShip::ToggleTargetModule(const int slotIndex, ASpaceObject* target) 
 			return true;
 		}
 		else {
-			if (!USafeENGINE::IsValid(target) || target == this) {
+			if (!IsValid(target) || target == this) {
 				UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Can't find target"));
 				return false;
 			}
@@ -1195,7 +1193,7 @@ bool APlayerShip::ToggleTargetModule(const int slotIndex, ASpaceObject* target) 
 			case ModuleType::TractorBeam:
 			case ModuleType::MinerLaser:
 				//모듈이 빔 계열인 경우
-				if (!USafeENGINE::IsValid(target))
+				if (!IsValid(target))
 					return false;
 				slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
 				slotTargetModule[slotIndex].isBookedForOff = false;
@@ -1224,7 +1222,7 @@ bool APlayerShip::ToggleTargetModule(const int slotIndex, ASpaceObject* target) 
 						slotTargetModule[slotIndex].remainCooltime = FMath::Max(1.0f, slotTargetModule[slotIndex].maxCooltime);
 					} else
 						UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Target Module %d - Toggle : Not On. Ammo not enoght."), slotIndex);
-				} else if (USafeENGINE::IsValid(target)) {
+				} else if (IsValid(target)) {
 					slotTargetModule[slotIndex].moduleState = ModuleState::Activate;
 					slotTargetModule[slotIndex].target = target;
 
@@ -1258,7 +1256,7 @@ void APlayerShip::SettingAmmo(const int selectedAmmoID) {
 	TArray<FItem> _itemList;
 	int _findSlot;
 
-	if (!USafeENGINE::IsValid(_userState))
+	if (!IsValid(_userState))
 		return;
 
 	_userState->GetUserDataItem(_itemList);
@@ -1415,9 +1413,9 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
 
-			if (USafeENGINE::CheckDistanceConsiderSize(this, targetObject) < 500.0f) {
+			if (USafeENGINE::CheckDistanceConsiderSize(this, targetObject) < _define_AvailableDistanceToDock) {
 				targetObject = nullptr;
-				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * 1000.0f + GetActorLocation();
+				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 				behaviorState = BehaviorState::Docked;
 				Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
@@ -1467,7 +1465,7 @@ bool APlayerShip::MoveDistanceCheck() {
 		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
 	}
 	else {
-		if (USafeENGINE::IsValid(targetObject))
+		if (IsValid(targetObject))
 			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
  
 		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
@@ -1526,10 +1524,8 @@ void APlayerShip::RotateCheck() {
 		else return;
 	}
 	targetVector.Z = 0;
-
 	realMoveFactor = targetVector - GetActorLocation();
 	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
-
 	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
 
 	if (nextPointOuter > 0.01f) {
@@ -1612,7 +1608,7 @@ void APlayerShip::ModuleCheck() {
 	for (FTargetModule& module : slotTargetModule) {
 
 		//에너지가 부족할 경우 모든 모듈의 동작을 중지 예약.
-		if (sCurrentPower < 5.0f || !USafeENGINE::IsValid(module.target))
+		if (sCurrentPower < 5.0f || !IsValid(module.target))
 			module.isBookedForOff = true;
 
 		//모듈이 켜져있을 경우 power 소모량 증가 및 쿨타임 지속 감소
@@ -1628,7 +1624,7 @@ void APlayerShip::ModuleCheck() {
 				switch (module.moduleState) {
 				case ModuleState::Activate:
 				case ModuleState::Overload:
-					if (USafeENGINE::IsValid(module.target) && module.target != this && module.target->IsA(ASpaceObject::StaticClass())) {
+					if (IsValid(module.target) && module.target != this && module.target->IsA(ASpaceObject::StaticClass())) {
 
 						//목표 지점 및 발사 위치, 방향 계산
 						_targetedLocation = module.target->GetActorLocation();
@@ -1658,7 +1654,7 @@ void APlayerShip::ModuleCheck() {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
 								, _spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-							if (!USafeENGINE::IsValid(_beam))
+							if (!IsValid(_beam))
 								return;
 							UGameplayStatics::FinishSpawningActor(_beam, _spawnedTransform);
 							_beam->SetBeamProperty(this, module.target, module.launchSpeedMultiple, module.moduleType,
@@ -1673,7 +1669,7 @@ void APlayerShip::ModuleCheck() {
 								module.ammo.itemAmount--;
 								AProjectiles* _projectile = Cast<AProjectiles>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AProjectiles::StaticClass(),
 									_spawnedTransform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-								if (!USafeENGINE::IsValid(_projectile))
+								if (!IsValid(_projectile))
 									return;
 								switch (module.moduleType) {
 								case ModuleType::Cannon:
@@ -1717,7 +1713,7 @@ void APlayerShip::ModuleCheck() {
 							if (userState->DropPlayerCargo(FItem(_tempItemSlot[_findSlot].itemID, _reloadedAmount))) {
 								UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandToggleTargetModule] Reload Start!"));
 								module.ammo.itemAmount = _reloadedAmount;
-								if (USafeENGINE::IsValid(module.target)) {
+								if (IsValid(module.target)) {
 									module.moduleState = ModuleState::Activate;
 									UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][CommandToggleTargetModule] Reload Finish! and Target On!"));
 								} else {
@@ -1794,7 +1790,7 @@ const float APlayerShip::CalculateCompute() const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData;
 	float _result = 0;
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return _result;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++)
@@ -1824,7 +1820,7 @@ const float APlayerShip::CalculatePowerGrid() const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	FItemData _tempModuleData;
 	float _result = 0;
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return _result;
 
 	for (int index = 0; index < slotTargetModule.Num(); index++)
@@ -1882,7 +1878,7 @@ void APlayerShip::CheckPath() {
 */
 void APlayerShip::RequestPathUpdate() {
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
-	if (USafeENGINE::IsValid(targetObject)) {
+	if (IsValid(targetObject)) {
 		moveTargetVector = targetObject->GetActorLocation();
 		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
 		moveTargetVector.Normalize();

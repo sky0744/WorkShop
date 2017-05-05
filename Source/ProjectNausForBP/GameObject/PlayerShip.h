@@ -181,8 +181,6 @@ private:
 		USpringArmComponent* playerViewpointArm;
 	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
 		UCameraComponent* playerViewpointCamera;
-	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
-		float SmoothZoomRemain;
 #pragma endregion
 
 #pragma region Variables

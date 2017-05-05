@@ -134,16 +134,6 @@ const FNewStartPlayerData& USafeENGINE::GetStartProfileData(const int& id) const
 #pragma endregion
 
 #pragma region GamePlay
-bool USafeENGINE::IsValid(const UObject* obj) {
-	if (!obj) 
-		return false;
-	if (!obj->IsValidLowLevel()) 
-		return false;
-	if (obj->IsPendingKill()) 
-		return false;
-	return true;
-}
-
 int USafeENGINE::FindItemSlot(const TArray<FItem>& itemList, const FItem items) {
 	if (items.itemID < 0)
 		return false;

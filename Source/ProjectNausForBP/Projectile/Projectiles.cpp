@@ -45,7 +45,7 @@ void AProjectiles::Tick(float DeltaTime) {
 		AddActorWorldOffset(GetActorForwardVector() * setedVelocity * DeltaTime * 0.15f, false);
 	
 	//유도탄이며 발사 2초 이상, 타겟이 유효 -> 유도 및 발사 속도를 유지하며 진행
-	else if(USafeENGINE::IsValid(target)){
+	else if(IsValid(target)){
 		SetActorRotation(FMath::Lerp(GetActorRotation(), (target->GetActorLocation() - GetActorLocation()).Rotation(), 0.1f));
 		AddActorWorldOffset(GetActorForwardVector() * setedVelocity * DeltaTime, false);
 	} else
@@ -53,7 +53,7 @@ void AProjectiles::Tick(float DeltaTime) {
 }
 
 void AProjectiles::OnCollisionActor(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	if (USafeENGINE::IsValid(OtherActor) &&  OtherActor->IsA(ASpaceObject::StaticClass()) && OtherActor != projectileOwner) {
+	if (IsValid(OtherActor) &&  OtherActor->IsA(ASpaceObject::StaticClass()) && OtherActor != projectileOwner) {
 		UGameplayStatics::ApplyPointDamage(OtherActor, setedDamage, FVector(1.0f, 0.0f, 0.0f), SweepResult, nullptr, this, UDamageType::StaticClass());
 		Destroy();
 	}
@@ -61,7 +61,7 @@ void AProjectiles::OnCollisionActor(UPrimitiveComponent* OverlappedComp, AActor*
 
 void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, float damageMultiple,
 	float maxSpeedMultiple, float lifetimeMultiple, ASpaceObject* targetObject) {
-	if (!USafeENGINE::IsValid(targetObject)) {
+	if (!IsValid(targetObject)) {
 		Destroy();
 		return;
 	}

@@ -24,7 +24,7 @@ void ASpaceAIController::Possess(APawn* inPawn) {
 	Super::Possess(inPawn);
 	//Behavior Tree & Blackboard init and Run.
 	//if not Inited or invalid pawn, ai never run.
-	if (aiBehaviorTree && compAIBlackboard && aiBlackboard) {
+	if (IsValid(inPawn) && aiBehaviorTree && compAIBlackboard && aiBlackboard) {
 		if (inPawn->GetClass() != AShip::StaticClass())
 			return;
 

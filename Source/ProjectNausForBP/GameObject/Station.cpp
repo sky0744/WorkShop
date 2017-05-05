@@ -67,7 +67,7 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 	}
 
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player)
+	if (IsValid(_spaceState) && _dealingFaction == Faction::Player)
 		_spaceState->ApplyRelation(_dealingFaction, _remainDamage);
 
 	/*
@@ -114,7 +114,7 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 		AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 		Peer _peerResult = Peer::Neutral;
 
-		if (USafeENGINE::IsValid(_userState) && USafeENGINE::IsValid(_spaceState) && _dealingFaction == Faction::Player) {
+		if (IsValid(_userState) && IsValid(_spaceState) && _dealingFaction == Faction::Player) {
 			_peerResult = _spaceState->PeerIdentify(faction, _dealingFaction, true);
 			//전략 포인트의 일부 가중치를 팩션 관계도에 반영
 			_spaceState->ApplyRelation(_dealingFaction, strategicPoint, true);
@@ -146,7 +146,6 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 		_isCritical ? TEXT("Critical") : TEXT("Non Critical"));
 	return _effectShieldDamage + _effectArmorDamage + _effectHullDamage;
 }
-
 
 void AStation::BeginDestroy() {
 

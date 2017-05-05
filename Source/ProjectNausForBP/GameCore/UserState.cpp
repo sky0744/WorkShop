@@ -43,8 +43,8 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	_saver->name = sUserName;
 	_saver->shipID = _tempStartInfo.StartShipID;
 	_saver->credit = _tempStartInfo.StartCredit;
-	_saver->sectorName = _tempStartInfo.StartSector;
-	_saver->position = _tempStartInfo.StartPosition;
+	_saver->sectorName = _saver->restartSector = _tempStartInfo.StartSector;
+	_saver->position = _saver->restartLocation = _tempStartInfo.StartPosition;
 	_saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
 
 	_saver->skillList = _tempStartInfo.StartSkillList;
@@ -83,7 +83,7 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 bool AUserState::Jump(const FString& jumpToSector) {
 
 	ASpaceState* _sectorState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (!USafeENGINE::IsValid(_sectorState))
+	if (!IsValid(_sectorState))
 		return false;
 	if (!_sectorState->isValidSector(jumpToSector))
 		return false;
@@ -133,7 +133,7 @@ bool AUserState::TotalSave(const bool isBeforeWarp) {
 bool AUserState::TotalLoad() {
 
 	USaveLoader* _loader = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
-	if (!USafeENGINE::IsValid(_loader)) {
+	if (!IsValid(_loader)) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Can't Find Save Files or casting SaveLoader"));
 		return false;
 	}
@@ -145,7 +145,7 @@ bool AUserState::TotalLoad() {
 	}
 
 	ASpaceState* spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (!USafeENGINE::IsValid(spaceState))
+	if (!IsValid(spaceState))
 		return false;
 
 	if (spaceState->LoadSpaceState(_loader) != true) {
@@ -165,41 +165,79 @@ bool AUserState::TotalLoad() {
 }
 void AUserState::PlayerDeath() {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return;
 	FItemData _tempItemData;
-	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+	if (!IsValid(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+		return;
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (!IsValid(_spaceState))
 		return;
 	ASpaceObject* _playerPawn = Cast<ASpaceObject>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
-	if (!USafeENGINE::IsValid(_playerPawn) || _playerPawn->GetValue(GetStatType::currentHull) > 0.0f)
+	if (!IsValid(_playerPawn) || _playerPawn->GetValue(GetStatType::currentHull) > 0.0f)
 		return;
-
-	sShipID = 0;
-	for (int index = 0; index < listItem.Num(); index++) {
-		_tempItemData = _tempInstance->GetItemData(listItem[index].itemID);
-		if (!_tempItemData.isCanDrop)
-			continue;
-		listItem.RemoveAtSwap(index);
-	}
-	sBounty = 0.0f;
-	sCredit *= FMath::FRandRange(0.2f, 0.9f);
 
 	TotalSave(true);
 	USaveLoader* _Repositioning = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
 	TArray<AActor*> _stationsInSector;
+	TArray<AActor*> _gatesInSector;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStation::StaticClass(), _stationsInSector);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGate::StaticClass(), _gatesInSector);
 
-	if (_stationsInSector.Num() < 1)
-		_Repositioning->position = FVector::ZeroVector;
-	else
-		_Repositioning->position = _stationsInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation();
+	//파기 불가능한 모듈 및 아이템은 카고에 저장하는 상태에서 사망 처리
+	for (int index = 0; index < _Repositioning->itemList.Num(); index++) {
+		_tempItemData = _tempInstance->GetItemData(_Repositioning->itemList[index].itemID);
+		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
+			continue;
+		_Repositioning->itemList.RemoveAtSwap(index);
+	}
+	for (int& moduleID : _Repositioning->slotTargetModule) {
+		_tempItemData = _tempInstance->GetItemData(moduleID);
+		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
+			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+	}
+	for (int& moduleID : _Repositioning->slotActiveModule) {
+		_tempItemData = _tempInstance->GetItemData(moduleID);
+		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
+			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+	}
+	for (int& moduleID : _Repositioning->slotPassiveModule) {
+		_tempItemData = _tempInstance->GetItemData(moduleID);
+		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
+			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+	}
+	for (int& moduleID : _Repositioning->slotSystemModule) {
+		_tempItemData = _tempInstance->GetItemData(moduleID);
+		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
+			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+	}
+	_Repositioning->itemList.Shrink();
 
+	//함선 초기화 및 현상금 제거, 일정량의 크레딧 손실
+	_Repositioning->shipID = 0;
+	sBounty = 0.0f;
+	sCredit *= FMath::FRandRange(0.2f, 0.9f);
+
+	//섹터 내 재배치. 우선순위 : 0 - 최근에 지정한 재배치 섹터 및 위치, 1 - 랜덤한 스테이션, 2 - 랜덤한 게이트, etc - zero
+	if (_spaceState->isValidSector(_Repositioning->restartSector)) {
+		_Repositioning->sectorName = _Repositioning->restartSector;
+		_Repositioning->position = _Repositioning->restartLocation;
+	} 
+	else {
+		_Repositioning->sectorName = UGameplayStatics::GetCurrentLevelName(GetWorld());
+		if (_stationsInSector.Num() > 0)
+			_Repositioning->position = _stationsInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation();
+		else if (_stationsInSector.Num() > 0)
+			_Repositioning->position = _gatesInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation();
+		else _Repositioning->position = FVector::ZeroVector;
+	}
+	UGameplayStatics::SaveGameToSlot(_Repositioning, "SaveGame", 0);
 	UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 }
 
 bool AUserState::PlayerSave(USaveLoader* _saver) {
 
-	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
+	if (!IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerSave] Can't Find Player's Pawn."));
 		return false;
 	}
@@ -207,13 +245,13 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerSave] Can't Find IsA Relative about Player's Pawn."));
 		return false;
 	}
-
 	_saver->name = sUserName;
 	_saver->shipID = sShipID;
 	_saver->credit = sCredit;
+	_saver->restartSector = restartSector;
+	_saver->restartLocation = restartLocation;
 
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-
 	_saver->shield = _obj->GetValue(GetStatType::currentShield);
 	_saver->armor = _obj->GetValue(GetStatType::currentArmor);
 	_saver->hull = _obj->GetValue(GetStatType::currentHull);
@@ -236,7 +274,7 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 	return true;
 }
 bool AUserState::PlayerLoad(USaveLoader* loader) {
-	if (!USafeENGINE::IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
+	if (!IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerLoad] Can't Find Player's Pawn."));
 		return false;
 	}
@@ -246,7 +284,7 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	}
 
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	if (!USafeENGINE::IsValid(_obj)) {
+	if (!IsValid(_obj)) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerLoad] Fail to Get Player Unit's Infomation!"));
 		return false;
 	}
@@ -285,7 +323,7 @@ bool AUserState::ShipBuy(const int newShipID) {
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	if (!USafeENGINE::IsValid(_tempInstance) || !USafeENGINE::IsValid(_obj))
+	if (!IsValid(_tempInstance) || !IsValid(_obj))
 		return false;
 
 	FShipData _tempShipData = _tempInstance->GetShipData(newShipID);
@@ -446,7 +484,7 @@ bool AUserState::DropPlayerCargo(FItem dropItem) {
 
 bool AUserState::BuyItem(FItem buyItems) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 
 	FStructureInfo* _structureInfo;
@@ -497,7 +535,7 @@ bool AUserState::BuyItem(FItem buyItems) {
 
 bool AUserState::SellItem(FItem sellItems) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 
 	FStructureInfo* _structureInfo;
@@ -591,7 +629,7 @@ bool AUserState::TransferItem(const FItem transferItems, const bool isToStationD
 bool AUserState::EquipModule(const int itemSlotIndex) {
 	
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
 		return false;
@@ -694,7 +732,7 @@ bool AUserState::EquipModule(const int itemSlotIndex) {
 
 bool AUserState::UnEquipModule(const ItemType moduleType, const int slotIndex) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return false;
 	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
 		return false;
@@ -786,7 +824,7 @@ bool AUserState::CheckSkill(const TArray<FSkill>& checkSkill) const {
 
 float AUserState::CheckCargoValue() const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return -1.0f;
 
 	FItemData _tempItemData;
@@ -801,10 +839,21 @@ float AUserState::CheckCargoValue() const {
 
 float AUserState::CheckAddItemValue(const FItem item) const {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	if (!USafeENGINE::IsValid(_tempInstance))
+	if (!IsValid(_tempInstance))
 		return -1.0f;
 
 	FItemData _tempItemData = _tempInstance->GetItemData(item.itemID);
 	return _tempItemData.CargoVolume * item.itemAmount;
+}
+
+bool AUserState::SetRestartLocation() {
+	
+	APawn* _tempPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	if (!IsValid(_tempPawn))
+		return false;
+
+	restartSector = UGameplayStatics::GetCurrentLevelName(GetWorld());
+	restartLocation = _tempPawn->GetActorLocation();
+	return true;
 }
 #pragma endregion

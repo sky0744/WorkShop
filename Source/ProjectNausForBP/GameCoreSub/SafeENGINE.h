@@ -59,6 +59,9 @@ const float _define_ModuleANDPathTick = 0.5f;
 const int _define_StatModuleSlotMIN = 0;
 const int _define_StatModuleSlotMAX = 8;
 
+const float _define_CamDistanceMIN = 100.0f;
+const float _define_CamDistanceMAX = 5000.0f;
+const float _define_CamZoomFactor = 0.05f;
 const float _define_StatLengthMIN = 10.0f;
 const float _define_StatLengthMAX = 10000.0f;
 const float _define_StatRadarRangeMIN = 10.0f;
@@ -99,15 +102,16 @@ const float _define_StatPowerGridPerformanceMIN = 0.0f;
 const float _define_StatPowerGridPerformanceMAX = 99999.0f;
 const float _define_StatCargoSizeMIN = 0.0f;
 const float _define_StatCargoSizeMAX = 200000.0f;
+
+const float _define_SetDistanceToRotateForward = 1000.0f;
 #pragma endregion
 
 #pragma region Constant Value Drone Type
 #pragma endregion
 
-#pragma region Constant Value Station Type
-#pragma endregion
-
-#pragma region Constant Value Gate Type
+#pragma region Constant Value Structure Type
+const float _define_AvailableDistanceToDock = 300.0f;
+const float _define_AvailableDistanceToRestartSet = 500.0f;
 const float _define_AvailableDistanceToJump = 500.0f;
 #pragma endregion
 
@@ -364,8 +368,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int skillID;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
-		int canLearnMaxLevel;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int skillLevel;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
@@ -732,7 +734,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		int SkillID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		int MaxLevel;
+		SkillGroup SkillGroupType;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		int LearningMultiple;
 
@@ -1023,12 +1025,6 @@ public:
 #pragma endregion
 
 #pragma region GamePlay - Static
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		/** Nullptr, PendingKill, LowValid의 통합 유효성 검사를 실시합니다.
-		*	@param obj - 유효성을 검사할 UObject 개체.
-		*	@return 검사한 개체의 유효성입니다.
-		*/
-		static bool IsValid(const UObject* obj);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static int FindItemSlot(const TArray<FItem>& itemList, const FItem items);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
