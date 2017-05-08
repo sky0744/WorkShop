@@ -30,8 +30,10 @@ public:
 		bool TotalSave(const bool isBeforeWarp = false);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool TotalLoad();
-	void PlayerDeath();
-
+	UFUNCTION()
+		void PlayerDeath();
+	UFUNCTION()
+		void PlayerDeathProcess();
 private:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Called by InterFace : Player")
 		bool PlayerSave(USaveLoader* saver);

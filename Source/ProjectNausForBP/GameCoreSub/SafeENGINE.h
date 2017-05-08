@@ -48,7 +48,7 @@ const float _define_SPToRenownHostile = 0.01f;
 const float _define_SPToRenownNotHostile = -0.05f;
 #pragma endregion
 
-#pragma region Constant Value UserState
+#pragma region Constant Value In UserState
 const float _define_ev_SoundVolumeMIN = 0.0f;
 const float _define_ev_SoundVolumeMAX = 1.0f;
 #pragma endregion
@@ -101,7 +101,7 @@ const float _define_DamagePercentageMIN = 0.15f;
 const float _define_DamagePercentageMAX = 4.15f;
 #pragma endregion
 
-#pragma region Constant Value Ship
+#pragma region Constant Value In Ship
 const float _define_StatComputePerformanceMIN = 0.0f;
 const float _define_StatComputePerformanceMAX = 99999.0f;
 const float _define_StatPowerGridPerformanceMIN = 0.0f;
@@ -112,26 +112,44 @@ const float _define_StatCargoSizeMAX = 200000.0f;
 const float _define_SetDistanceToRotateForward = 1000.0f;
 #pragma endregion
 
-#pragma region Constant Value Drone
+#pragma region Constant Value In Drone
 #pragma endregion
 
-#pragma region Constant Value Structure
+#pragma region Constant Value In Structure
 const float _define_AvailableDistanceToDock = 300.0f;
 const float _define_AvailableDistanceToRestartSet = 500.0f;
 const float _define_AvailableDistanceToJump = 500.0f;
 const float _define_StructureTick = 5.0f;
 #pragma endregion
 
-#pragma region Constant Value Resource
+#pragma region Constant Value In Resource
 const float _define_StatResourceAmountMIN = 0.0f;
 const float _define_StatResourceAmountMAX = 10000.0f;
 const float _define_RandomRotateSpeedMIN = -3.0f;
 const float _define_RandomRotateSpeedMAX = 3.0f;
 #pragma endregion
 
-#pragma region Constant Value Cargo
+#pragma region Constant Value In Cargo
 const float _define_DropChanceMIN = 0.0f;
 const float _define_DropChanceMAX = 100.0f;
+#pragma endregion
+
+#pragma region Constant Value In Beam
+#pragma endregion
+
+#pragma region Constant Value In Projectile
+const float _define_ProjectileLifeTimeMIN = 1.0f;
+const float _define_ProjectileLifeTimeMAX = 30.0f;
+const float _define_ProjectileExplosiveRadiusMIN = 10.0f;
+const float _define_ProjectileExplosiveRadiusMAX = 150.0f;
+const float _define_ProjectileVelocityMIN = 10.0f;
+const float _define_ProjectileVelocityMAX = 60000.0f;
+const float _define_ProjectileColdLaunchVelocityMIN = 0.0f;
+const float _define_ProjectileColdLaunchVelocityMAX = 1.0f;
+const float _define_ProjectileColdLaunchAccelMIN = 1.0f;
+const float _define_ProjectileColdLaunchAccelMAX = 1000.0f;
+const float _define_ProjectileColdLaunchDelayMIN = 0.0f;
+const float _define_ProjectileColdLaunchDelayMAX = 10.0f;
 #pragma endregion
 
 #pragma region Sub Data Structure in DataTable Set or Instance
@@ -226,7 +244,7 @@ struct PROJECTNAUSFORBP_API FItem
 	GENERATED_USTRUCT_BODY()
 public:
 	FItem(int id = 0, int amount = 0)
-		: itemID(id)
+		: itemID(FMath::Clamp(id, 0, 10000))
 		, itemAmount(amount) {}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Instance Item Data")
@@ -857,6 +875,12 @@ public:
 		FName SfxHitPath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		float ExplosionSensorRange;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		float ColdLaunchVelocityFactor;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		float ColdLaunchAcceleration;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		float ColdLaunchDelayTime;
 
 	FProjectileData() {}
 };

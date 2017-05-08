@@ -237,6 +237,9 @@ void AUserState::PlayerDeath() {
 	UGameplayStatics::SaveGameToSlot(_Repositioning, "SaveGame", 0);
 	UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 }
+void AUserState::PlayerDeathProcess() {
+
+}
 
 bool AUserState::PlayerSave(USaveLoader* _saver) {
 

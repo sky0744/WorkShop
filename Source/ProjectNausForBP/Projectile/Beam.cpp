@@ -16,7 +16,9 @@ ABeam::ABeam()
 		beamParticle->SetTemplate(particleSystem.Object);
 
 	beamShotAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundBeamShot"));
+	beamShotAudio->bAutoActivate = false;
 	beamHitAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundBeamHit"));
+	beamHitAudio->bAutoActivate = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -41,7 +43,7 @@ void ABeam::Tick(float DeltaTime) {
 		return;
 
 	startLocation = beamOwner->GetActorLocation() + beamOwner->GetActorRotation().RotateVector(startLocation);
-	DrawDebugPoint(GetWorld(), startLocation, 6, FColor(255, 255, 255), false, DeltaTime);
+	DrawDebugPoint(GetWorld(), startLocation, 6, FColor::White, false, DeltaTime);
 	//거리 판단상 사거리 이내
 	if (beamRange > USafeENGINE::CheckDistanceConsiderSize(beamOwner, target)) {
 		launchedFaction = beamOwner->GetFaction();
@@ -54,8 +56,8 @@ void ABeam::Tick(float DeltaTime) {
 		resultLocation = GetActorLocation() + resultLocation * beamRange;
 		isHited = false;
 	}
-	DrawDebugPoint(GetWorld(), resultLocation, 6, FColor(255, 255, 255), false, DeltaTime);
-	DrawDebugLine(GetWorld(), startLocation, resultLocation, FColor(255, 255, 255), false, DeltaTime, 0, 5.0f);
+	DrawDebugPoint(GetWorld(), resultLocation, 6, FColor::White, false, DeltaTime);
+	DrawDebugLine(GetWorld(), startLocation, resultLocation, FColor::White, false, DeltaTime, 0, 5.0f);
 
 	FItem _collectedOre;
 	if (isHited) {
@@ -96,13 +98,12 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 		resultLocation.Normalize();
 		DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, aliveTime);
 
-		projectileShotSound =
 		//거리 판단상 사거리 이내
 		if (setedrange > USafeENGINE::CheckDistanceConsiderSize(launchActor, targetActor)) {
 			launchedFaction = launchActor->GetFaction();
 			UGameplayStatics::ApplyPointDamage(targetActor, setedDamage, resultLocation, FHitResult(), nullptr, this, UDamageType::StaticClass());
 			resultLocation = targetActor->GetActorLocation();
-			beamHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *currentSectorInfo->PlayerableBGM[_bgmIndex].ToString()));
+			//beamHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *currentSectorInfo->PlayerableBGM[_bgmIndex].ToString()));
 
 			//빔이 블럭되지 않고 최대거리까지 진행
 		} else 

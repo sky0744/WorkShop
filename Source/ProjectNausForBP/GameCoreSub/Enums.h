@@ -403,15 +403,16 @@ enum class InteractionType : uint8 {
 UENUM(BlueprintType)
 enum class ConfirmState : uint8 {
 	Idle				UMETA(DisplayName = "Idle"),
-	WaitInMenu_Save			UMETA(DisplayName = "WaitInMenu_Save"),
-	WaitInMenu_Load			UMETA(DisplayName = "WaitInMenu_Load"),
-	WaitInMenu_ReturnToTitle	UMETA(DisplayName = "WaitInMenu_ReturnToTitle"),
-	WaitInMenu_GameExit		UMETA(DisplayName = "WaitInMenu_GameExit")
+	WaitInMenu_Save			UMETA(DisplayName = "Wait Save In Menu"),
+	WaitInMenu_Load			UMETA(DisplayName = "Wait Load In Menu"),
+	WaitInMenu_ReturnToTitle	UMETA(DisplayName = "Wait Return To Title In Menu"),
+	WaitInMenu_GameExit		UMETA(DisplayName = "Wait Game Exit In Menu"),
+	Wait_ReloadORExit			UMETA(DisplayName = "Wait Reload OR Exit To Title")
 };
 UENUM(BlueprintType)
 enum class SaveState : uint8 {
-	NewGameCreate			UMETA(DisplayName = "NewGameCreate"),
-	UserRequest			UMETA(DisplayName = "UserRequest"),
-	BeforeWarp			UMETA(DisplayName = "BeforeWarp"),
+	NewGameCreate			UMETA(DisplayName = "New Game Create"),
+	UserRequest			UMETA(DisplayName = "Save/Load User Request"),
+	BeforeWarp			UMETA(DisplayName = "Save/Load Before Warp"),
 };
 #pragma endregion

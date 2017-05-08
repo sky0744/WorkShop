@@ -75,5 +75,10 @@ private:
 	float activateTime;
 	float setedDamage;
 	float setedVelocity;
+	float currentVelocity;
+
+	float coldVelocityFactor;
+	float coldAcceleration;
+	float coldDelayTime;
 #pragma endregion
 };
