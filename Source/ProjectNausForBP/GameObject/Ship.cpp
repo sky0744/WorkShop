@@ -182,7 +182,7 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		FNPCData _tempNPCData = _tempInstance->GetNPCData(npcShipID);
 
 		for (FNPCDropData& dropData : _tempNPCData.DropItems) {
-			if (FMath::Clamp(dropData.dropChance, _define_DropChance_MIN, _define_DropChance_MAX) < FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX))
+			if (FMath::Clamp(dropData.dropChance, _define_DropChanceMIN, _define_DropChanceMAX) < FMath::FRandRange(_define_DropChanceMIN, _define_DropChanceMAX))
 				continue;
 
 			_cargoContainer = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),

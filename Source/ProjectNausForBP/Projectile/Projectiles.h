@@ -52,6 +52,19 @@ private:
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UParticleSystemComponent* projectileParticle;
 
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		UAudioComponent* projectileShotAudio;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		UAudioComponent* projectileMovementAudio;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		UAudioComponent* projectileHitAudio;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		USoundCue* projectileShotSound;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		USoundCue* projectileMovementSound;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		USoundCue* projectileHitSound;
+	
 	UPROPERTY()
 		ASpaceObject* projectileOwner;
 	UPROPERTY()

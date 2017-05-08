@@ -83,8 +83,6 @@ public:
 public:
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void PlayerInterAction(const InteractionType interaction);
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		bool SetWarpLocation(const FVector location);
 
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		bool ToggleTargetModule(const int slotIndex);
@@ -92,17 +90,18 @@ public:
 		bool ToggleActiveModule(const int slotIndex);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player Controller")
-		ASpaceObject* GetTargetInfo() const;
+		ASpaceObject* GetTargetInfo();
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void SetTarget(ASpaceObject* target);
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void SettingInteraction(const ASpaceObject* target) const;
+		void SettingInteraction(const ASpaceObject* target);
 #pragma endregion
 
 #pragma region Components & Variables
 private:
 	ASpaceHUDBase* controlledHUD;
 	APlayerShip* controlledPawn;
+	ICommandable* commandInterface;
 	ASpaceObject* tObj;
 
 	FVector mousePositionInWorld;

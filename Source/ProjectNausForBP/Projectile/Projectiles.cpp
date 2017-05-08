@@ -19,6 +19,10 @@ AProjectiles::AProjectiles()
 	projectileHitSensor->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	projectileHitSensor->OnComponentBeginOverlap.AddDynamic(this, &AProjectiles::OnCollisionActor);
 
+	projectileShotAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileShot"));
+	projectileMovementAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileMovement"));
+	projectileHitAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileHit"));
+
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
@@ -85,6 +89,10 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 		target = targetObject;
 	} else 
 		isHoming = false;
+
+	projectileShotSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxShotPath.ToString()));
+	projectileMovementSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxMovementPath.ToString()));
+	projectileHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxHitPath.ToString()));
 
 	projectileMesh->IgnoreActorWhenMoving(projectileOwner, true);
 	SetLifeSpan(_tempItemData.LifeTime * lifetimeMultiple);

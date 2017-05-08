@@ -27,5 +27,4 @@ void ASpaceMode::BeginPlay() {
 void ASpaceMode::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-
 }

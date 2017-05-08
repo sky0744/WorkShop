@@ -8,17 +8,20 @@ AUserState::AUserState() {
 	listSkill = TArray<FSkill>();
 	queueSkillLearn = TArray<FSkill>();
 	listItem = TArray<FItem>();
+
+	ev_BGMClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/BGM.BGM'")));
+	ev_SfxClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/Sfx.Sfx'")));
+	ev_BGMMix = Cast<USoundMix>(StaticLoadObject(USoundMix::StaticClass(), NULL, TEXT("SoundMix'/Game/Resource/Sound/SoundAsset/BGMMixer.BGMMixer'")));
+	ev_SfxMix = Cast<USoundMix>(StaticLoadObject(USoundMix::StaticClass(), NULL, TEXT("SoundMix'/Game/Resource/Sound/SoundAsset/SfxMixer.SfxMixer'")));
 }
 
 void AUserState::BeginPlay() {
 	Super::BeginPlay();
 
-	if (UGameplayStatics::GetCurrentLevelName(GetWorld()) != "MainTitle") {
+	if (!UGameplayStatics::GetCurrentLevelName(GetWorld()).Equals("MainTitle", ESearchCase::IgnoreCase)) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][BeginPlay] Current World is %s, Start Loading Save File."), *UGameplayStatics::GetCurrentLevelName(GetWorld()));
 		TotalLoad();
 	}
-	else 
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][BeginPlay] Current World is MainTitle, so Not Loaded Save File."));
 }
 
 #pragma region Save/Load
@@ -51,10 +54,10 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	_saver->itemList = _tempStartInfo.StartItemList;
 
 	FShipData _tempShipData = _tempInstance->GetShipData(_tempStartInfo.StartShipID);
-	_saver->shield = _tempShipData.Shield;// *(1.0f + tempShipData.BonusShield);
-	_saver->armor = _tempShipData.Armor;// *(1.0f + tempShipData.BonusArmor);
-	_saver->hull = _tempShipData.Hull;// *(1.0f + tempShipData.BonusHull);
-	_saver->power = _tempShipData.Power;// *(1.0f + tempShipData.BonusPower);
+	_saver->shield = _tempShipData.Shield;
+	_saver->armor = _tempShipData.Armor;
+	_saver->hull = _tempShipData.Hull;
+	_saver->power = _tempShipData.Power;
 
 	_saver->slotTargetModule = TArray<int>();
 	_saver->slotActiveModule = TArray<int>();
@@ -144,11 +147,11 @@ bool AUserState::TotalLoad() {
 		return false;
 	}
 
-	ASpaceState* spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (!IsValid(spaceState))
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (!IsValid(_spaceState))
 		return false;
 
-	if (spaceState->LoadSpaceState(_loader) != true) {
+	if (_spaceState->LoadSpaceState(_loader) != true) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Space Info Load Fail."));
 		return false;
 	}
@@ -226,10 +229,10 @@ void AUserState::PlayerDeath() {
 	else {
 		_Repositioning->sectorName = UGameplayStatics::GetCurrentLevelName(GetWorld());
 		if (_stationsInSector.Num() > 0)
-			_Repositioning->position = _stationsInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation();
+			_Repositioning->position = FVector2D(_stationsInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation());
 		else if (_stationsInSector.Num() > 0)
-			_Repositioning->position = _gatesInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation();
-		else _Repositioning->position = FVector::ZeroVector;
+			_Repositioning->position = FVector2D(_gatesInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation());
+		else _Repositioning->position = FVector2D::ZeroVector;
 	}
 	UGameplayStatics::SaveGameToSlot(_Repositioning, "SaveGame", 0);
 	UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
@@ -267,9 +270,8 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 	_saver->skillList = listSkill;
 
 	if (_saver->saveState == SaveState::UserRequest) {
-		_saver->position = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation();
-		_saver->rotation = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorRotation();
-		_saver->rotation.Pitch = _saver->rotation.Roll = 0.0f;
+		_saver->position = FVector2D(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation());
+		_saver->rotation = FRotator(0.0f, UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorRotation().Yaw, 0.0f);
 	}
 	return true;
 }
@@ -304,7 +306,7 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 		return false;
 	}
 
-	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorLocation(FVector(loader->position.X, loader->position.Y, 0.0f));
+	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorLocation(FVector(loader->position, 0.0f));
 	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorRotation(FRotator(0.0f, loader->rotation.Yaw, 0.0f));
 	return true;
 }
@@ -853,7 +855,31 @@ bool AUserState::SetRestartLocation() {
 		return false;
 
 	restartSector = UGameplayStatics::GetCurrentLevelName(GetWorld());
-	restartLocation = _tempPawn->GetActorLocation();
+	restartLocation = FVector2D(_tempPawn->GetActorLocation());
 	return true;
+}
+#pragma endregion
+
+#pragma region Changing Environment Setting Functions
+float AUserState::Ev_ChangeBGMVolume(float volume) {
+
+	if (!ev_BGMClass->IsValidLowLevelFast() || !ev_BGMMix->IsValidLowLevelFast())
+		ev_BGMVolume;
+
+	ev_BGMVolume = FMath::Clamp(volume, _define_ev_SoundVolumeMIN, _define_ev_SoundVolumeMAX);
+	UGameplayStatics::SetSoundMixClassOverride(GEngine->GetWorld(), ev_BGMMix, ev_BGMClass, ev_BGMVolume, 1.0f, 1.0f, true);
+
+	return ev_BGMVolume;
+}
+
+float AUserState::Ev_ChangeSfxVolume(float volume) {
+
+	if (!ev_BGMClass->IsValidLowLevelFast() || !ev_BGMMix->IsValidLowLevelFast())
+		return ev_SfxVolume;
+
+	ev_SfxVolume = FMath::Clamp(volume, _define_ev_SoundVolumeMIN, _define_ev_SoundVolumeMAX);
+	UGameplayStatics::SetSoundMixClassOverride(GEngine->GetWorld(), ev_SfxMix, ev_SfxClass, ev_SfxVolume, 1.0f, 1.0f, true);
+
+	return ev_SfxVolume;
 }
 #pragma endregion

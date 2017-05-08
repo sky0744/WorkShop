@@ -18,7 +18,7 @@ AStation::AStation() {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
-	PrimaryActorTick.TickInterval = 5.0f;
+	PrimaryActorTick.TickInterval = _define_StructureTick;
 }
 
 #pragma region Event Call
@@ -33,6 +33,12 @@ void AStation::Tick(float DeltaSeconds) {
 	currentShield = FMath::Clamp(currentShield + rechargeShield * DeltaSeconds, 0.0f, maxShield);
 	currentArmor = FMath::Clamp(currentArmor + repairArmor * DeltaSeconds, 0.0f, maxArmor);
 	currentHull = FMath::Clamp(currentHull + repairHull * DeltaSeconds, 0.0f, maxHull);
+
+	if (structureInfo != nullptr) {
+		structureInfo->structureShieldRate = FMath::Clamp(currentShield / maxShield, 0.0f, 1.0f);
+		structureInfo->structureArmorRate = FMath::Clamp(currentArmor / maxArmor, 0.0f, 1.0f);
+		structureInfo->structureHullRate = FMath::Clamp(currentHull / currentHull, 0.0f, 1.0f);
+	}
 }
 
 float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -126,7 +132,7 @@ float AStation::TakeDamage(float DamageAmount, struct FDamageEvent const& Damage
 		if (structureInfo != nullptr) {
 			for (FItem& cargo : structureInfo->itemList) {
 				//모든 카고를 절반의 확률로 드랍
-				if (FMath::FRandRange(_define_DropChance_MIN, _define_DropChance_MAX) > 0.5f)
+				if (FMath::FRandRange(_define_DropChanceMIN, _define_DropChanceMAX) > 0.5f)
 					continue;
 
 				_cargoContainer = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),

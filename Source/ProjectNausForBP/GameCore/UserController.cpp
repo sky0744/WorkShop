@@ -38,6 +38,8 @@ AUserController::AUserController() {
 void AUserController::BeginPlay() {
 	Super::BeginPlay();
 	controlledPawn = Cast<APlayerShip>(GetPawn());
+	if(IsValid(controlledPawn))
+		commandInterface = Cast<ICommandable>(controlledPawn);
 	controlledHUD = Cast<ASpaceHUDBase>(GetHUD());
 
 	traceParams = FCollisionQueryParams(FName("PressClick"), true, this);
@@ -83,8 +85,8 @@ void AUserController::SetupInputComponent() {
 
 #pragma region Input Binding - Action
 void AUserController::ControlCamReset() {
-	//GEngine->AddOnScreenDebugMessage(-1, 0.0333f, FColor::Yellow, "Control Roll : " + FString::SanitizeFloat(value));
-	controlledPawn->ControlViewPointOrigin();
+	if (IsValid(controlledPawn))
+		controlledPawn->ControlViewPointOrigin();
 }
 
 void AUserController::ControlTargetSpeed(float value) {
@@ -178,18 +180,8 @@ void AUserController::ClickReleaseMouseLeft(FKey key) {
 }
 
 void AUserController::ClickPressMouseWheel(FKey key){
-
 }
 void AUserController::ClickReleaseMouseWheel(FKey key){
-	this->DeprojectMousePositionToWorld(mousePositionInWorld, mouseDirectionInWorld);
-	mouseEndPositionInWorld = mousePositionInWorld + mouseDirectionInWorld * 200000.0f;
-	hitResult.Init();
-
-	this->GetWorld()->LineTraceSingleByObjectType(hitResult
-		, mousePositionInWorld
-		, mouseEndPositionInWorld
-		, traceObjectParams
-		, traceParams);
 }
 
 void AUserController::ClickPressMouseRight(FKey key) {
@@ -214,12 +206,8 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 		if(IsValid(controlledHUD))
 			controlledHUD->OffUIInteraction();
 		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
-		mouseXYPlane.Z = 0.0f;
-		ICommandable* _possessPawn = Cast<ICommandable>(controlledPawn);
-
-		FNavLocation _tempNavLoc = FNavLocation();
-		if(UNavigationSystem::GetCurrent(GetWorld())->ProjectPointToNavigation(mouseXYPlane, _tempNavLoc))
-			_possessPawn->CommandMoveToPosition(mouseXYPlane);
+		if(commandInterface != nullptr)
+			commandInterface->CommandMoveToPosition(mouseXYPlane);
 	}
 }
 #pragma endregion
@@ -227,20 +215,15 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 #pragma region player flow control
 void AUserController::PlayerInterAction(const InteractionType interaction) {
 
-	if (!IsValid(controlledPawn))
+	if (!IsValid(controlledPawn) || commandInterface == nullptr)
 		return;
-
-	ICommandable* _pObj;
-	if (!controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
-		return;
-	_pObj = Cast<ICommandable>(controlledPawn);
 
 	TScriptInterface<IStructureable> _sObj;
 	AResource* _resource;
 	ACargoContainer* _cargoContainer;
 	FItem _item;
 
-	_pObj->CommandStop();
+	commandInterface->CommandStop();
 	switch (interaction)
 	{
 	case InteractionType::DockRequest:
@@ -249,13 +232,13 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 
 		_sObj.SetObject(tObj);
 		_sObj.SetInterface(Cast<IStructureable>(tObj));
-		_pObj->CommandDock(_sObj);
+		commandInterface->CommandDock(_sObj);
 		break;
 	case InteractionType::Approach:
-		_pObj->CommandMoveToTarget(tObj);
+		commandInterface->CommandMoveToTarget(tObj);
 		break;
 	case InteractionType::Attack:
-		_pObj->CommandAttack(tObj);
+		commandInterface->CommandAttack(tObj);
 		break;
 	case InteractionType::Jump:
 		if (!tObj->GetClass()->ImplementsInterface(UStructureable::StaticClass()))
@@ -263,19 +246,19 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 
 		_sObj.SetObject(tObj);
 		_sObj.SetInterface(Cast<IStructureable>(tObj));
-		_pObj->CommandJump(_sObj);
+		commandInterface->CommandJump(_sObj);
 		break;
 	case InteractionType::Warp:
-		_pObj->CommandWarp( USafeENGINE::CheckLocationMovetoTarget(controlledPawn, tObj, 500.0f) );
+		commandInterface->CommandWarp(USafeENGINE::CheckLocationMovetoTarget(controlledPawn, tObj, 500.0f));
 		break;
 	case InteractionType::Collect:
 		if (!tObj->IsA(AResource::StaticClass()))
 			return;
 		_resource = Cast<AResource>(tObj);
-		_pObj->CommandMining(_resource);
+		commandInterface->CommandMining(_resource);
 		break;
 	case InteractionType::Repair:
-		_pObj->CommandRepair(tObj);
+		commandInterface->CommandRepair(tObj);
 		break;
 	case InteractionType::GetCargo:
 		if (!tObj->IsA(ACargoContainer::StaticClass()))
@@ -284,7 +267,7 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 		if (USafeENGINE::CheckDistanceConsiderSize(controlledPawn, _cargoContainer) > 250.0f)
 			return;
 		_item = _cargoContainer->GetCargo();
-		if (Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->AddPlayerCargo(_item))
+		if (Cast<AUserState>(PlayerState)->AddPlayerCargo(_item))
 			_cargoContainer->Destroy();
 		else
 			_cargoContainer->SetCargo(_item);
@@ -292,15 +275,6 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 	default:
 		break;
 	}
-}
-
-bool AUserController::SetWarpLocation(const FVector location) {
-	//if location is invaild / too far(out of normal zone), cancel setting warp location.
-	if (FVector::Dist(FVector::ZeroVector, location) > 500000.0f)
-		return false;
-
-	warpLocation = location;
-	return true;
 }
 
 bool AUserController::ToggleTargetModule(const int slotIndex) {
@@ -315,54 +289,53 @@ bool AUserController::ToggleActiveModule(const int slotIndex) {
 	else return false;
 }
 
-ASpaceObject* AUserController::GetTargetInfo() const {
+ASpaceObject* AUserController::GetTargetInfo() {
 
 	if(IsValid(tObj) && tObj != controlledPawn)
 		return tObj;
-	else return nullptr;
+	else {
+		tObj = nullptr;
+		return nullptr;
+	}
 }
 
 void AUserController::SetTarget(ASpaceObject* target) {
 
-	if (target->IsA(ASpaceObject::StaticClass())) {
-
-		FColor _peerColor;
-		if (controlledPawn == target)
-			return;
-
-		if (!IsValid(tObj) || tObj != target) {
-			tObj = target;
-			switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction(), false)) {
-			case Peer::Neutral:
-				_peerColor = FColor::Yellow;
-				break;
-			case Peer::Friendship:
-				_peerColor = FColor::Green;
-				break;
-			case Peer::Enemy:
-				_peerColor = FColor::Red;
-				break;
-			case Peer::TempHold:
-				_peerColor = FColor::Blue;
-				break;
-			default:
-				_peerColor = FColor::White;
-				break;
-			}
-			if (IsValid(tObj) && IsValid(controlledHUD))
-				controlledHUD->OnUITarget(tObj, _peerColor, 5.0f);
-		} else if (tObj == target)
-			tObj = nullptr;
-		else
-			return;
+	if (!IsValid(target) || controlledPawn == target || tObj == target) {
+		tObj = nullptr;
+		return;
 	}
+	else
+		tObj = target;
+	FColor _peerColor;
+
+	switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction(), false)) {
+	case Peer::Neutral:
+		_peerColor = FColor::Yellow;
+		break;
+	case Peer::Friendship:
+		_peerColor = FColor::Green;
+		break;
+	case Peer::Enemy:
+		_peerColor = FColor::Red;
+		break;
+	case Peer::TempHold:
+		_peerColor = FColor::Blue;
+		break;
+	default:
+		_peerColor = FColor::White;
+		break;
+	}
+	if (IsValid(tObj) && IsValid(controlledHUD))
+		controlledHUD->OnUITarget(tObj, _peerColor, 5.0f);
 }
 
-void AUserController::SettingInteraction(const ASpaceObject* target) const {
+void AUserController::SettingInteraction(const ASpaceObject* target) {
 	
 	FColor peerColor;
-	if (controlledPawn == target)
+	if (!IsValid(target) || controlledPawn == target || controlledPawn == tObj) 
 		return;
+
 	if (IsValid(tObj) && IsValid(controlledHUD) && tObj == target)
 		controlledHUD->OnUIInteraction(tObj, tObj->GetObjectType());
 }

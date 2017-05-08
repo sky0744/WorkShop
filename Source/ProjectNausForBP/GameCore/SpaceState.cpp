@@ -5,9 +5,13 @@
 
 
 ASpaceState::ASpaceState() {
+	ev_BGMComponent = CreateDefaultSubobject <UAudioComponent>(TEXT("BGMComponent"));
+	ev_BGMComponent->bAutoActivate = false;
+	ev_BGMComponent->OnAudioFinished.AddDynamic(this, &ASpaceState::OnBGMSettingAndPlay);
+	ev_BGMComponent->VolumeMultiplier;
 
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = 60.0f;
+	PrimaryActorTick.TickInterval = _define_SectorRefreshTime;
 
 	sectorInfo = TArray<FSectorData>();
 	tempFactionRelationship = TArray<float>();
@@ -17,12 +21,24 @@ ASpaceState::ASpaceState() {
 void ASpaceState::BeginPlay() {
 	Super::BeginPlay();
 
+	//GC 즉시 실행
+	GetWorld()->ForceGarbageCollection(true);
 	factionEnumPtr = FindObject<UEnum>(ANY_PACKAGE, TEXT("Faction"), true);
 	currentShipCapacity = 0;
+
+	if (UGameplayStatics::GetCurrentLevelName(GetWorld()).Equals("MainTitle", ESearchCase::IgnoreCase)) {
+		ev_BGMCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("SoundCue'/Game/Resource/Sound/SoundAsset/SoundCue/MainTitle/MainTitle_Cue.MainTitle_Cue'")));
+		if (ev_BGMComponent->IsValidLowLevelFast() && ev_BGMCue->IsValidLowLevelFast()) {
+			ev_BGMComponent->SetSound(ev_BGMCue);
+			ev_BGMComponent->Play();
+		}
+	}
 }
 
 void ASpaceState::Tick(float DeltaSecondes) {
 	Super::Tick(DeltaSecondes);
+
+	GEngine->AddOnScreenDebugMessage(-1, DeltaSecondes, FColor::Blue, "is BGM Playing : " + ev_BGMComponent->IsPlaying() ? "True" : "False");
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (currentSectorInfo == nullptr || !IsValid(_tempInstance))
@@ -33,179 +49,97 @@ void ASpaceState::Tick(float DeltaSecondes) {
 	FShipData _tempShipData;
 	FItem _item = FItem();
 
-	IStructureable* _regenStructure;
 	TArray<AActor*> objectInSector;
-	bool _canProduct;
-	float _tempValue;
-	int _findIndex;
-	int _addAmount;
-	int _totalFactorInTick = totalChanceFactor;
+	float _respawnFactor;
+	float _structureRegenerateFactor;
+	int _shipRegenAmount;
+	int _randomGateIndex;
+	int _currentChanceFactor = totalChanceFactor;
 
+	//게임 내의 모든 스테이션에 대해 스테이터스 및 파괴 쿨타임, 생산 상태를 갱신
 	for (FSectorData& sectorData : sectorInfo) {
-
-		if (&sectorData == currentSectorInfo)
-			continue;
 		for (FStructureInfo& stationData : sectorData.StationList) {
 			if (stationData.isDestroyed)
-				stationData.remainRespawnTime = FMath::Clamp(stationData.remainRespawnTime - DeltaSecondes, 0.0f, stationData.maxRespawnTime);
+				stationData.remainRespawnTime = FMath::Clamp(stationData.remainRespawnTime - DeltaSecondes, -1.0f, stationData.maxRespawnTime);
 			else {
-				_tempValue = DeltaSecondes / stationData.maxRespawnTime;
-				stationData.structureShieldRate = FMath::Clamp(stationData.structureShieldRate + _tempValue, 0.0f, 1.0f);
-				stationData.structureArmorRate = FMath::Clamp(stationData.structureArmorRate + _tempValue, 0.0f, 1.0f);
-				stationData.structureHullRate = FMath::Clamp(stationData.structureHullRate + _tempValue, 0.0f, 1.0f);
+				_respawnFactor = DeltaSecondes / stationData.maxRespawnTime;
+				stationData.structureShieldRate = FMath::Clamp(stationData.structureShieldRate + _respawnFactor, 0.0f, 1.0f);
+				stationData.structureArmorRate = FMath::Clamp(stationData.structureArmorRate + _respawnFactor, 0.0f, 1.0f);
+				stationData.structureHullRate = FMath::Clamp(stationData.structureHullRate + _respawnFactor, 0.0f, 1.0f);
+				stationData.remainItemListRefreshTime = FMath::Clamp(stationData.remainItemListRefreshTime - DeltaSecondes, -1.0f, stationData.maxItemListRefreshTime);
 
-				stationData.remainItemListRefreshTime = FMath::Clamp(stationData.remainItemListRefreshTime - DeltaSecondes, 0.0f, stationData.maxItemListRefreshTime);
-				stationData.remainProductTime = FMath::Clamp(stationData.remainProductTime - DeltaSecondes, 0.0f, stationData.maxItemListRefreshTime);
+				if (stationData.structureType == StructureType::ProductionFacility || stationData.structureType == StructureType::Hub) {
+					for (int index = 0; index < stationData.itemsInProduction.Num(); index++) {
+						if (stationData.itemsInProduction[index].productTime > 0.0f) {
+							stationData.itemsInProduction[index].productTime 
+								= FMath::Clamp(stationData.itemsInProduction[index].productTime - DeltaSecondes, -1.0f, stationData.itemsInProduction[index].maxProductTime);
+							continue;
+						}
+						USafeENGINE::AddCargo(stationData.playerItemList, stationData.itemsInProduction[index].productItem);
+						stationData.itemsInProduction.RemoveAtSwap(index);
+					}
+				}
 			}
 		}
 		for (FStructureInfo& gateData : sectorData.GateList) {
 			if (gateData.isDestroyed)
-				gateData.remainRespawnTime = FMath::Clamp(gateData.remainRespawnTime - DeltaSecondes, 0.0f, gateData.maxRespawnTime);
+				gateData.remainRespawnTime = FMath::Clamp(gateData.remainRespawnTime - DeltaSecondes, -1.0f, gateData.maxRespawnTime);
 			else {
-				_tempValue = DeltaSecondes / gateData.maxRespawnTime;
-				gateData.structureShieldRate = FMath::Clamp(gateData.structureShieldRate + _tempValue, 0.0f, 1.0f);
-				gateData.structureArmorRate = FMath::Clamp(gateData.structureArmorRate + _tempValue, 0.0f, 1.0f);
-				gateData.structureHullRate = FMath::Clamp(gateData.structureHullRate + _tempValue, 0.0f, 1.0f);
-
-				gateData.remainItemListRefreshTime = FMath::Clamp(gateData.remainItemListRefreshTime - DeltaSecondes, 0.0f, gateData.maxItemListRefreshTime);
+				_structureRegenerateFactor = DeltaSecondes / gateData.maxRespawnTime;
+				gateData.structureShieldRate = FMath::Clamp(gateData.structureShieldRate + _structureRegenerateFactor, 0.0f, 1.0f);
+				gateData.structureArmorRate = FMath::Clamp(gateData.structureArmorRate + _structureRegenerateFactor, 0.0f, 1.0f);
+				gateData.structureHullRate = FMath::Clamp(gateData.structureHullRate + _structureRegenerateFactor, 0.0f, 1.0f);
+				gateData.remainItemListRefreshTime = FMath::Clamp(gateData.remainItemListRefreshTime - DeltaSecondes, -1.0f, gateData.maxItemListRefreshTime);
 			}
 		}
 	}
 
-	//구조물 리젠 및 리셋 처리
+	//현재 섹터 내의 스테이션에 대해 리젠, 아이템 목록을 갱신
 	for (FStructureInfo& stationData : currentSectorInfo->StationList) {
-		if (stationData.isDestroyed) {
-			if (stationData.remainRespawnTime <= 0.0f && stationData.isRespawnable) {
-				AStation* _regenStation = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
-					FTransform(stationData.structureRotation, FVector(stationData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+		//리젠 갱신
+		if (stationData.isDestroyed && stationData.isRespawnable && stationData.remainRespawnTime < 0.0f) {
+			AStation* _regenStation = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
+				FTransform(stationData.structureRotation, FVector(stationData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-				if (IsValid(_regenStation)) {
-					_regenStructure = Cast<IStructureable>(_regenStation);
-					if (_regenStructure != nullptr) {
-						_regenStructure->SetStructureData(stationData);
-						UGameplayStatics::FinishSpawningActor(_regenStation, _regenStation->GetActorTransform());
-					} else 
-						_regenStation->Destroy();
+			if (IsValid(_regenStation) && _regenStation->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
+				Cast<IStructureable>(_regenStation)->SetStructureData(stationData);
+				UGameplayStatics::FinishSpawningActor(_regenStation, _regenStation->GetActorTransform());
+			} else
+				_regenStation->Destroy();
+		}
+		//아이템 목록 갱신
+		if (!stationData.isDestroyed && stationData.remainItemListRefreshTime < 0.0f) {
+			stationData.itemList.Empty();
+			stationData.itemList.Reserve(stationData.itemSellListId.Num());
+			for (FItemSellData& sellData : stationData.itemSellListId) {
+				if (sellData.sellingChance >= FMath::RandRange(_define_ItemRefreshChanceMIN, _define_ItemRefreshChanceMAX)) {
+					_item = FItem(sellData.sellingItemID, FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount));
+					stationData.itemList.Emplace(_item);
 				}
 			}
-		} 
-		else {
-			if (stationData.remainItemListRefreshTime <= 0.0f) {
-				_findIndex = -1;
-				_addAmount = 0;
-				_item = FItem();
-
-				/*or (FItemSellData& sellData : stationData.itemSellListId) {
-					if (sellData.sellingChance >= FMath::RandRange(0.0, 100.0f)) {
-						_item = FItem(sellData.sellingItemID, 1);
-						USafeENGINE.
-						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, _item);
-						_addAmount = FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount);
-
-						if (_findIndex > -1)
-							stationData.itemList[_findIndex].itemAmount += _addAmount;
-						else if (_addAmount > 0)
-							stationData.itemList.Emplace(FItem(sellData.sellingItemID, _addAmount));
-					} else {
-						_item = FItem(stationData.itemSellListId[index].sellingItemID, 1);
-						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, _item);
-
-						if (_findIndex > -1)
-							stationData.itemList.RemoveAtSwap(_findIndex);
-					}
-				}*/
-
-				for (int index = 0; index < stationData.itemSellListId.Num(); index++) {
-					if (stationData.itemSellListId[index].sellingChance >= FMath::RandRange(0.0, 100.0f)) {
-						_item = FItem(stationData.itemSellListId[index].sellingItemID, 1);
-						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, _item);
-						_addAmount = FMath::RandRange(stationData.itemSellListId[index].sellingItemMinAmount, stationData.itemSellListId[index].sellingItemMaxAmount);
-
-						if (_findIndex > -1)
-							stationData.itemList[_findIndex].itemAmount += _addAmount;
-						else if (_addAmount > 0)
-							stationData.itemList.Emplace(FItem(stationData.itemSellListId[index].sellingItemID, _addAmount));
-					} else {
-						_item = FItem(stationData.itemSellListId[index].sellingItemID, 1);
-						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, _item);
-
-						if (_findIndex > -1)
-							stationData.itemList.RemoveAtSwap(_findIndex);
-					}
-				}
-				stationData.remainItemListRefreshTime = stationData.maxItemListRefreshTime;
-			}
-			if (stationData.remainProductTime <= 0.0f && (stationData.structureType == StructureType::ProductionFacility
-				|| stationData.structureType == StructureType::Hub) && stationData.productItemList.Num() > 0) {
-
-				_canProduct = true;
-				_findIndex = -1;
-
-				for (int index = 0; index < stationData.consumptItemList.Num(); index++) {
-					_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, stationData.consumptItemList[index]);
-
-					if (_findIndex < 0 || stationData.itemList[_findIndex].itemAmount < stationData.consumptItemList[index].itemAmount) {
-						_canProduct = false;
-						break;
-					}
-				}
-
-				if (_canProduct == true) {
-					for (int index = 0; index < stationData.consumptItemList.Num(); index++) {
-						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, stationData.consumptItemList[index]);
-						stationData.itemList[_findIndex].itemAmount -= stationData.consumptItemList[index].itemAmount;
-						if (stationData.itemList[_findIndex].itemAmount <= 0)
-							stationData.itemList.RemoveAt(_findIndex);
-					}
-
-					for (int index = 0; index < stationData.productItemList.Num(); index++) {
-						if (!_canProduct || index > stationData.maxProductAmount.Num() || stationData.itemList[_findIndex].itemAmount >= stationData.maxProductAmount[index])
-							break;
-
-						_findIndex = USafeENGINE::FindItemSlot(stationData.itemList, stationData.productItemList[index]);
-						if (_findIndex > -1)
-							stationData.itemList[_findIndex].itemAmount += stationData.productItemList[index].itemAmount;
-						else
-							stationData.itemList.Emplace(FItem(stationData.productItemList[index]));
-					}
-					stationData.remainProductTime = stationData.maxProductTime;
-				}
-			}
+			stationData.remainItemListRefreshTime = stationData.maxItemListRefreshTime;
 		}
 	}
 	for (FStructureInfo& gateData : currentSectorInfo->GateList) {
-		if (gateData.isDestroyed) {
-			if (gateData.remainRespawnTime <= 0.0f && gateData.isRespawnable) {
-				AGate* _regenGate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(),
-					FTransform(gateData.structureRotation, FVector(gateData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+		//리젠 갱신
+		if (gateData.isDestroyed && gateData.isRespawnable && gateData.remainRespawnTime < 0.0f) {
+			AGate* _regenGate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
+				FTransform(gateData.structureRotation, FVector(gateData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-				if (IsValid(_regenGate)) {
-					_regenStructure = Cast<IStructureable>(_regenGate);
-					_regenStructure->SetStructureData(gateData);
-					UGameplayStatics::FinishSpawningActor(_regenGate, _regenGate->GetActorTransform());
-				}
-			}
-		} else if (gateData.remainItemListRefreshTime <= 0.0f) {
-			_findIndex = -1;
-			_addAmount = 0;
-			_item = FItem();
-
-			for (int index = 0; index < gateData.itemSellListId.Num(); index++) {
-				if (gateData.itemSellListId[index].sellingChance >= FMath::RandRange(0.0, 100.0f)) {
-					_item = FItem(gateData.itemSellListId[index].sellingItemID, 1);
-					_findIndex = USafeENGINE::FindItemSlot(gateData.itemList, _item);
-					_addAmount = FMath::RandRange(gateData.itemSellListId[index].sellingItemMinAmount, gateData.itemSellListId[index].sellingItemMaxAmount);
-
-					if (_findIndex > -1)
-						gateData.itemList[_findIndex].itemAmount += _addAmount;
-					else if (_addAmount > 0)
-						gateData.itemList.Emplace(FItem(gateData.itemSellListId[index].sellingItemID, _addAmount));
-				} else {
-					_item = FItem(gateData.itemSellListId[index].sellingItemID, 1);
-					_findIndex = USafeENGINE::FindItemSlot(gateData.itemList, _item);
-
-					if (_findIndex > -1)
-						gateData.itemList.RemoveAtSwap(_findIndex);
+			if (IsValid(_regenGate) && _regenGate->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
+				Cast<IStructureable>(_regenGate)->SetStructureData(gateData);
+				UGameplayStatics::FinishSpawningActor(_regenGate, _regenGate->GetActorTransform());
+			} else
+				_regenGate->Destroy();
+		}
+		//아이템 목록 갱신
+		if (!gateData.isDestroyed && gateData.remainItemListRefreshTime < 0.0f) {
+			gateData.itemList.Empty();
+			gateData.itemList.Reserve(gateData.itemSellListId.Num());
+			for (FItemSellData& sellData : gateData.itemSellListId) {
+				if (sellData.sellingChance >= FMath::RandRange(_define_ItemRefreshChanceMIN, _define_ItemRefreshChanceMAX)) {
+					_item = FItem(sellData.sellingItemID, FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount));
+					gateData.itemList.Emplace(_item);
 				}
 			}
 			gateData.remainItemListRefreshTime = gateData.maxItemListRefreshTime;
@@ -214,65 +148,67 @@ void ASpaceState::Tick(float DeltaSecondes) {
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOverTime();
 
 	//섹터 내 함선 최대 수 체크
-	if (currentShipCapacity < shipRegenLimit) {
-		shipRegenAmount = FMath::RoundToInt((shipRegenLimit - objectInSector.Num()) * 0.05f);
-		//리젠 시작
-		for (int index = 0; index < shipRegenAmount; index++) {
-			randomResultForRegen = FMath::RandRange(0, totalChanceFactor);
-			//리젠 확률 가중치 계산
-			for (int index1 = 0; index1 < currentSectorInfo->ShipRegenData.Num(); index1++) {
+	if (currentShipCapacity > shipRegenLimit)
+		return;
+	//리젠 시작
+	_shipRegenAmount = FMath::RoundToInt((shipRegenLimit - currentShipCapacity) * _define_RegenShipFactor);
+	for (int index = 0; index < _shipRegenAmount; index++) {
+		//리젠 확률 가중치 계산, 리젠 데이터를 거치면서 가중치를 감산, 가중치가 0에 도달한 데이터로 리젠 시도.
+		_currentChanceFactor = FMath::RandRange(0, totalChanceFactor);
+		for (FObjectPlacement& respawnData : currentSectorInfo->ShipRegenData) {
+			_currentChanceFactor -= FMath::Max(respawnData.regenChanceFactor, 0);
+			if (_currentChanceFactor > 1)
+				continue;
 
-				_totalFactorInTick -= FMath::Max(currentSectorInfo->ShipRegenData[index1].regenChanceFactor, 0);
-				if (_totalFactorInTick < 1) {
-					//게이트로부터 출현하는 함선 생성 및 연출
-					if (currentSectorInfo->ShipRegenData[index1].isPlacementToGate && currentSectorInfo->GateList.Num() > 0) {
-						randomGateForRegenLocation = FMath::RandRange(0, currentSectorInfo->GateList.Num() - 1);
+			//게이트로부터 출현하는 함선 생성 및 연출
+			if (respawnData.isPlacementToGate && currentSectorInfo->GateList.Num() > 0) {
+				_randomGateIndex = FMath::RandRange(0, currentSectorInfo->GateList.Num() - 1);
+				currentSectorInfo->GateList[_randomGateIndex].structureLocation;
 
-						_tempStationData = _tempInstance->GetStationData(currentSectorInfo->GateList[randomGateForRegenLocation].structureID);
-						_tempNPCData = _tempInstance->GetNPCData(currentSectorInfo->ShipRegenData[index1].objectID);
-						_tempShipData = _tempInstance->GetShipData(_tempNPCData.ShipID);
+				AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), 
+					FTransform(FRotator(0.0f, currentSectorInfo->GateList[_randomGateIndex].structureRotation.Yaw, 0.0f), FVector(currentSectorInfo->GateList[_randomGateIndex].structureLocation, 0.0f)), 
+					ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
-						FRotator _rotator = FRotator(0.0f, currentSectorInfo->GateList[randomGateForRegenLocation].structureRotation.Yaw, 0.0f);
-						FVector _location = FVector(currentSectorInfo->GateList[randomGateForRegenLocation].structureLocation, 0.0f);
-						_location += USafeENGINE::GetRandomLocation(true) * (_tempShipData.LengthToLongAsix * 0.5f
-							+ _tempStationData.LengthToLongAsix * 0.5f + FMath::FRandRange(10.0f, 100.0f));
-
-						AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(),
-							FTransform(_rotator, _location), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-
-						if (_regenShip != nullptr) {
-							_regenShip->InitObject(currentSectorInfo->ShipRegenData[index1].objectID);
-							UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
-						}
-						break;
-					} else if (!currentSectorInfo->ShipRegenData[index1].isPlacementToGate) {
-
-						AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(),
-							FTransform(currentSectorInfo->ShipRegenData[index1].rotation, FVector(currentSectorInfo->ShipRegenData[index1].location, 0.0f)),
-							ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-
-						if (_regenShip != nullptr) {
-							_regenShip->InitObject(currentSectorInfo->ShipRegenData[index1].objectID);
-							UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
-						}
-						break;
-					}
-
+				if (IsValid(_regenShip)) {
+					_regenShip->InitObject(respawnData.objectID);
+					UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
 				}
+				else
+					_regenShip->Destroy();
+				break;
+			} 
+			//고정 위치에서 출현하는 함선 생성 및 연출
+			else {
+				AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(),
+					FTransform(FRotator(0.0f, respawnData.rotation.Yaw, 0.0f), FVector(respawnData.location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+
+				if (IsValid(_regenShip)) {
+					_regenShip->InitObject(respawnData.objectID);
+					UGameplayStatics::FinishSpawningActor(_regenShip, _regenShip->GetActorTransform());
+				}
+				else
+					_regenShip->Destroy();
+				break;
 			}
 
+
 		}
+
 	}
 }
 
+#pragma region Save/Load
 bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	if (!IsValid(_tempInstance))
+		return false;
+
 	FSectorData _tempData;
 	FStationData _tempStationData;
 	FShipData _tempShipData;
 
 	if (saver->saveState == SaveState::NewGameCreate) {
-		//All inited Sector's Data Save
+		//모든 섹터의 데이터를 초기화하고 저장. 섹터 데이터 이외의 초기 데이터는 UserState에서 처리
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By New Game!"));
 
 		TArray<FString> _sectorNameData;
@@ -285,14 +221,12 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		}
 
 		saver->sectorInfo = sectorInfo;
-		if (saver->sectorInfo.Num() == _sectorNameData.Num()) {
-			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] New GameSave Create Finish!"));
+		if (saver->sectorInfo.Num() == _sectorNameData.Num())
 			return true;
-		} else {
-			UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] New GameSave Create Fail!"));
+		else
 			return false;
-		}
-	} else if (saver->saveState == SaveState::UserRequest) {
+	}
+	else if (saver->saveState == SaveState::UserRequest) {
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By User Request!"));
 		saver->sectorInfo = sectorInfo;
 		TArray<AActor*> _getAllObj;
@@ -309,14 +243,10 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		saver->containerSaveInfo.Reserve(_getAllObj.Num());
 		saver->objectSaveInfo.Reserve(_getAllObj.Num());
 		saver->droneSaveInfo.Reserve(_getAllObj.Num());
-
-		int _exceptObjectCount = 0;
-		//Save All Object...
+		//함선, 자원, 컨테이너, 일반 오브젝트, 드론 등의 오브젝트를 데이터화하고 저장.
 		for (int index = 0; index < _getAllObj.Num(); index++) {
-			if (_getAllObj[index]->IsA(APlayerShip::StaticClass())) {
-				_exceptObjectCount++;
+			if (_getAllObj[index]->IsA(APlayerShip::StaticClass())) 
 				continue;
-			}
 			_spaceObject = Cast<ASpaceObject>(_getAllObj[index]);
 			if (!IsValid(_spaceObject))
 				continue;
@@ -357,19 +287,27 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				break;
 			}
 		}
+		saver->shipSaveInfo.Shrink();
+		saver->resourceSaveInfo.Shrink();
+		saver->containerSaveInfo.Shrink();
+		saver->objectSaveInfo.Shrink();
+		saver->droneSaveInfo.Shrink();
+
 		saver->relation = factionRelationship;
+		saver->relationwithPlayerEmpire = relationwithPlayerEmpire;
 		saver->playerFactionName = playerFactionName;
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] GameSave Create Finish!"));
 		return true;
 	} 
 	else if (saver->saveState == SaveState::BeforeWarp) {
-		//Just Save Sector Info(+ Structure Data)
+		//섹터 정보 및 플레이어 시작 위치만 지정
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][SaveSpaceState] Start Save File Create By Warp!"));
 		saver->sectorInfo = sectorInfo;
 		saver->relation = factionRelationship;
+		saver->relationwithPlayerEmpire = relationwithPlayerEmpire;
 		saver->playerFactionName = playerFactionName;
 
-		saver->position = FVector(0.0f, 0.0f, 0.0f);
+		saver->position = FVector2D(0.0f, 0.0f);
 		saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
 		FSectorData* _nextSectorInfo = nullptr;
 
@@ -379,6 +317,9 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 				break;
 			}
 		}
+		//플레이어의 시작 위치를 지정
+		//PlayerPawn은 Manager급 액터들과 함께 일반 액터에 비해 빨리 스폰. 일반 액터인 AGate는 일반적으로 AlwaysSpawn으로 스폰되므로 겹치게 됨.
+		//따라서, 점프 이전에 미리 좌표를 계산해서 지정해야 겹치지 않고 스폰될 수 있음.
 		if (_nextSectorInfo != nullptr) {
 			for (int index = 0; index < _nextSectorInfo->GateList.Num(); index++) {
 				if (_nextSectorInfo->GateList[index].LinkedSector.Compare(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase) == 0) {
@@ -386,9 +327,8 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 					_tempShipData = _tempInstance->GetShipData(saver->shipID);
 
 					saver->rotation.Yaw = _nextSectorInfo->GateList[index].structureRotation.Yaw;
-					saver->position = FVector(_nextSectorInfo->GateList[index].structureLocation, 0.0f);
-					saver->position += USafeENGINE::GetRandomLocation(true)
-						* (_tempStationData.LengthToLongAsix * 0.5f + _tempShipData.LengthToLongAsix * 0.5f + FMath::FRandRange(10.0f, 100.0f));
+					saver->position = _nextSectorInfo->GateList[index].structureLocation;
+					saver->position += FVector2D(USafeENGINE::GetRandomLocation(true) * (_tempStationData.LengthToLongAsix + _tempShipData.LengthToLongAsix) * 0.5f);
 					break;
 				}
 			}
@@ -410,21 +350,21 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 	FResourceData _tempResourceData;
 	FNewStartPlayerData _tempNewStartData;
 
-	AActor* _obj;
 	AShip* _ship;
-	IStructureable* _sObj;
+	AStation* _station;
+	AGate* _gate;
 	ADrone* _drone;
 	ASpaceObject* _spaceObject;
 	ACargoContainer* _container;
 	AResource* _resource;
+	IStructureable* _sObj;
 	sectorInfo = loader->sectorInfo;
 
-	for (int index = 0; index < sectorInfo.Num(); index++) {
-		if (loader->sectorInfo[index].nSectorName.ToString().Equals(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase)) {
-			currentSectorInfo = &sectorInfo[index];
+	for (FSectorData& sectorData : sectorInfo) {
+		if (sectorData.nSectorName.ToString().Equals(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase)) {
+			currentSectorInfo = &sectorData;
 			_sectorDataFind = true;
 			shipRegenLimit = FMath::Min(300, currentSectorInfo->ShipRegenTotal);
-
 			for (int index1 = 0; index1 < currentSectorInfo->ShipRegenData.Num(); index1++)
 				totalChanceFactor += currentSectorInfo->ShipRegenData[index1].regenChanceFactor;
 			break;
@@ -441,151 +381,152 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 
 		//Load Ship Data
 		for (FSavedNPCShipData& shipData : loader->shipSaveInfo) {
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(FRotator(0.0f, shipData.npcShipRotation.Yaw, 0.0f),
-				FVector(shipData.npcShipLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-			if (_obj != nullptr) {
-				_ship = Cast<AShip>(_obj);
+			_ship = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(FRotator(0.0f, shipData.npcShipRotation.Yaw, 0.0f),
+				FVector(shipData.npcShipLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			if (IsValid(_ship)) {
 				_ship->InitObject(shipData.npcShipID);
 				_ship->LoadBaseObject(shipData.npcShipShield, shipData.npcShipArmor, shipData.npcShipHull, shipData.npcShipPower);
 				_ship->SetFaction(shipData.npcShipFaction);
-				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-			}
+				UGameplayStatics::FinishSpawningActor(_ship, _ship->GetActorTransform());
+			} else if(_ship)
+				_ship->Destroy();
 		}
 		//Load Structure Data
 		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
 			if (!structureData.isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
-					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-				if (_obj != nullptr) {
-					_sObj = Cast<IStructureable>(_obj);
+				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
+				if (IsValid(_station) && _station->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
+					_sObj = Cast<IStructureable>(_station);
 					_sObj->SetStructureData(structureData);
-					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
-					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				}
+					UGameplayStatics::FinishSpawningActor(_station, _station->GetActorTransform());
+				} else if (_station)
+					_station->Destroy();
 			}
 		}
 		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
 			if (!structureData.isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
-					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-				if (_obj != nullptr) {
-					_sObj = Cast<IStructureable>(_obj);
+				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
+				if (IsValid(_gate) && _gate->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
+					_sObj = Cast<IStructureable>(_gate);
 					_sObj->SetStructureData(structureData);
-					UNavigationSystem::GetCurrent(GetWorld())->UpdateActorInNavOctree(*_obj);
-					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				}
+					UGameplayStatics::FinishSpawningActor(_gate, _gate->GetActorTransform());
+				} else if (_gate)
+					_gate->Destroy();
 			}
 		}
 		//Load Drone Data - Player
 		//Load Drone Data
 		for (FSavedDroneData& droneData : loader->droneSaveInfo) {
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ADrone::StaticClass(), FTransform(FRotator(0.0f, droneData.droneRotation.Yaw, 0.0f),
-				FVector(droneData.droneLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-			if (_obj != nullptr) {
-				_drone = Cast<ADrone>(_obj);
+			_drone = Cast<ADrone>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ADrone::StaticClass(), FTransform(FRotator(0.0f, droneData.droneRotation.Yaw, 0.0f),
+				FVector(droneData.droneLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			if (IsValid(_drone)) {
 				_drone->InitObject(droneData.droneID);
 				_drone->LoadBaseObject(droneData.droneShield, droneData.droneArmor, droneData.droneHull, 0.0f);
 				_drone->SetFaction(droneData.droneFaction);
-				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-			}
+				UGameplayStatics::FinishSpawningActor(_drone, _drone->GetActorTransform());
+			} else if(_drone)
+				_drone->Destroy();
 		}
 		//Load SpaceObject Data
 		for (FSavedObjectData& objectData : loader->objectSaveInfo){
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ASpaceObject::StaticClass(), FTransform(FRotator(0.0f, objectData.spaceObjectRotation.Yaw, 0.0f),
-				FVector(objectData.spaceObjectLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-			if (_obj != nullptr) {
-				_spaceObject = Cast<ASpaceObject>(_obj);
+			_spaceObject = Cast<ASpaceObject>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ASpaceObject::StaticClass(), FTransform(FRotator(0.0f, objectData.spaceObjectRotation.Yaw, 0.0f),
+				FVector(objectData.spaceObjectLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			if (IsValid(_spaceObject)) {
 				_spaceObject->InitObject(objectData.spaceObjectID);
 				_spaceObject->LoadBaseObject(0.0f, 0.0f, 0.0f, objectData.spaceObjectDurability);
 				_spaceObject->SetFaction(objectData.spaceObjectFaction);
-				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-			}
+				UGameplayStatics::FinishSpawningActor(_spaceObject, _spaceObject->GetActorTransform());
+			} else if(_spaceObject)
+				_spaceObject->Destroy();
 		}
 		//Load Container Data
 		for (FSavedContainerData& containerData : loader->containerSaveInfo) {
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(), FTransform(FRotator(0.0f, containerData.containerRotation.Yaw, 0.0f),
-				FVector(containerData.containerLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-			if (_obj != nullptr) {
-				_container = Cast<ACargoContainer>(_obj);
+			_container = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(), FTransform(FRotator(0.0f, containerData.containerRotation.Yaw, 0.0f),
+				FVector(containerData.containerLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			if (IsValid(_container)) {
 				_container->InitObject(containerData.containerID);
 				_container->LoadBaseObject(0.0f, 0.0f, 0.0f, containerData.containerDurability);
 				_container->SetCargo(containerData.containerCargo);
-				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-			}
+				UGameplayStatics::FinishSpawningActor(_container, _container->GetActorTransform());
+			} else if(_container)
+				_container->Destroy();
 		}
 		//Load Resources
 		for (FSavedResourceData& resourceData : loader->resourceSaveInfo){
-			_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(FRotator(0.0f, resourceData.resourceRotation.Yaw, 0.0f),
-				FVector(resourceData.resourceLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-			if (_obj != nullptr) {
-				_resource = Cast<AResource>(_obj);
+			_resource = Cast<AResource>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(FRotator(0.0f, resourceData.resourceRotation.Yaw, 0.0f),
+				FVector(resourceData.resourceLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			if (IsValid(_resource)) {
 				_resource->InitObject(resourceData.resourceID);
 				_resource->SetResource(resourceData.resourceDurability, resourceData.resourceAmount);
-				UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-			}
+				UGameplayStatics::FinishSpawningActor(_resource, _resource->GetActorTransform());
+			} else if(_resource)
+				_resource->Destroy();
 		}
 	}
-	//saveState == BeforeWarp or saveState == NewGameCreate
 	else {
 		//Just Load Sector Info(+ Structure Data)
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Start Load File Create By Warp to Next Sector!"));
 
 		//Load Structure
-		for (int index = 0; index < currentSectorInfo->StationList.Num(); index++) {
-			if (!currentSectorInfo->StationList[index].isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, currentSectorInfo->StationList[index].structureRotation.Yaw, 0.0f),
-					FVector(currentSectorInfo->StationList[index].structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-				if (_obj != nullptr) {
-					_sObj = Cast<IStructureable>(_obj);
-					_sObj->SetStructureData(currentSectorInfo->StationList[index]);
-					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				}
+		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
+			if (!structureData.isDestroyed) {
+				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
+				if (IsValid(_station) && _station->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
+					_sObj = Cast<IStructureable>(_station);
+					_sObj->SetStructureData(structureData);
+					UGameplayStatics::FinishSpawningActor(_station, _station->GetActorTransform());
+				} else if(_station)
+					_station->Destroy();
 			}
 		}
-		for (int index = 0; index < currentSectorInfo->GateList.Num(); index++) {
-			if (!currentSectorInfo->GateList[index].isDestroyed) {
-				_obj = UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, currentSectorInfo->GateList[index].structureRotation.Yaw, 0.0f),
-					FVector(currentSectorInfo->GateList[index].structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-				if (_obj != nullptr) {
-					_sObj = Cast<IStructureable>(_obj);
-					_sObj->SetStructureData(currentSectorInfo->GateList[index]);
-					UGameplayStatics::FinishSpawningActor(_obj, _obj->GetActorTransform());
-				}
+		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
+			if (!structureData.isDestroyed) {
+				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
+				if (IsValid(_gate) && _gate->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
+					_sObj = Cast<IStructureable>(_gate);
+					_sObj->SetStructureData(structureData);
+					UGameplayStatics::FinishSpawningActor(_gate, _gate->GetActorTransform());
+				} else if(_gate)
+					_gate->Destroy();
 			}
 		}
 
 		//Generate Inited Ship
-		for (int index = 0; index < currentSectorInfo->ShipInitedData.Num(); index++) {
-			if (FMath::RandRange(0, 100) < 100 - FMath::Clamp(currentSectorInfo->ShipInitedData[index].regenChanceFactor, 0, 100))
+		for (FObjectPlacement& shipInitData : currentSectorInfo->ShipInitedData) {
+			if (FMath::RandRange(0, 100) < 100 - FMath::Clamp(shipInitData.regenChanceFactor, 0, 100))
 				continue;
 
-			_ship = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(currentSectorInfo->ShipInitedData[index].rotation,
-				FVector(currentSectorInfo->ShipInitedData[index].location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
-			if (_ship != nullptr) {
-				_ship->InitObject(currentSectorInfo->ShipInitedData[index].objectID);
+			_ship = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), FTransform(FRotator(0.0f, shipInitData.rotation.Yaw, 0.0f),
+				FVector(shipInitData.location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			if (IsValid(_ship)) {
+				_ship->InitObject(shipInitData.objectID);
 				UGameplayStatics::FinishSpawningActor(_ship, _ship->GetActorTransform());
-			}
+			} else if(_ship)
+				_ship->Destroy();
 		}
-
 		//Generate Inited Resources
-		for (int index = 0; index < currentSectorInfo->ResourceInitedData.Num(); index++) {
-			if (FMath::RandRange(0, 100) < 100 - FMath::Clamp(currentSectorInfo->ResourceInitedData[index].regenChanceFactor, 0, 100))
+		for (FObjectPlacement& resourceInitData : currentSectorInfo->ResourceInitedData) {
+			if (FMath::RandRange(0, 100) < 100 - FMath::Clamp(resourceInitData.regenChanceFactor, 0, 100))
 				continue;
 
-			_resource = Cast<AResource>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(currentSectorInfo->ResourceInitedData[index].rotation,
-				FVector(currentSectorInfo->ResourceInitedData[index].location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+			_resource = Cast<AResource>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AResource::StaticClass(), FTransform(FRotator(0.0f, resourceInitData.rotation.Yaw, 0.0f),
+				FVector(resourceInitData.location, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 			if (_resource != nullptr) {
-				_resource->InitObject(currentSectorInfo->ResourceInitedData[index].objectID);
+				_resource->InitObject(resourceInitData.objectID);
 				UGameplayStatics::FinishSpawningActor(_resource, _resource->GetActorTransform());
-			}
+			} else if (_resource)
+				_resource->Destroy();
 		}
 	}
 
 	playerFactionName = loader->playerFactionName;
 	factionRelationship = loader->relation;
 	tempFactionRelationship = factionRelationship;
+	relationwithPlayerEmpire = loader->relationwithPlayerEmpire;
 
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship In save file : %d"), factionRelationship.Num());
 	if (factionRelationship.Num() != factionEnumPtr->NumEnums() - 4) {
@@ -593,9 +534,13 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship Init not Matching with save file! Some Relationship Data Will be Damaged! Set To %d."), factionRelationship.Num());
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));
+
+	OnBGMSettingAndPlay();
 	return true;
 }
+#pragma endregion
 
+#pragma region Get Data Or SectorData Processing
 void ASpaceState::GetCurrentSectorInfo(FSectorData& getSectorInfo) {
 	getSectorInfo = *currentSectorInfo;
 }
@@ -609,15 +554,11 @@ bool ASpaceState::isValidSector(const FString& checkSectorName) const {
 }
 
 void ASpaceState::AccumulateToShipCapacity(const bool isDestroying) {
-	if (isDestroying)
-		currentShipCapacity--;
-	else currentShipCapacity++;
-
+	isDestroying ? currentShipCapacity-- : currentShipCapacity++;
 	return;
 }
 
 Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, const bool isRealRelation) const {
-
 	if (target == Faction::Neutral)
 		return Peer::Neutral;
 	if (requestor == target)
@@ -626,6 +567,7 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 	Peer _result = Peer::Neutral;
 	float _relation = 0.0f;
 
+	//플레이어와 관련없는 팩션간 피아관계
 	if (requestor > Faction::PlayerFoundingFaction && target > Faction::PlayerFoundingFaction) {
 		switch (requestor) {
 		case Faction::PrimusEmpire:
@@ -664,6 +606,7 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 		default: break;
 		}
 	} 
+	//플레이어와 관련있는 팩션간 피아관계
 	else {
 		Faction _targetFaction;
 
@@ -699,10 +642,7 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 
 float ASpaceState::GetRelationshipArray(TArray<float>& relationshipArray, bool isRealRelation) const {
 
-	if (isRealRelation)
-		relationshipArray = factionRelationship;
-	else
-		relationshipArray = tempFactionRelationship;
+	relationshipArray = isRealRelation ? factionRelationship : tempFactionRelationship;
 	return relationwithPlayerEmpire;
 }
 
@@ -736,3 +676,25 @@ void ASpaceState::ApplyRelation(const Faction targetFaction, float SPForConvertR
 		
 	return;
 }
+#pragma endregion
+
+#pragma region BGM
+void ASpaceState::OnBGMSettingAndPlay() {
+
+	if (ev_BGMComponent->IsPlaying() || currentSectorInfo == nullptr)
+		return;
+
+	int _bgmIndex;
+
+	if (currentSectorInfo->PlayerableBGM.Num() > 0) {
+		_bgmIndex = FMath::RandRange(0, currentSectorInfo->PlayerableBGM.Num() - 1);
+
+		ev_BGMCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *currentSectorInfo->PlayerableBGM[_bgmIndex].ToString()));
+		if (ev_BGMComponent->IsValidLowLevelFast() && ev_BGMCue->IsValidLowLevelFast()) {
+			ev_BGMComponent->SetSound(ev_BGMCue);
+			ev_BGMComponent->Play();
+		}
+	}
+	return;
+}
+#pragma endregion

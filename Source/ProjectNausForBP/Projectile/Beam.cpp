@@ -15,6 +15,9 @@ ABeam::ABeam()
 	if (particleSystem.Succeeded())
 		beamParticle->SetTemplate(particleSystem.Object);
 
+	beamShotAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundBeamShot"));
+	beamHitAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundBeamHit"));
+
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
@@ -93,11 +96,14 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 		resultLocation.Normalize();
 		DrawDebugPoint(GetWorld(), GetActorLocation(), 6, FColor(255, 255, 255), false, aliveTime);
 
+		projectileShotSound =
 		//거리 판단상 사거리 이내
 		if (setedrange > USafeENGINE::CheckDistanceConsiderSize(launchActor, targetActor)) {
 			launchedFaction = launchActor->GetFaction();
 			UGameplayStatics::ApplyPointDamage(targetActor, setedDamage, resultLocation, FHitResult(), nullptr, this, UDamageType::StaticClass());
 			resultLocation = targetActor->GetActorLocation();
+			beamHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *currentSectorInfo->PlayerableBGM[_bgmIndex].ToString()));
+
 			//빔이 블럭되지 않고 최대거리까지 진행
 		} else 
 			resultLocation = GetActorLocation() + resultLocation * setedrange;

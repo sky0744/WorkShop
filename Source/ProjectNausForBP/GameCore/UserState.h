@@ -9,8 +9,7 @@
 #include "UserState.generated.h"
 
 UCLASS()
-class PROJECTNAUSFORBP_API AUserState : public APlayerState
-{
+class PROJECTNAUSFORBP_API AUserState : public APlayerState {
 	GENERATED_BODY()
 public:
 	AUserState();
@@ -128,6 +127,44 @@ public:
 		bool SetRestartLocation();
 #pragma endregion
 
+#pragma region Environment Functions & Components & Variables
+public:
+	//그래픽 설정 함수
+	//사운드 볼륨 설정 컴포넌트 및 변수
+	UFUNCTION(BlueprintCallable, Category = "Call Environment Setting Function : State")
+		float Ev_ChangeBGMVolume(float volume);
+	UFUNCTION(BlueprintCallable, Category = "Call Environment Setting Function : State")
+		float Ev_ChangeSfxVolume(float volume);
+	//입력 설정 컴포넌트 및 변수
+	//게임 플레이 설정 컴포넌트 및 변수
+
+	//그래픽 설정 컴포넌트 및 변수
+	bool ev_FullScreenMode;
+	FVector2D ev_ScreenResolution;
+	int8 ev_GrahpicLevelTextrue;
+	int8 ev_GrahpicLevelShader;
+	int8 ev_GrahpicLevelShadow;
+	int8 ev_GrahpicLevelAntiAliasing;
+	int8 ev_GrahpicLevelAnisotropicFiltering;
+	bool ev_GrahpicHDR;
+	bool ev_GrahpicSSAO;
+	//사운드 볼륨 설정 컴포넌트 및 변수
+	UPROPERTY()
+		USoundClass* ev_BGMClass;
+	UPROPERTY()
+		USoundClass* ev_SfxClass;
+	UPROPERTY()
+		USoundMix* ev_BGMMix;
+	UPROPERTY()
+		USoundMix* ev_SfxMix;
+	float ev_BGMVolume;
+	float ev_SfxVolume;
+	//입력 설정 컴포넌트 및 변수
+	float ev_KeyAsixSensitivity;
+	float ev_MouseAsixSensitivity;
+	//게임 플레이 설정 컴포넌트 및 변수
+#pragma endregion
+
 #pragma region Components & Variables
 private:
 	FText sUserName;
@@ -138,41 +175,18 @@ private:
 	float sBounty;
 
 	FString restartSector;
-	FVector restartLocation;
+	FVector2D restartLocation;
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-	TArray<FSkill> listSkill;
+		TArray<FSkill> listSkill;
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-	TArray<FSkill> queueSkillLearn;
+		TArray<FSkill> queueSkillLearn;
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-	TArray<FItem> listItem;
+		TArray<FItem> listItem;
 
 private:
 	FString nextSectorName;
 	TScriptInterface<IStructureable> dockedStructure;
 	float currentCargo;
-#pragma endregion
-
-#pragma region Environment Variable
-public:
-	//Grahpic
-		static bool ev_FullScreenMode;
-		static FVector2D ev_ScreenResolution;
-		static int8 ev_GrahpicLevelTextrue;
-		static int8 ev_GrahpicLevelShader;
-		static int8 ev_GrahpicLevelShadow;
-		static int8 ev_GrahpicLevelAntiAliasing;
-		static int8 ev_GrahpicLevelAnisotropicFiltering;
-		static bool ev_GrahpicHDR;
-		static bool ev_GrahpicSSAO;
-	//Sound
-		static float ev_MasterVolume;
-		static float ev_BGMVolume;
-		static float ev_SfxVolume;
-	//Setting
-		static float ev_KeyAsixSensitivity;
-		static float ev_MouseAsixSensitivity;
-	//Achievements
-
 #pragma endregion
 };

@@ -35,6 +35,14 @@ public:
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
 		UParticleSystemComponent* beamParticle;
+	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
+		UAudioComponent* beamShotAudio;
+	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
+		UAudioComponent* beamHitAudio;
+	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
+		USoundCue* beamShotSound;
+	UPROPERTY(VisibleAnyWhere, Category = "Beam Data")
+		USoundCue* beamHitSound;
 	ModuleType beamType;
 
 	UPROPERTY()

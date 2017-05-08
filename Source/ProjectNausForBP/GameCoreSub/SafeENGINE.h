@@ -29,12 +29,13 @@ const float _define_SPtoRelationFactorMAX = 0.005f;
 const float _define_LimitApplyRelationPerOnceMIN = -2.0f;
 const float _define_LimitApplyRelationPerOnceMAX = 2.0f;
 
-//const float _define_TransAllyRelationship = 0.6f;
-//const float _define_TransSubHostileRelationship = -0.15f;
-//const float _define_TransHostileRelationship = -0.7f;
+const float _define_SectorRefreshTime = 1.0f;
+const float _define_ItemRefreshChanceMIN = 0.0f;
+const float _define_ItemRefreshChanceMAX = 100.0f;
+const float _define_RegenShipFactor = 0.025f;
 #pragma endregion
 
-#pragma region Constant Value UserState Type
+#pragma region Constant Value UserState
 const int _define_SkillLevelMIN = 0;
 const int _define_SkillLevelMAX = 5;
 
@@ -45,6 +46,11 @@ const float _define_RenownMIN = -1000.0f;
 const float _define_RenownMAX = 1000.0f;
 const float _define_SPToRenownHostile = 0.01f;
 const float _define_SPToRenownNotHostile = -0.05f;
+#pragma endregion
+
+#pragma region Constant Value UserState
+const float _define_ev_SoundVolumeMIN = 0.0f;
+const float _define_ev_SoundVolumeMAX = 1.0f;
 #pragma endregion
 
 #pragma region Constant Value In SpaceObject
@@ -95,7 +101,7 @@ const float _define_DamagePercentageMIN = 0.15f;
 const float _define_DamagePercentageMAX = 4.15f;
 #pragma endregion
 
-#pragma region Constant Value Ship Type
+#pragma region Constant Value Ship
 const float _define_StatComputePerformanceMIN = 0.0f;
 const float _define_StatComputePerformanceMAX = 99999.0f;
 const float _define_StatPowerGridPerformanceMIN = 0.0f;
@@ -106,25 +112,26 @@ const float _define_StatCargoSizeMAX = 200000.0f;
 const float _define_SetDistanceToRotateForward = 1000.0f;
 #pragma endregion
 
-#pragma region Constant Value Drone Type
+#pragma region Constant Value Drone
 #pragma endregion
 
-#pragma region Constant Value Structure Type
+#pragma region Constant Value Structure
 const float _define_AvailableDistanceToDock = 300.0f;
 const float _define_AvailableDistanceToRestartSet = 500.0f;
 const float _define_AvailableDistanceToJump = 500.0f;
+const float _define_StructureTick = 5.0f;
 #pragma endregion
 
-#pragma region Constant Value Resource Type
+#pragma region Constant Value Resource
 const float _define_StatResourceAmountMIN = 0.0f;
 const float _define_StatResourceAmountMAX = 10000.0f;
 const float _define_RandomRotateSpeedMIN = -3.0f;
 const float _define_RandomRotateSpeedMAX = 3.0f;
 #pragma endregion
 
-#pragma region Constant Value Cargo Type
-const float _define_DropChance_MIN = 0.0f;
-const float _define_DropChance_MAX = 100.0f;
+#pragma region Constant Value Cargo
+const float _define_DropChanceMIN = 0.0f;
+const float _define_DropChanceMAX = 100.0f;
 #pragma endregion
 
 #pragma region Sub Data Structure in DataTable Set or Instance
@@ -377,7 +384,7 @@ USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FProductProcess {
 	GENERATED_USTRUCT_BODY()
 public:
-	FProductProcess(FItem item = FItem(), float startItem = 0.0f)
+	FProductProcess(FItem item = FItem(0, 0), float startItem = 0.0f)
 		: productItem(item)
 		, productTime(startItem)
 		, maxProductTime(startItem) {}
@@ -389,7 +396,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		float maxProductTime;
 };
-USTRUCT(BlueprintType)		//인덱스 자체가 ID(중복 X)
+USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FStructureInfo
 {
 	GENERATED_USTRUCT_BODY()
@@ -438,20 +445,11 @@ public:
 		float remainItemListRefreshTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<FItem> productItemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> maxProductAmount;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<FItem> consumptItemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float maxProductTime;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float remainProductTime;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<int> shipSellList;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FItem> playerItemList;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		TArray<FProductProcess> itemsInProduction;
 };
 #pragma endregion
 
@@ -636,15 +634,12 @@ public:
 		float DefHull;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> ProductItemList;
+		TArray<FItemSellData> ItemSellListId;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> ProductAmountList;
+		float ItemListRefreshTime;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> ConsumItemList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> ConsumAmountList;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<float> ProductTimer;
+		TArray<int> shipSellList;
 
 	FStationData() {}
 };
@@ -711,9 +706,15 @@ public:
 		FItem ProductItem;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		FItem RequireBluePrint;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		TArray<FSkill> RequireSkill;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		TArray<FItem> RequireItems;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		int RequireTechLevel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
+		bool IsCanProductInHub;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		float ProductTime;
 
@@ -849,6 +850,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Proejctile Data")
 		UTexture2D* Icon;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		FName SfxShotPath;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		FName SfxMovementPath;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		FName SfxHitPath;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		float ExplosionSensorRange;
 
 	FProjectileData() {}
@@ -876,6 +883,8 @@ public:
 		SectorType Type;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		SectorState State;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		TArray<FName> PlayerableBGM;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		float SectorDevelopmentLevel;
@@ -920,7 +929,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
 		FString StartSector;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		FVector StartPosition;
+		FVector2D StartPosition;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
 		TArray<FSkill> StartSkillList;

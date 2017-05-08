@@ -155,9 +155,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FString restartSector;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
-		FVector restartLocation;
+		FVector2D restartLocation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FText playerFactionName;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
+		float relationwithPlayerEmpire;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float credit;
 
@@ -165,7 +167,7 @@ public:
 		SaveState saveState;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
-		FVector position;
+		FVector2D position;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator rotation;
 

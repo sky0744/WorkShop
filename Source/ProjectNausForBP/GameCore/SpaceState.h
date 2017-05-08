@@ -90,9 +90,14 @@ public:
 private:
 	int shipRegenLimit;
 	int currentShipCapacity;
-
 	int totalChanceFactor;
-	int shipRegenAmount;
-	int randomResultForRegen;
-	int randomGateForRegenLocation;
+
+#pragma region BGM
+public:
+	UFUNCTION()
+	void OnBGMSettingAndPlay();
+
+	UAudioComponent* ev_BGMComponent;
+	USoundCue* ev_BGMCue;
+#pragma endregion
 };
