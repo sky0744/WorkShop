@@ -24,8 +24,24 @@ AUserController::AUserController() {
 	HitResultTraceDistance = 2000000.0f;
 #pragma endregion
 
-#pragma region Controller
+#pragma region Location/Camera Controller
 	bAttachToPawn = true;
+
+	playerViewpointArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FixArm"));
+	playerViewpointCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FixedCamera"));
+	playerViewpointArm->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
+	playerViewpointCamera->SetupAttachment(playerViewpointArm, playerViewpointArm->GetAttachSocketName());
+
+	playerViewpointArm->AddWorldRotation(FRotator(-45.0f, 0.0f, 0.0f));
+	playerViewpointArm->bEnableCameraRotationLag = true;
+	playerViewpointArm->bEnableCameraLag = true;
+	playerViewpointArm->bAbsoluteRotation = true;
+	playerViewpointArm->bDoCollisionTest = false;
+	playerViewpointArm->bUsePawnControlRotation = false;
+	playerViewpointArm->CameraRotationLagSpeed = 7.0f;
+
+	playerCameraMinDistance = _define_CameraDinstanceMIN;
+	playerViewpointArm->CameraLagMaxDistance = _define_CameraDinstanceMIN;
 #pragma endregion
 
 #pragma region Replication
@@ -38,8 +54,11 @@ AUserController::AUserController() {
 void AUserController::BeginPlay() {
 	Super::BeginPlay();
 	controlledPawn = Cast<APlayerShip>(GetPawn());
-	if(IsValid(controlledPawn))
-		commandInterface = Cast<ICommandable>(controlledPawn);
+	if (IsValid(controlledPawn) && controlledPawn->StaticClass()->ImplementsInterface(UCommandable::StaticClass())) {
+		commandInterface.SetObject(controlledPawn);
+		commandInterface.SetInterface(Cast<ICommandable>(controlledPawn));
+	}
+	SetAudioListenerOverride(playerViewpointCamera, FVector::ZeroVector, FRotator::ZeroRotator);
 	controlledHUD = Cast<ASpaceHUDBase>(GetHUD());
 
 	traceParams = FCollisionQueryParams(FName("PressClick"), true, this);
@@ -85,8 +104,7 @@ void AUserController::SetupInputComponent() {
 
 #pragma region Input Binding - Action
 void AUserController::ControlCamReset() {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlViewPointOrigin();
+	playerViewpointArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 }
 
 void AUserController::ControlTargetSpeed(float value) {
@@ -134,25 +152,32 @@ void AUserController::KeyUndock() {
 
 #pragma region Input Binding - Asix
 void AUserController::ControlCamX(float value) {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlViewPointX(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
+	playerViewpointArm->AddWorldOffset(FVector(0.0f, value * _define_CamZoomFactor, 0.0f));
 }
 void AUserController::ControlCamY(float value) {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlViewPointY(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
+	playerViewpointArm->AddWorldOffset(FVector(-value * _define_CamZoomFactor, 0.0f, 0.0f));
 }
 
 void AUserController::ControlMouseX(float value) {
-	if (IsValid(controlledPawn) && mouseLeftClicked == true)
-		controlledPawn->ControlCamRotateX(value);
+	if (!mouseLeftClicked)
+		return;
+	value *= _define_CameraSensitivityultipleRotate;
+	playerViewpointArm->RelativeRotation.Pitch = FMath::Clamp(playerViewpointArm->RelativeRotation.Pitch + value, -75.0f, -10.0f);
+	playerViewpointArm->RelativeRotation.Roll = 0.0f;
 }
 void AUserController::ControlMouseY(float value) {
-	if (IsValid(controlledPawn) && mouseLeftClicked == true)
-		controlledPawn->ControlCamRotateY(value);
+	if (!mouseLeftClicked)
+		return;
+	value *= _define_CameraSensitivityultipleRotate;
+	playerViewpointArm->RelativeRotation.Yaw -= value;
+	playerViewpointArm->RelativeRotation.Pitch = FMath::Clamp(playerViewpointArm->RelativeRotation.Pitch + value, -75.0f, -10.0f);
+	playerViewpointArm->RelativeRotation.Roll = 0.0f;
 }
 void AUserController::ControlMouseWheel(float value) {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlCamDistance(value * 10.0f);
+
+	//차후 Tick이나 기타 등등의 방법을 동원해서 Damp Lerp로 목표거리에 도달하도록 할 것. 왜 bEnableCameraLag로는 Lerp가 안되는가...
+	value *= _define_CamZoomFactor;
+	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value, playerCameraMinDistance, playerViewpointArm->CameraLagMaxDistance);
 }
 
 void AUserController::ClickPressMouseLeft(FKey key) {
@@ -206,16 +231,24 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 		if(IsValid(controlledHUD))
 			controlledHUD->OffUIInteraction();
 		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
-		if(commandInterface != nullptr)
+
+		if(commandInterface != nullptr && IsValid(commandInterface.GetObjectRef()) && commandInterface.GetInterface() != nullptr)
 			commandInterface->CommandMoveToPosition(mouseXYPlane);
 	}
 }
 #pragma endregion
 
 #pragma region player flow control
+void AUserController::PlayerShipLengthChange(const int halfLength) {
+	playerCameraMinDistance = FMath::Clamp(halfLength * _define_CameraDinstanceMINFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
+	playerViewpointArm->CameraLagMaxDistance = FMath::Clamp(halfLength * _define_CameraDinstanceMAXFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
+
+	playerViewpointArm->CameraLagSpeed = FMath::Abs(playerViewpointArm->CameraLagMaxDistance - playerCameraMinDistance) * FMath::Clamp(1.0f - _define_CameraLerpMultipleZoom, 0.0f, 1.0f);
+}
+
 void AUserController::PlayerInterAction(const InteractionType interaction) {
 
-	if (!IsValid(controlledPawn) || commandInterface == nullptr)
+	if (!IsValid(controlledPawn) || (commandInterface != nullptr && IsValid(commandInterface.GetObjectRef()) && commandInterface.GetInterface() != nullptr))
 		return;
 
 	TScriptInterface<IStructureable> _sObj;

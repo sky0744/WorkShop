@@ -27,18 +27,17 @@ void ASpaceState::BeginPlay() {
 	currentShipCapacity = 0;
 
 	if (UGameplayStatics::GetCurrentLevelName(GetWorld()).Equals("MainTitle", ESearchCase::IgnoreCase)) {
-		ev_BGMCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("SoundCue'/Game/Resource/Sound/SoundAsset/SoundCue/MainTitle/MainTitle_Cue.MainTitle_Cue'")));
+		ev_BGMCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("SoundCue'/Game/Resource/Sound/RawSound/MainTitle_Cue.MainTitle_Cue'")));
 		if (ev_BGMComponent->IsValidLowLevelFast() && ev_BGMCue->IsValidLowLevelFast()) {
 			ev_BGMComponent->SetSound(ev_BGMCue);
 			ev_BGMComponent->Play();
 		}
 	}
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->AddUILogMessage(FText::FromString("Welcome To Project Naus!"), FColor::White);
 }
 
 void ASpaceState::Tick(float DeltaSecondes) {
 	Super::Tick(DeltaSecondes);
-
-	GEngine->AddOnScreenDebugMessage(-1, DeltaSecondes, FColor::Blue, "is BGM Playing : " + ev_BGMComponent->IsPlaying() ? "True" : "False");
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (currentSectorInfo == nullptr || !IsValid(_tempInstance))

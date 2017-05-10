@@ -30,6 +30,7 @@ AProjectiles::AProjectiles()
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0;
+	activateTime = 0.0f;
 }
 
 // Called when the game starts or when spawned
@@ -51,14 +52,15 @@ void AProjectiles::Tick(float DeltaTime) {
 
 	//유도탄인 경우
 	else {
-		if (activateTime < 2.0f)
+		if (activateTime < coldDelayTime)
 			currentVelocity = setedVelocity * coldVelocityFactor;
-		//유도탄이며 발사 2초 이상, 타겟이 유효 -> 유도 및 발사 속도를 유지하며 진행
+		//발사 지연시간 후, 타겟이 유효 -> 유도 및 발사 속도를 최대치까지 증가시키며 진행
 		else if (IsValid(target)) {
-			currentVelocity = FMath::Clamp(currentVelocity + coldAcceleration * DeltaTime, _define_ProjectileVelocityMIN, setedVelocity);
+			currentVelocity = FMath::Clamp(currentVelocity + setedVelocity * coldAcceleration * DeltaTime, _define_ProjectileVelocityMIN, setedVelocity);
 			SetActorRotation(FMath::Lerp(GetActorRotation(), (target->GetActorLocation() - GetActorLocation()).Rotation(), 0.1f));
 		}
-		projectileMovementSound->PitchMultiplier = currentVelocity / setedVelocity;
+		if(projectileMovementSound)
+			projectileMovementSound->PitchMultiplier = currentVelocity / setedVelocity;
 		AddActorWorldOffset(GetActorForwardVector() * currentVelocity * DeltaTime, false);
 	}
 }
@@ -98,22 +100,27 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	coldVelocityFactor = FMath::Clamp(_tempProjectileData.ColdLaunchVelocityFactor, _define_ProjectileColdLaunchVelocityMIN, _define_ProjectileColdLaunchVelocityMAX);
 	coldAcceleration = FMath::Clamp(_tempProjectileData.ColdLaunchAcceleration, _define_ProjectileColdLaunchAccelMIN, _define_ProjectileColdLaunchAccelMAX);
 	coldDelayTime = FMath::Clamp(_tempProjectileData.ColdLaunchDelayTime, _define_ProjectileColdLaunchDelayMIN, _define_ProjectileColdLaunchDelayMAX);
-	 
-	projectileShotSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxShotPath.ToString()));
-	projectileMovementSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxMovementPath.ToString()));
-	projectileHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxHitPath.ToString()));
-
-	if (projectileShotSound) {
-		projectileShotAudio->SetSound(projectileShotSound);
-		projectileShotAudio->Play();
+	
+	if (_tempProjectileData.SfxShotPath.Compare("None") != 0) {
+		projectileShotSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxShotPath.ToString()));
+		if (projectileShotSound) {
+			projectileShotAudio->SetSound(projectileShotSound);
+			projectileShotAudio->Play();
+		}
 	}
-	if (projectileMovementSound) {
-		projectileMovementAudio->SetSound(projectileMovementSound);
-		projectileMovementAudio->VolumeMultiplier = 0.0f;
-		projectileMovementAudio->Play();
+	if (_tempProjectileData.SfxMovementPath.Compare("None") != 0) {
+		projectileMovementSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxMovementPath.ToString()));
+		if (projectileMovementSound) {
+			projectileMovementAudio->SetSound(projectileMovementSound);
+			projectileMovementAudio->VolumeMultiplier = 0.0f;
+			projectileMovementAudio->Play();
+		}
 	}
-	if (projectileHitSound)
-		projectileHitAudio->SetSound(projectileHitSound);
+	if (_tempProjectileData.SfxHitPath.Compare("None") != 0) {
+		projectileHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxHitPath.ToString()));
+		if (projectileHitSound)
+			projectileHitAudio->SetSound(projectileHitSound);
+	}
 
 	if (_tempItemData.Type == ItemType::Ammo_Missile) {
 		isHoming = true;
@@ -122,7 +129,7 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 		isHoming = false;
 
 	projectileMesh->IgnoreActorWhenMoving(projectileOwner, true);
-	SetLifeSpan(FMath::Clamp(_tempItemData.LifeTime * lifetimeMultiple, _define_ProjectileLifeTimeMIN, _define_ProjectileLifeTimeMAX));
+	SetLifeSpan(FMath::Clamp(_tempItemData.LifeTime * (1.0f + lifetimeMultiple), _define_ProjectileLifeTimeMIN, _define_ProjectileLifeTimeMAX));
 }
 
 Faction AProjectiles::GetLaunchingFaction() const{

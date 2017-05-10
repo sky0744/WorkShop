@@ -21,11 +21,6 @@ APlayerShip::APlayerShip() {
 	objectMovement->SetPlaneConstraintEnabled(true);
 	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
 
-	playerViewpointArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FixArm"));
-	playerViewpointCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FixedCamera"));
-	playerViewpointArm->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
-	playerViewpointCamera->SetupAttachment(playerViewpointArm, playerViewpointArm->GetAttachSocketName());
-
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
@@ -50,16 +45,6 @@ void APlayerShip::BeginPlay()
 		Destroy();
 	}
 	traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
-
-	playerViewpointArm->AddWorldRotation(FRotator(-45.0f, 0.0f, 0.0f));
-	playerViewpointArm->CameraLagMaxDistance = 1000.0f;
-	playerViewpointArm->bEnableCameraRotationLag = true;
-	playerViewpointArm->bEnableCameraLag = true;
-	playerViewpointArm->CameraLagSpeed = 100.0f;
-	playerViewpointArm->CameraRotationLagSpeed = 7.0f;
-	playerViewpointArm->bAbsoluteRotation = true;
-	playerViewpointArm->bDoCollisionTest = false;
-	playerViewpointArm->bUsePawnControlRotation = false;
 
 	sShipID = -1;
 	checkTime = 0.0f;
@@ -289,7 +274,6 @@ bool APlayerShip::InitObject(const int objectId) {
 	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
-	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CamDistanceMAX, _tempShipData.LengthToLongAsix * 10.0f);
 
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -299,7 +283,9 @@ bool APlayerShip::InitObject(const int objectId) {
 	sMaxRotateRate = FMath::Clamp(_tempShipData.MaxRotateRate, _define_StatRotateMIN, _define_StatRotateMAX);
 	sRotateAcceleration = FMath::Clamp(_tempShipData.RotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 	sRotateDeceleration = FMath::Clamp(_tempShipData.RotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
-
+	
+	if (IsValid(Controller) && Controller->IsA(AUserController::StaticClass()))
+		Cast<AUserController>(Controller)->PlayerShipLengthChange(lengthToLongAsix * 0.5f);
 	if (TotalStatsUpdate() == false)
 		return false;
 
@@ -1121,33 +1107,6 @@ void APlayerShip::GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo) const {
 	targetModuleAmmo.Init(0, slotTargetModule.Num());
 	for (int index = 0; index < targetModuleAmmo.Num(); index++) 
 		targetModuleAmmo[index] = slotTargetModule[index].ammo;
-}
-
-void APlayerShip::ControlCamRotateX(const float factorX) {
-	//playerViewpointArm->AddRelativeRotation(FRotator(0.0f, factorX, 0.0f) * GetWorld()->DeltaTimeSeconds * 5.0f);
-	//playerViewpointArm->SetWorldRotation(FRotator(FMath::ClampAngle(playerViewpointArm->GetComponentRotation().Pitch, -75.0f, -10.0f), playerViewpointArm->GetComponentRotation().Yaw, 0.0f));
-}
-
-void APlayerShip::ControlCamRotateY(const float factorY) {
-	playerViewpointArm->AddRelativeRotation(FRotator(-factorY, 0.0f, 0.0f) * GetWorld()->DeltaTimeSeconds * 5.0f);
-	playerViewpointArm->SetWorldRotation(FRotator(FMath::ClampAngle(playerViewpointArm->GetComponentRotation().Pitch, -75.0f, -10.0f), playerViewpointArm->GetComponentRotation().Yaw, 0.0f));
-}
-
-void APlayerShip::ControlCamDistance(const float value) {
-	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CamZoomFactor * lengthToLongAsix,
-		FMath::Max(_define_CamDistanceMIN, lengthToLongAsix), playerViewpointArm->CameraLagMaxDistance);
-}
-
-void APlayerShip::ControlViewPointX(const float value) {
-	playerViewpointArm->AddWorldOffset(FVector(0.0f, value * _define_CamZoomFactor, 0.0f));
-}
-
-void APlayerShip::ControlViewPointY(const float value) {
-	playerViewpointArm->AddWorldOffset(FVector(-value * _define_CamZoomFactor, 0.0f, 0.0f));
-}
-
-void APlayerShip::ControlViewPointOrigin() {
-	playerViewpointArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 }
 
 void APlayerShip::SetTargetSpeed(const float value) {

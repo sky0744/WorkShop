@@ -82,6 +82,8 @@ public:
 #pragma region player flow control
 public:
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
+		void PlayerShipLengthChange(const int halfLength);
+	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void PlayerInterAction(const InteractionType interaction);
 
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
@@ -99,10 +101,14 @@ public:
 
 #pragma region Components & Variables
 private:
-	ASpaceHUDBase* controlledHUD;
-	APlayerShip* controlledPawn;
-	ICommandable* commandInterface;
-	ASpaceObject* tObj;
+	UPROPERTY()
+		ASpaceHUDBase* controlledHUD;
+	UPROPERTY()
+		APlayerShip* controlledPawn;
+	UPROPERTY()
+		TScriptInterface<ICommandable> commandInterface;
+	UPROPERTY()
+		ASpaceObject* tObj;
 
 	FVector mousePositionInWorld;
 	FVector mouseDirectionInWorld;
@@ -115,5 +121,17 @@ private:
 	FCollisionQueryParams traceParams;
 	FHitResult hitResult;
 	FVector warpLocation;
+#pragma endregion
+
+#pragma region Player Camera Components & Variables
+	UPROPERTY(VisibleAnyWhere, Category = "User Camera")
+		USpringArmComponent* playerViewpointArm;
+	UPROPERTY(VisibleAnyWhere, Category = "User Camera")
+		UCameraComponent* playerViewpointCamera;
+
+	float playerCameraMinDistance;
+	//카메라 최대 거리 = playerViewpointArm->CameraLagMaxDistance
+	//float playerCameraMaxDistance;
+	float currentZoomDamper;
 #pragma endregion
 };

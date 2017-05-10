@@ -72,20 +72,6 @@ public:
 		virtual void GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlCamRotateX(const float factorX);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlCamRotateY(const float factorY);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlCamDistance(const float value);
-
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlViewPointX(const float value);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlViewPointY(const float value);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlViewPointOrigin();
-
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetTargetSpeed(const float value);
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetAcceleration(const float value);
@@ -177,10 +163,6 @@ private:
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
 		UFloatingPawnMovement* objectMovement;
-	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
-		USpringArmComponent* playerViewpointArm;
-	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
-		UCameraComponent* playerViewpointCamera;
 #pragma endregion
 
 #pragma region Variables
