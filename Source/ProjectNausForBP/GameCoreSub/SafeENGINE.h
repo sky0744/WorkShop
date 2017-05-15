@@ -29,13 +29,14 @@ const float _define_SPtoRelationFactorMAX = 0.005f;
 const float _define_LimitApplyRelationPerOnceMIN = -2.0f;
 const float _define_LimitApplyRelationPerOnceMAX = 2.0f;
 
-const float _define_SectorRefreshTime = 1.0f;
+const float _define_SectorRefreshTime = 60.0f;
 const float _define_ItemRefreshChanceMIN = 0.0f;
 const float _define_ItemRefreshChanceMAX = 100.0f;
 const float _define_RegenShipFactor = 0.025f;
 #pragma endregion
 
-#pragma region Constant Value UserState
+#pragma region Constant Value In UserState
+//플레이어 데이터 Const
 const int _define_SkillLevelMIN = 0;
 const int _define_SkillLevelMAX = 5;
 
@@ -46,9 +47,20 @@ const float _define_RenownMIN = -1000.0f;
 const float _define_RenownMAX = 1000.0f;
 const float _define_SPToRenownHostile = 0.01f;
 const float _define_SPToRenownNotHostile = -0.05f;
-#pragma endregion
 
-#pragma region Constant Value In UserState
+//플레이어 카메라 컨트롤 Const
+const float _define_CameraPitchMIN = -10.0f;
+const float _define_CameraPitchMAX = -75.0f;
+const float _define_CameraSensitivityultipleRotate = 20.0f;
+const float _define_CameraSensitivityultipleMovement = 20.0f;
+const float _define_CameraDinstanceMIN = 100.0f;
+const float _define_CameraDinstanceMAX = 10000.0f;
+const float _define_CameraDinstanceMINFactor = 1.0f;
+const float _define_CameraDinstanceMAXFactor = 10.0f;
+const float _define_CameraSensitivityMultipleZoom = 0.2f;
+const float _define_CameraLerpMultipleZoom = 0.98f;
+
+//환경 설정 ini Const
 const float _define_ev_SoundVolumeMIN = 0.0f;
 const float _define_ev_SoundVolumeMAX = 1.0f;
 #pragma endregion
@@ -65,9 +77,6 @@ const float _define_ModuleANDPathTick = 0.5f;
 const int _define_StatModuleSlotMIN = 0;
 const int _define_StatModuleSlotMAX = 8;
 
-const float _define_CamDistanceMIN = 100.0f;
-const float _define_CamDistanceMAX = 5000.0f;
-const float _define_CamZoomFactor = 0.05f;
 const float _define_StatLengthMIN = 10.0f;
 const float _define_StatLengthMAX = 10000.0f;
 const float _define_StatRadarRangeMIN = 10.0f;
@@ -244,7 +253,7 @@ struct PROJECTNAUSFORBP_API FItem
 	GENERATED_USTRUCT_BODY()
 public:
 	FItem(int id = 0, int amount = 0)
-		: itemID(FMath::Clamp(id, 0, 10000))
+		: itemID(id)
 		, itemAmount(amount) {}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Instance Item Data")

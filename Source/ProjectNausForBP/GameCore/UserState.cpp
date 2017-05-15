@@ -235,7 +235,7 @@ void AUserState::PlayerDeath() {
 		else _Repositioning->position = FVector2D::ZeroVector;
 	}
 	UGameplayStatics::SaveGameToSlot(_Repositioning, "SaveGame", 0);
-	UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
+	//UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 }
 void AUserState::PlayerDeathProcess() {
 

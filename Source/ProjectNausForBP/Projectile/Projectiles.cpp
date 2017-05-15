@@ -5,9 +5,8 @@
 
 
 // Sets default values
-AProjectiles::AProjectiles()
-{
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+AProjectiles::AProjectiles() {
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 
 	projectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	RootComponent = projectileMesh;
@@ -20,21 +19,24 @@ AProjectiles::AProjectiles()
 	projectileHitSensor->OnComponentBeginOverlap.AddDynamic(this, &AProjectiles::OnCollisionActor);
 
 	projectileShotAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileShot"));
+	projectileShotAudio->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	projectileShotAudio->bAutoActivate = false;
 	projectileMovementAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileMovement"));
+	projectileShotAudio->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	projectileMovementAudio->bAutoActivate = false;
 	projectileHitAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileHit"));
+	projectileShotAudio->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	projectileHitAudio->bAutoActivate = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
 	PrimaryActorTick.TickInterval = 0.0;
+	activateTime = 0.0f;
 }
 
 // Called when the game starts or when spawned
-void AProjectiles::BeginPlay()
-{
+void AProjectiles::BeginPlay() {
 	Super::BeginPlay();
 }
 
@@ -46,25 +48,27 @@ void AProjectiles::Tick(float DeltaTime) {
 	//유도탄이 아닌 경우 -> 현재 방향 및 발사 속도를 유지하며 진행
 	if (!isHoming) {
 		AddActorWorldOffset(GetActorForwardVector() * setedVelocity * DeltaTime, false);
-		projectileMovementAudio->VolumeMultiplier = 1.0f;
+		if (projectileMovementAudio)
+			projectileMovementAudio->VolumeMultiplier = 1.0f;
 	}
 
 	//유도탄인 경우
 	else {
-		if (activateTime < 2.0f)
+		if (activateTime < coldDelayTime)
 			currentVelocity = setedVelocity * coldVelocityFactor;
-		//유도탄이며 발사 2초 이상, 타겟이 유효 -> 유도 및 발사 속도를 유지하며 진행
+		//발사 지연시간 후, 타겟이 유효 -> 유도 및 발사 속도를 최대치까지 증가시키며 진행
 		else if (IsValid(target)) {
 			currentVelocity = FMath::Clamp(currentVelocity + coldAcceleration * DeltaTime, _define_ProjectileVelocityMIN, setedVelocity);
 			SetActorRotation(FMath::Lerp(GetActorRotation(), (target->GetActorLocation() - GetActorLocation()).Rotation(), 0.1f));
 		}
-		projectileMovementSound->PitchMultiplier = currentVelocity / setedVelocity;
+		if (projectileMovementAudio)
+			projectileMovementAudio->PitchMultiplier = currentVelocity / setedVelocity;
 		AddActorWorldOffset(GetActorForwardVector() * currentVelocity * DeltaTime, false);
 	}
 }
 
 void AProjectiles::OnCollisionActor(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	if (IsValid(OtherActor) &&  OtherActor->IsA(ASpaceObject::StaticClass()) && OtherActor != projectileOwner) {
+	if (IsValid(OtherActor) && OtherActor->IsA(ASpaceObject::StaticClass()) && OtherActor != projectileOwner) {
 		UGameplayStatics::ApplyPointDamage(OtherActor, setedDamage, FVector::ForwardVector, SweepResult, nullptr, this, UDamageType::StaticClass());
 		if (projectileMovementAudio)
 			projectileMovementAudio->Stop();
@@ -88,7 +92,7 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempProjectileData.MeshPath.ToString()));
 	if (newMesh)
 		projectileMesh->SetStaticMesh(newMesh);
-	
+
 	launchedFaction = launchActor->GetFaction();
 	setedDamage = _tempItemData.Damage * damageMultiple;
 	projectileOwner = launchActor;
@@ -98,33 +102,39 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	coldVelocityFactor = FMath::Clamp(_tempProjectileData.ColdLaunchVelocityFactor, _define_ProjectileColdLaunchVelocityMIN, _define_ProjectileColdLaunchVelocityMAX);
 	coldAcceleration = FMath::Clamp(_tempProjectileData.ColdLaunchAcceleration, _define_ProjectileColdLaunchAccelMIN, _define_ProjectileColdLaunchAccelMAX);
 	coldDelayTime = FMath::Clamp(_tempProjectileData.ColdLaunchDelayTime, _define_ProjectileColdLaunchDelayMIN, _define_ProjectileColdLaunchDelayMAX);
-	 
-	projectileShotSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxShotPath.ToString()));
-	projectileMovementSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxMovementPath.ToString()));
-	projectileHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxHitPath.ToString()));
 
-	if (projectileShotSound) {
-		projectileShotAudio->SetSound(projectileShotSound);
-		projectileShotAudio->Play();
+	if (_tempProjectileData.SfxShotPath.Compare("None") != 0) {
+		projectileShotSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxShotPath.ToString()));
+		if (projectileShotSound) {
+			projectileShotAudio->SetSound(projectileShotSound);
+			projectileShotAudio->VolumeMultiplier = 1.0f;
+			projectileShotAudio->Play();
+		}
 	}
-	if (projectileMovementSound) {
-		projectileMovementAudio->SetSound(projectileMovementSound);
-		projectileMovementAudio->VolumeMultiplier = 0.0f;
-		projectileMovementAudio->Play();
+	if (_tempProjectileData.SfxMovementPath.Compare("None") != 0) {
+		projectileMovementSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxMovementPath.ToString()));
+		if (projectileMovementSound) {
+			projectileMovementAudio->SetSound(projectileMovementSound);
+			projectileMovementAudio->VolumeMultiplier = 0.0f;
+			projectileMovementAudio->Play();
+		}
 	}
-	if (projectileHitSound)
-		projectileHitAudio->SetSound(projectileHitSound);
+	if (_tempProjectileData.SfxHitPath.Compare("None") != 0) {
+		projectileHitSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, *_tempProjectileData.SfxHitPath.ToString()));
+		if (projectileHitSound)
+			projectileHitAudio->SetSound(projectileHitSound);
+	}
 
 	if (_tempItemData.Type == ItemType::Ammo_Missile) {
 		isHoming = true;
 		target = targetObject;
-	} else 
+	} else
 		isHoming = false;
 
 	projectileMesh->IgnoreActorWhenMoving(projectileOwner, true);
-	SetLifeSpan(FMath::Clamp(_tempItemData.LifeTime * lifetimeMultiple, _define_ProjectileLifeTimeMIN, _define_ProjectileLifeTimeMAX));
+	SetLifeSpan(FMath::Clamp(_tempItemData.LifeTime * (1.0f + lifetimeMultiple), _define_ProjectileLifeTimeMIN, _define_ProjectileLifeTimeMAX));
 }
 
-Faction AProjectiles::GetLaunchingFaction() const{
+Faction AProjectiles::GetLaunchingFaction() const {
 	return launchedFaction;
 }

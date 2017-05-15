@@ -33,12 +33,11 @@ void ASpaceState::BeginPlay() {
 			ev_BGMComponent->Play();
 		}
 	}
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->AddUILogMessage(FText::FromString("Welcome To Project Naus!"), FColor::White);
 }
 
 void ASpaceState::Tick(float DeltaSecondes) {
 	Super::Tick(DeltaSecondes);
-
-	GEngine->AddOnScreenDebugMessage(-1, DeltaSecondes, FColor::Blue, "is BGM Playing : " + ev_BGMComponent->IsPlaying() ? "True" : "False");
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (currentSectorInfo == nullptr || !IsValid(_tempInstance))

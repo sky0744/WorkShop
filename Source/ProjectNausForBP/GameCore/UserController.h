@@ -13,14 +13,13 @@
  * 
  */
 UCLASS()
-class PROJECTNAUSFORBP_API AUserController : public APlayerController
-{
+class PROJECTNAUSFORBP_API AUserController : public APlayerController {
 	GENERATED_BODY()
 public:
 	AUserController();
 #pragma region Event Calls
 protected:
-	virtual void BeginPlay() override;	
+	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaSeconds) override;
 	virtual void SetupInputComponent() override;
 #pragma endregion
@@ -99,10 +98,14 @@ public:
 
 #pragma region Components & Variables
 private:
-	ASpaceHUDBase* controlledHUD;
-	APlayerShip* controlledPawn;
-	ICommandable* commandInterface;
-	ASpaceObject* tObj;
+	UPROPERTY()
+		ASpaceHUDBase* controlledHUD;
+	UPROPERTY()
+		APlayerShip* controlledPawn;
+	UPROPERTY()
+		TScriptInterface<ICommandable> commandInterface;
+	UPROPERTY()
+		ASpaceObject* tObj;
 
 	FVector mousePositionInWorld;
 	FVector mouseDirectionInWorld;

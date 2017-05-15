@@ -72,20 +72,6 @@ public:
 		virtual void GetTargetModuleAmmo(TArray<FItem>& targetModuleAmmo) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlCamRotateX(const float factorX);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlCamRotateY(const float factorY);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlCamDistance(const float value);
-
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlViewPointX(const float value);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlViewPointY(const float value);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		virtual void ControlViewPointOrigin();
-
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetTargetSpeed(const float value);
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual void SetAcceleration(const float value);
@@ -98,6 +84,21 @@ public:
 		virtual void SettingAmmo(const int selectedAmmoID);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Call to Player Ship")
 		virtual bool ToggleActiveModule(const int slotIndex);
+
+	UCameraComponent* GetCamera();
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlCamRotateX(const float factorX);
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlCamRotateY(const float factorY);
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlCamDistance(const float value);
+
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlViewPointX(const float value);
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlViewPointY(const float value);
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlViewPointOrigin();
 #pragma endregion
 
 #pragma region Interface Implementation : ICommandable

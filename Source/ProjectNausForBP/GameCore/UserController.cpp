@@ -38,8 +38,13 @@ AUserController::AUserController() {
 void AUserController::BeginPlay() {
 	Super::BeginPlay();
 	controlledPawn = Cast<APlayerShip>(GetPawn());
-	if(IsValid(controlledPawn))
-		commandInterface = Cast<ICommandable>(controlledPawn);
+	if (IsValid(controlledPawn)) {
+		SetAudioListenerOverride(controlledPawn->GetCamera(), FVector::ZeroVector, FRotator::ZeroRotator);
+		if (controlledPawn->StaticClass()->ImplementsInterface(UCommandable::StaticClass())) {
+			commandInterface.SetObject(controlledPawn);
+			commandInterface.SetInterface(Cast<ICommandable>(controlledPawn));
+		}
+	}
 	controlledHUD = Cast<ASpaceHUDBase>(GetHUD());
 
 	traceParams = FCollisionQueryParams(FName("PressClick"), true, this);
