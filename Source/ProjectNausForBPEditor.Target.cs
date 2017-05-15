@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e1ba9902c8bd9f27b49a3dafdb6a74367d3ca4619957fbaffd2c1a2ebdb6f136
-size 597
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+using System.Collections.Generic;
+
+public class ProjectNausForBPEditorTarget : TargetRules
+{
+	public ProjectNausForBPEditorTarget(TargetInfo Target)
+	{
+		Type = TargetType.Editor;
+	}
+
+	//
+	// TargetRules interface.
+	//
+
+	public override void SetupBinaries(
+		TargetInfo Target,
+		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
+		ref List<string> OutExtraModuleNames
+		)
+	{
+		OutExtraModuleNames.AddRange( new string[] { "ProjectNausForBP" } );
+	}
+}

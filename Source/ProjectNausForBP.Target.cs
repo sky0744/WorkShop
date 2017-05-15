@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8fa2d6dc437ed1a781049bf674ffcbca63fb433c395a87378cdc17e2f85d1d5e
-size 583
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+using System.Collections.Generic;
+
+public class ProjectNausForBPTarget : TargetRules
+{
+	public ProjectNausForBPTarget(TargetInfo Target)
+	{
+		Type = TargetType.Game;
+	}
+
+	//
+	// TargetRules interface.
+	//
+
+	public override void SetupBinaries(
+		TargetInfo Target,
+		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
+		ref List<string> OutExtraModuleNames
+		)
+	{
+		OutExtraModuleNames.AddRange( new string[] { "ProjectNausForBP" } );
+	}
+}
