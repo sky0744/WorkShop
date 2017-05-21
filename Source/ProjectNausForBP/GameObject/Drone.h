@@ -93,14 +93,8 @@ private:
 	DroneRuleType droneRuleType;
 	BehaviorState behaviorState;
 
-	float lengthToLongAsix;
-
-	FCollisionObjectQueryParams traceObjectParams;
-	FHitResult pathFindTraceResult;
-
 	FVector directionFactor;
 	FVector moveTargetVector;
-	FVector avoidancePathVector;
 	bool isNeedToDoAvoidance;
 
 	float maxShield;

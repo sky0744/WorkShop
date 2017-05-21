@@ -327,7 +327,6 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 
 					saver->rotation.Yaw = _nextSectorInfo->GateList[index].structureRotation.Yaw;
 					saver->position = _nextSectorInfo->GateList[index].structureLocation;
-					saver->position += FVector2D(USafeENGINE::GetRandomLocation(true) * (_tempStationData.LengthToLongAsix + _tempShipData.LengthToLongAsix) * 0.5f);
 					break;
 				}
 			}
@@ -569,33 +568,33 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 	//플레이어와 관련없는 팩션간 피아관계
 	if (requestor > Faction::PlayerFoundingFaction && target > Faction::PlayerFoundingFaction) {
 		switch (requestor) {
-		case Faction::PrimusEmpire:
+		case Faction::Empire:
 			switch (target) {
-			case Faction::ValenciaProtectorate:		_result = Peer::Ally;	break;
+			case Faction::Protectorate:				_result = Peer::Ally;	break;
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
 			}
 			break;
-		case Faction::FlorenceTradeCoalition:
+		case Faction::TradeCoalition:
 			switch (target) {
-			case Faction::FreeCitizenFederation:	_result = Peer::Ally;	break;
+			case Faction::CitizenFederation:		_result = Peer::Ally;	break;
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
 			}
 			break;
-		case Faction::FreeCitizenFederation:
+		case Faction::CitizenFederation:
 			switch (target) {
-			case Faction::FlorenceTradeCoalition:	_result = Peer::Ally;	break;
+			case Faction::TradeCoalition:			_result = Peer::Ally;	break;
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
 			}
-		case Faction::ValenciaProtectorate:
+		case Faction::Protectorate:
 			switch (target) {
-			case Faction::PrimusEmpire:				_result = Peer::Ally;	break;
+			case Faction::Empire:					_result = Peer::Ally;	break;
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
 			}
-		case Faction::HeartOfLiberty:
+		case Faction::LibertyAdvocacyNation:
 			switch (target) {
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
@@ -619,9 +618,9 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 			else return _result;
 
 			if (isRealRelation)
-				_relation = FMath::Clamp(factionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::PrimusEmpire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+				_relation = FMath::Clamp(factionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::Empire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
 			else
-				_relation = FMath::Clamp(tempFactionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::PrimusEmpire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+				_relation = FMath::Clamp(tempFactionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::Empire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
 		}
 		if (_relation >= _define_RelationThresholdAllyStrong)
 			_result = Peer::AllyStrong;

@@ -5,17 +5,6 @@
 
 AResource::AResource()
 {
-	objectMesh->SetCanEverAffectNavigation(true);
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
-
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
@@ -28,10 +17,7 @@ void AResource::BeginPlay()
 {
 	Super::BeginPlay();
 
-	asteroidRotator = FRotator();
-	asteroidRotator.Pitch = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
-	asteroidRotator.Yaw = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
-	asteroidRotator.Roll = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
+	asteroidRotator = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][Resource][Spawn] Spawn Finish!"));
 }
 
@@ -39,7 +25,7 @@ void AResource::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	AddActorLocalRotation(asteroidRotator);
+	SetActorRotation(FRotator(0.0f, GetActorRotation().Yaw + asteroidRotator, 0.0f));
 }
 
 float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -64,12 +50,6 @@ float AResource::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 }
 
 void AResource::BeginDestroy() {
-
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
-	}
-	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
@@ -111,16 +91,14 @@ bool AResource::InitObject(const int objectId) {
 			objectName = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "Rich {name}"), _tempResourceData.Name);
 		else objectName = _tempResourceData.Name;
 
-		UStaticMesh* _newMesh;
-		if(_tempResourceData.MeshPath.Num() > 0)
-			_newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempResourceData.MeshPath[FMath::RandRange(0, _tempResourceData.MeshPath.Num() - 1)].ToString()));
-		else 
-			_newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, TEXT("")));
-		if (_newMesh)
-			objectMesh->SetStaticMesh(_newMesh);
+		UPaperFlipbook* _newFlipBook;
+		if(_tempResourceData.SpritePath.Num() > 0)
+			_newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempResourceData.SpritePath[FMath::RandRange(0, _tempResourceData.SpritePath.Num() - 1)].ToString()));
+		else _newFlipBook = nullptr;
+		if (_newFlipBook)
+			objectFlipBook->SetFlipbook(_newFlipBook);
 
 		resourceType = _tempResourceData.Type;
-		lengthToLongAsix = _tempResourceData.LengthToLongAsix;
 
 		maxDurability = FMath::FRandRange(_tempResourceData.DurabilityRange.X, _tempResourceData.DurabilityRange.Y);
 		currentDurability = maxDurability;
@@ -143,7 +121,7 @@ float AResource::GetValue(const GetStatType statType) const {
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::maxHull:
 		_value = maxDurability;

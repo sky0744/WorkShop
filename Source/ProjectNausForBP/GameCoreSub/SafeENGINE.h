@@ -491,12 +491,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		FName MeshPath;
+		FName SpritePath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ship Data")
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<FSkill> RequireSkills;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		float RequireFactionRelation;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		Faction FactionOfProduction;
@@ -504,8 +506,6 @@ public:
 		ShipClass Shipclass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float ShipValue;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		float LengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float LengthRadarRange;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
@@ -623,7 +623,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		FName MeshPath;
+		FName SpritePath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
 		UTexture2D* Icon;
 
@@ -632,8 +632,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		StructureType Type;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float LengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float StrategicPoint;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
@@ -680,14 +678,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		TArray<FName> MeshPath;
+		TArray<FName> SpritePath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
 		UTexture2D* Icon;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		ResourceType Type;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float LengthToLongAsix;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FVector2D DurabilityRange;
@@ -713,12 +708,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		FName MeshPath;
+		FName SpritePath;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
 		UTexture2D* Icon;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		float LengthToLongAsix;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		float Durability;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")

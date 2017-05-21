@@ -6,17 +6,6 @@
 #include "PlayerShip.h"
 
 APlayerShip::APlayerShip() {
-	objectMesh->SetCanEverAffectNavigation(true);
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
-
 	objectMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("ObjectMovement"));
 	objectMovement->SetPlaneConstraintEnabled(true);
 	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
@@ -25,6 +14,16 @@ APlayerShip::APlayerShip() {
 	playerViewpointCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FixedCamera"));
 	playerViewpointArm->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
 	playerViewpointCamera->SetupAttachment(playerViewpointArm, playerViewpointArm->GetAttachSocketName());
+
+	playerViewpointArm->AddWorldRotation(FRotator(-45.0f, 0.0f, 0.0f));
+	playerViewpointArm->CameraLagMaxDistance = 1000.0f;
+	playerViewpointArm->bEnableCameraRotationLag = true;
+	playerViewpointArm->bEnableCameraLag = true;
+	playerViewpointArm->CameraLagSpeed = 100.0f;
+	playerViewpointArm->CameraRotationLagSpeed = 7.0f;
+	playerViewpointArm->bAbsoluteRotation = true;
+	playerViewpointArm->bDoCollisionTest = false;
+	playerViewpointArm->bUsePawnControlRotation = false;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -49,17 +48,6 @@ void APlayerShip::BeginPlay()
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerShip][Begin] Spawn Fail! this is not User's Ship!"));
 		Destroy();
 	}
-	traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
-
-	playerViewpointArm->AddWorldRotation(FRotator(-45.0f, 0.0f, 0.0f));
-	playerViewpointArm->CameraLagMaxDistance = 1000.0f;
-	playerViewpointArm->bEnableCameraRotationLag = true;
-	playerViewpointArm->bEnableCameraLag = true;
-	playerViewpointArm->CameraLagSpeed = 100.0f;
-	playerViewpointArm->CameraRotationLagSpeed = 7.0f;
-	playerViewpointArm->bAbsoluteRotation = true;
-	playerViewpointArm->bDoCollisionTest = false;
-	playerViewpointArm->bUsePawnControlRotation = false;
 
 	sShipID = -1;
 	checkTime = 0.0f;
@@ -73,7 +61,6 @@ void APlayerShip::Tick(float DeltaTime)
 	tempDeltaTime = DeltaTime;
 	checkTime += DeltaTime;
 	if (checkTime >_define_ModuleANDPathTick) {
-		CheckPath();
 		ModuleCheck();
 		checkTime = 0.0f;
 	}
@@ -88,14 +75,12 @@ void APlayerShip::Tick(float DeltaTime)
 	case BehaviorState::Move:
 		if (MoveDistanceCheck()) {
 			behaviorState = BehaviorState::Idle;
-			bIsStraightMove = true;
 			moveTargetVector = GetActorLocation() + GetActorForwardVector() * _define_SetDistanceToRotateForward;
 		}
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
 			targetObject = nullptr;
-			bIsStraightMove = true;
 			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
@@ -214,7 +199,6 @@ void APlayerShip::SetupPlayerInputComponent(class UInputComponent* inputComponen
 }
 
 void APlayerShip::BeginDestroy() {
-	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
@@ -253,9 +237,9 @@ bool APlayerShip::InitObject(const int objectId) {
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
 	objectName = _tempShipData.Name;
-	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-	if (_newMesh) 
-		objectMesh->SetStaticMesh(_newMesh);
+	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempShipData.SpritePath.ToString()));
+	if (_newFlipBook)
+		objectFlipBook->SetFlipbook(_newFlipBook);
 
 	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min(_tempShipData.SlotTarget, _tempShipData.HardPoints.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
 	slotTargetModule.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
@@ -286,10 +270,9 @@ bool APlayerShip::InitObject(const int objectId) {
 	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
-	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
-	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CameraDinstanceMAX, _tempShipData.LengthToLongAsix * _define_CameraDinstanceMAXFactor);
+	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CameraDinstanceMAX, objectCollision->GetScaledSphereRadius() * 0.5f * _define_CameraDinstanceMAXFactor);
 
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -315,7 +298,7 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::raderDistance:
 		_value = lengthRadarRange;
@@ -490,7 +473,6 @@ bool APlayerShip::TotalStatsUpdate() {
 	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
-	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -1286,8 +1268,8 @@ void APlayerShip::ControlCamRotateY(const float factorY) {
 void APlayerShip::ControlCamDistance(const float value) {
 	if (!playerViewpointArm)
 		return;
-	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CameraSensitivityMultipleZoom * lengthToLongAsix,
-		FMath::Max(_define_CameraDinstanceMIN, lengthToLongAsix), FMath::Min(_define_CameraDinstanceMAX, playerViewpointArm->CameraLagMaxDistance));
+	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CameraSensitivityMultipleZoom * objectCollision->GetScaledSphereRadius() * 0.5f,
+		FMath::Max(_define_CameraDinstanceMIN, objectCollision->GetScaledSphereRadius() * 0.5f), FMath::Min(_define_CameraDinstanceMAX, playerViewpointArm->CameraLagMaxDistance));
 }
 
 void APlayerShip::ControlViewPointX(const float value) {
@@ -1325,7 +1307,6 @@ void APlayerShip::CommandStop() {
 		behaviorState = BehaviorState::Idle;
 		setedTargetSpeed = 0.0f;
 		targetRotateRateFactor = 0.0f;
-		bIsStraightMove = false;
 	}
 }
 
@@ -1335,11 +1316,9 @@ bool APlayerShip::CommandMoveToPosition(FVector position) {
 
 		moveTargetVector = position;
 		targetObject = nullptr;
-		bIsStraightMove = true;
-		RequestPathUpdate();
 		behaviorState = BehaviorState::Move;
 		
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, lengthToLongAsix);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, objectCollision->GetScaledSphereRadius() * 0.5f);
 		return true; 
 	}
 	else return false;
@@ -1350,8 +1329,6 @@ bool APlayerShip::CommandMoveToTarget(ASpaceObject* target) {
 	if (CheckCanBehavior() == true) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMove] Receive Command Move! : %s"), *target->GetName());
 		targetObject = target;
-		bIsStraightMove = true;
-		RequestPathUpdate();
 		behaviorState = BehaviorState::Move; 
 		return true; 
 	}
@@ -1435,11 +1412,9 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 				Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
 			} else {
-				RequestPathUpdate();
 				behaviorState = BehaviorState::Docking;
 				UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
 			}
-			bIsStraightMove = true;
 			return true;
 		}
 		else {
@@ -1455,7 +1430,6 @@ bool APlayerShip::CommandUndock() {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandUndock] Receive Command Undock!"));
 		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(nullptr);
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIStationButton();
-		bIsStraightMove = true;
 		behaviorState = BehaviorState::Idle;	
 		return true;
 	}
@@ -1473,54 +1447,24 @@ bool APlayerShip::CommandLaunch(const TArray<int>& baySlot) {
 
 #pragma region Functions
 bool APlayerShip::MoveDistanceCheck() {
-	if (bIsStraightMove) {
-		targetVector = moveTargetVector;
-		realMoveFactor = targetVector - GetActorLocation();
-		DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
-		DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
-	}
-	else {
-		if (IsValid(targetObject))
-			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
- 
-		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 
-		moveTargetVector -= GetActorLocation();
-		moveTargetVector.Normalize();
-		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
-		DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
+	if (IsValid(targetObject))
+		moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, targetObject->GetValue(GetStatType::halfLength) + objectCollision->GetScaledSphereRadius() * 0.5f);
 
-		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
-		if (wayPoint.Num() > currentClosedPathIndex)
-			targetVector = wayPoint[currentClosedPathIndex];
-		else return false;
-
-		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
-			DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
-			if (wayPoint.Num() > index + 1)
-				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
-		}
-	}
-	targetVector.Z = 0.0f;
-	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
-	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+	moveTargetVector.Z = 0.0f;
+	
+	DrawDebugLine(GetWorld(), GetActorLocation(), moveTargetVector, FColor::Yellow, false, 0.1f, 0, 10.0f);
+	DrawDebugCircle(GetWorld(), moveTargetVector, objectCollision->GetScaledSphereRadius(), 40, FColor::Yellow, false, 0.1f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
 
 	//checks distance and Angle For start Acceleration.
-	if (nextPointDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(sMinAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
-		if (FMath::Abs(targetRotate.Yaw) < sStartAccelAngle)
+	if (remainDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(sMinAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+		if (FMath::Abs(moveTargetRotate.Yaw) < sStartAccelAngle)
 			setedTargetSpeed = targetSpeed * sMaxSpeed * (1.0f + moduleStatEngine);
 		else setedTargetSpeed = 0.0f;
 	}
-	else setedTargetSpeed = 0.0f;
-
-	//arrive to Destination. use upper of Nyquist Rate for high precision.
-	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
-		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
-	//if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
-	if (remainDistance < lengthToLongAsix * 0.25f) {
+	else  {
 		setedTargetSpeed = 0.0f;
-		currentClosedPathIndex = 0;
-		bIsStraightMove = false;
 		return true;
 	}
 	//arrive to Destination not yet.
@@ -1529,28 +1473,18 @@ bool APlayerShip::MoveDistanceCheck() {
 
 void APlayerShip::RotateCheck() {
 
-	if (bIsStraightMove) {
-		targetVector = moveTargetVector;
-	}
-	else {
-		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, wayPoint.Num() - 1);
-		if(wayPoint.IsValidIndex(currentClosedPathIndex))
-			targetVector = wayPoint[currentClosedPathIndex];
-		else return;
-	}
-	targetVector.Z = 0;
-	realMoveFactor = targetVector - GetActorLocation();
-	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
-	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
+	moveTargetVector.Z = 0;
+	moveTargetRotate = (moveTargetVector - GetActorLocation()).Rotation() - GetActorRotation();
+	RotationDot = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), moveTargetVector - GetActorLocation()));
 
-	if (nextPointOuter > 0.01f) {
-		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(sRotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
+	if (RotationDot > 0.01f) {
+		if (FMath::Abs(moveTargetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(sRotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
 			targetRotateRateFactor = sMaxRotateRate * (1.0f + moduleStatThruster) * rotateRateFactor;
 		else
 			targetRotateRateFactor = 0.0f;
 	}
-	else if (nextPointOuter < -0.01f) {
-		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(sRotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
+	else if (RotationDot < -0.01f) {
+		if (FMath::Abs(moveTargetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(sRotateDeceleration * rotateRateFactor * 2.0f, 1.0f, 9999.0f)))
 			targetRotateRateFactor = -sMaxRotateRate * (1.0f + moduleStatThruster) * rotateRateFactor;
 		else
 			targetRotateRateFactor = 0.0f;
@@ -1862,49 +1796,3 @@ const float APlayerShip::CalculatePowerGrid() const {
 }
 #pragma endregion
 
-#pragma region Path Finder
-/*
-* Check 1 : 전방 장애물 검사. 길이 : 오브젝트의 장축 * 2.0f + 1000.0f. 
-* Check 2 : 목표 지점까지의 장애물 검사. 거리 : 목표 지점까지
-* Check 1 또는 Check 2가 true일 때, RequestPathUpdate()를 호출하여 경로 재탐색.
-*/
-void APlayerShip::CheckPath() {
-	FVector _forTargetDirectionVector = moveTargetVector - GetActorLocation();
-	_forTargetDirectionVector.Normalize();
-
-	if (!CheckCanBehavior() || behaviorState == BehaviorState::Idle)
-		return;
-
-	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix * 1.2f)
-		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
-	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 1.2f)
-		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
-	
-	bIsStraightMove = !bMoveTargetHited;
-	if (!(!bMoveTargetHited || !bFrontHited))
-		RequestPathUpdate();
-}
-
-/*
-* 이동 명령 및 전방의 장애물이 확인되었을 때 호출.
-* NavMesh 기반 경로 요청.
-*/
-void APlayerShip::RequestPathUpdate() {
-	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
-	if (IsValid(targetObject)) {
-		moveTargetVector = targetObject->GetActorLocation();
-		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
-		moveTargetVector.Normalize();
-		moveTargetVector *= remainDistance;
-	}
-
-	waypointData = UNavigationSystem::GetCurrent(GetWorld())->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), moveTargetVector);
-	wayPoint = waypointData->PathPoints;
-	if (!waypointData)
-		return;
-	bIsStraightMove = false;
-	currentClosedPathIndex = 0;
-}
-#pragma endregion

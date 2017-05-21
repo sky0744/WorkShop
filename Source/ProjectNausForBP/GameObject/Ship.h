@@ -86,40 +86,14 @@ private:
 	void RotateCheck();
 	void Movement();
 	void ModuleCheck();
-
 	bool CheckCanBehavior() const;
-#pragma endregion
-
-#pragma region Path Finder
-private:
-	void CheckPath();
-	void RequestPathUpdate();
-
-	UPROPERTY()
-		TArray<FVector> wayPoint;
-	//성능 테스트를 위해 전역변수 <-> 지역변수 스트레스 테스트 할 것임
-	UPROPERTY()
-		UNavigationPath* waypointData;
-	FCollisionObjectQueryParams traceObjectParams;
-	FCollisionQueryParams traceParams;
-	FHitResult pathFindTraceResult;
-	TArray<FHitResult> frontTraceResult;
-	float checkTime;
-	float tempDeltaTime;
 
 	FVector moveTargetVector;
-	FVector targetVector;
-	FVector realMoveFactor;
-	FRotator targetRotate;
-	float resultOuter;
-
-	int currentClosedPathIndex;
+	FRotator moveTargetRotate;
+	float RotationDot;
 	float remainDistance;
-	bool bIsStraightMove;
-	bool bIsFirstCheckStraight;
-	float nextPointDistance;
-	float nextPointOuter;
-	//여기까지
+	float checkTime;
+	float tempDeltaTime;
 #pragma endregion
 
 #pragma region Components
@@ -138,7 +112,6 @@ private:
 	BehaviorType behaviorType;
 	BehaviorState behaviorState;
 
-	float lengthToLongAsix;
 	float lengthRadarRange;
 	float lengthWeaponRange;
 	float bounty;

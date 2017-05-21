@@ -7,16 +7,18 @@
 
 ASpaceObject::ASpaceObject()
 {
-	objectMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ObjectMesh"));
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
+	objectCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ObjectCollision"));
+	objectCollision->SetEnableGravity(false);
+	objectCollision->SetCollisionProfileName(TEXT("SpaceObject"));
+	objectCollision->BodyInstance.DOFMode = EDOFMode::XYPlane;
+	objectCollision->Mobility = EComponentMobility::Movable;
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	RootComponent = objectCollision;
+
+	objectFlipBook = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("ObjectFlipbook"));
+	objectFlipBook->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	objectFlipBook->bAbsoluteRotation = true;
+	objectFlipBook->SetWorldRotation(FRotator(0.0f, 90.0f, -90.0f));
 
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -24,7 +26,6 @@ ASpaceObject::ASpaceObject()
 	PrimaryActorTick.TickInterval = 0.0f;
 
 	objectID = -1;
-	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 }
 
 #pragma region Event Calls
@@ -37,20 +38,20 @@ void ASpaceObject::BeginPlay()
 		if(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass()) && this != UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->AddToObjectList(this);
 	}
-	lengthToLongAsix = 0.0f;
-
-	float tempX = FMath::FRandRange(0.001f, 0.01f);
-	if (FMath::RandBool())
-		tempX *= -1.0f;
-	float tempY = FMath::FRandRange(0.001f, 0.01f);
-	if (FMath::RandBool())
-		tempY *= -1.0f;
-	AddActorWorldOffset(FVector(tempX, tempY, 0.0f));
 }
 
 void ASpaceObject::Tick( float DeltaTime )
 {
 	Super::Tick(DeltaTime);
+
+	if (objectFlipBook->GetFlipbookLengthInFrames() > 1) {
+		objectYaw = GetActorRotation().Yaw;
+		objectYaw += (360.0f / objectFlipBook->GetFlipbookLengthInFrames()) * 0.5f;
+		if (objectYaw < 0.0f)
+			objectYaw += 360.0f;
+		objectYaw /= (360.0f / objectFlipBook->GetFlipbookLengthInFrames());
+		objectFlipBook->SetNewTime(objectYaw);
+	}
 }
 
 float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -100,9 +101,11 @@ float ASpaceObject::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 
 void ASpaceObject::BeginDestroy() {
 
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
+	if (GetWorld()) {
+		if(this->GetObjectType() == ObjectType::Ship && IsValid(UGameplayStatics::GetGameState(GetWorld())) && UGameplayStatics::GetGameState(GetWorld())->IsA(ASpaceState::StaticClass()))
+			Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
+		if(IsValid(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass()))
+			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
 	}
 	UnregisterAllComponents();
 	Super::BeginDestroy();
@@ -147,7 +150,7 @@ float ASpaceObject::GetValue(const GetStatType statType) const {
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::maxHull:
 		_value = maxDurability;

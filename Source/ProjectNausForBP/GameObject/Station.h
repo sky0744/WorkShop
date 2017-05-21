@@ -75,7 +75,6 @@ public:
 protected:
 	FStructureInfo* structureInfo;
 	bool isInited;
-	float lengthToLongAsix;
 
 	float maxShield;
 	float rechargeShield;

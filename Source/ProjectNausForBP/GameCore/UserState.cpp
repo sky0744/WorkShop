@@ -30,13 +30,13 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	sUserName = userName;
 	int _select = 4;
 
-	if (selectedFaction == Faction::PrimusEmpire)
+	if (selectedFaction == Faction::Empire)
 		_select = 0;
-	else if (selectedFaction == Faction::FreeCitizenFederation)
+	else if (selectedFaction == Faction::CitizenFederation)
 		_select = 1;
-	else if (selectedFaction == Faction::FlorenceTradeCoalition)
+	else if (selectedFaction == Faction::TradeCoalition)
 		_select = 2;
-	else if (selectedFaction == Faction::ValenciaProtectorate)
+	else if (selectedFaction == Faction::Protectorate)
 		_select = 3;
 
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());

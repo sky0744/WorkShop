@@ -7,17 +7,6 @@
 // Sets default values
 ACargoContainer::ACargoContainer()
 {
-	objectMesh->SetCanEverAffectNavigation(true);
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 50.0f;
-	objectMesh->BodyInstance.AngularDamping = 500.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
-
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 	PrimaryActorTick.bTickEvenWhenPaused = false;
@@ -30,18 +19,14 @@ void ACargoContainer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	containerRotator = FRotator();
-	containerRotator.Pitch = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
-	containerRotator.Yaw = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
-	containerRotator.Roll = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
+	containerRotator = FMath::FRandRange(_define_RandomRotateSpeedMIN, _define_RandomRotateSpeedMAX);
 	UE_LOG(LogClass, Log, TEXT("[Info][CargoContainer][Spawn] Spawn Finish!"));
 }
 
 void ACargoContainer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	AddActorLocalRotation(containerRotator);
+	SetActorRotation(FRotator(0.0f, GetActorRotation().Yaw + containerRotator, 0.0f));
 }
 
 float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) {
@@ -67,12 +52,6 @@ float ACargoContainer::TakeDamage(float DamageAmount, struct FDamageEvent const&
 }
 
 void ACargoContainer::BeginDestroy() {
-
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
-	}
-	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
@@ -106,10 +85,9 @@ bool ACargoContainer::InitObject(const int objectId) {
 
 	FObjectData _tempObjectData = _tempInstance->GetCargoContainerData(objectId);
 	objectName = _tempObjectData.Name;
-	lengthToLongAsix = _tempObjectData.LengthToLongAsix;
-	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempObjectData.MeshPath.ToString()));
-	if (_newMesh)
-		objectMesh->SetStaticMesh(_newMesh);
+	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempObjectData.SpritePath.ToString()));
+	if (_newFlipBook)
+		objectFlipBook->SetFlipbook(_newFlipBook);
 
 	return false;
 }
@@ -123,7 +101,7 @@ float ACargoContainer::GetValue(const GetStatType statType) const {
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::maxHull:
 		_value = maxDurability;

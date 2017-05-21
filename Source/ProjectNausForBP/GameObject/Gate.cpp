@@ -5,16 +5,7 @@
 
 AGate::AGate()
 {
-	objectMesh->SetCanEverAffectNavigation(true);
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
+	objectCollision->Mobility = EComponentMobility::Static;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -160,16 +151,6 @@ float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 }
 
 void AGate::BeginDestroy() {
-	if (structureInfo) {
-		structureInfo->isDestroyed = true;
-		structureInfo->remainRespawnTime = structureInfo->maxRespawnTime;
-	}
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
-	}
-
-	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
@@ -213,7 +194,7 @@ float AGate::GetValue(const GetStatType statType) const {
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::maxShield:
 		_value = maxShield;
@@ -313,10 +294,9 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	_tempStationData = _tempInstance->GetStationData(structureInfo->structureID);
 	objectName = _tempStationData.Name;
 
-	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempStationData.MeshPath.ToString()));
-	if (_newMesh)
-		objectMesh->SetStaticMesh(_newMesh);
-	lengthToLongAsix = _tempStationData.LengthToLongAsix;
+	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempStationData.SpritePath.ToString()));
+	if (_newFlipBook)
+		objectFlipBook->SetFlipbook(_newFlipBook);
 	strategicPoint = FMath::Clamp(_tempStationData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 
 	maxShield = _tempStationData.Shield;

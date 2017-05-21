@@ -69,6 +69,6 @@ private:
 	FItem currentResource;
 	float defResource;
 
-	FRotator asteroidRotator;
+	float asteroidRotator;
 #pragma endregion
 };

@@ -65,6 +65,6 @@ public:
 #pragma region Variables
 private:
 	int cargoContainerID;
-	FRotator containerRotator;
+	float containerRotator;
 	FItem cargo;
 };

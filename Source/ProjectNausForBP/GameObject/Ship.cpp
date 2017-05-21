@@ -6,17 +6,6 @@
 #include "Ship.h"
 
 AShip::AShip() {
-	objectMesh->SetCanEverAffectNavigation(true);
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
-
 	objectMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("ObjectMovement"));
 	objectMovement->SetPlaneConstraintEnabled(true);
 	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
@@ -38,7 +27,6 @@ AShip::AShip() {
 void AShip::BeginPlay()
 {
 	Super::BeginPlay();
-	traceParams = FCollisionQueryParams(FName("PathFind"), true, this);
 
 	checkTime = 0.0f;
 	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Begin] Spawn Finish!"));
@@ -56,7 +44,6 @@ void AShip::Tick(float DeltaTime)
 		currentArmor = FMath::Clamp(currentArmor + FMath::Clamp(repairArmor, _define_StatRestoreMIN, _define_StatRestoreMAX) * _define_ModuleANDPathTick, 0.0f, maxArmor);
 		currentHull = FMath::Clamp(currentHull + FMath::Clamp(repairHull, _define_StatRestoreMIN, _define_StatRestoreMAX) * _define_ModuleANDPathTick, 0.0f, maxHull);
 		currentPower = FMath::Clamp(currentPower + FMath::Clamp(rechargePower - moduleConsumptPower, -_define_StatRestoreMAX, _define_StatRestoreMAX) * _define_ModuleANDPathTick, 0.0f, maxPower);
-		CheckPath();
 		ModuleCheck();
 	}
 
@@ -66,13 +53,11 @@ void AShip::Tick(float DeltaTime)
 	case BehaviorState::Move:
 		if (MoveDistanceCheck()) {
 			behaviorState = BehaviorState::Idle;
-			bIsStraightMove = true;
 			moveTargetVector = GetActorLocation() + GetActorForwardVector() * _define_SetDistanceToRotateForward;
 		}
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
-			bIsStraightMove = true;
 			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
@@ -205,11 +190,6 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 }
 
 void AShip::BeginDestroy() {
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
-	}
-	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
@@ -250,9 +230,9 @@ bool AShip::InitObject(const int npcID) {
 	npcShipID = _tempNpcShipData.NPCID;
 	objectName = _tempNpcShipData.Name;
 
-	UStaticMesh* _newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempShipData.MeshPath.ToString()));
-	if (_newMesh)
-		objectMesh->SetStaticMesh(_newMesh);
+	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempShipData.SpritePath.ToString()));
+	if (_newFlipBook)
+		objectFlipBook->SetFlipbook(_newFlipBook);
 
 	shipClass = _tempShipData.Shipclass;
 	faction = _tempNpcShipData.FactionOfProduction;
@@ -283,7 +263,6 @@ bool AShip::InitObject(const int npcID) {
 				slotTargetModule[index].ammo = FItem(_tempModuleData.UsageAmmo[FMath::RandRange(0, _tempModuleData.UsageAmmo.Num() - 1)], FMath::RandRange(0, _tempModuleData.AmmoCapacity));
 		}
 	}
-	lengthToLongAsix = FMath::Clamp(_tempShipData.LengthToLongAsix, _define_StatLengthMIN, _define_StatLengthMAX);
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint + _tempNpcShipData.StrategicPointBonus, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 	bounty = FMath::Clamp(_tempNpcShipData.NpcBounty, _define_StatBountyMIN, _define_StatBountyMAX);
@@ -493,7 +472,7 @@ float AShip::GetValue(const GetStatType statType) const {
 	
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::raderDistance:
 		_value = lengthRadarRange;
@@ -596,7 +575,6 @@ void AShip::CommandStop() {
 	behaviorState = BehaviorState::Idle;
 	targetSpeed = 0.0f;
 	targetRotateRateFactor = 0.0f;
-	bIsStraightMove = false;
 }
 
 bool AShip::CommandMoveToPosition(FVector position) {
@@ -605,8 +583,6 @@ bool AShip::CommandMoveToPosition(FVector position) {
 		
 		moveTargetVector = position;
 		targetObject = nullptr;
-		bIsStraightMove = true;
-		RequestPathUpdate();
 		behaviorState = BehaviorState::Move;
 		return true;
 	}
@@ -617,8 +593,6 @@ bool AShip::CommandMoveToTarget(ASpaceObject* target) {
 
 	if (CheckCanBehavior() == true) {
 		targetObject = target;
-		bIsStraightMove = true;
-		RequestPathUpdate();
 		behaviorState = BehaviorState::Move;
 		return true;
 	}
@@ -690,11 +664,8 @@ bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 				targetObject = nullptr;
 				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 				behaviorState = BehaviorState::Docked;
-			} else {
-				RequestPathUpdate();
+			} else 
 				behaviorState = BehaviorState::Docking;
-			}
-			bIsStraightMove = true;
 			return true;
 		}
 		else return false;
@@ -705,7 +676,6 @@ bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 bool AShip::CommandUndock() {
 
 	if (behaviorState == BehaviorState::Docked) {
-		bIsStraightMove = true;
 		targetObject = nullptr;
 		behaviorState = BehaviorState::Idle;
 		return true;
@@ -732,52 +702,20 @@ void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) c
 }
 
 bool AShip::MoveDistanceCheck() {
-	if (bIsStraightMove) {
-		targetVector = moveTargetVector;
-		realMoveFactor = targetVector - GetActorLocation();
-		//DrawDebugCircle(GetWorld(), targetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
-		//DrawDebugLine(GetWorld(), targetVector, GetActorLocation(), FColor::Yellow, false, 0.1f);
-	} else {
-		if (targetObject != nullptr)
-			moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, 500.0f);
 
-		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+	if (IsValid(targetObject))
+		moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, targetObject->GetValue(GetStatType::halfLength) + objectCollision->GetScaledSphereRadius() * 0.5f);
 
-		moveTargetVector -= GetActorLocation();
-		moveTargetVector.Normalize();
-		moveTargetVector = GetActorLocation() + moveTargetVector * remainDistance;
-		//DrawDebugCircle(GetWorld(), moveTargetVector, lengthToLongAsix, 40, FColor::Yellow, false, 0.05f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
-
-		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, FMath::Max(wayPoint.Num() - 1, 0));
-		if (wayPoint.Num() > currentClosedPathIndex)
-			targetVector = wayPoint[currentClosedPathIndex];
-		else return false;
-
-		for (int index = currentClosedPathIndex; index < wayPoint.Num(); index++) {
-			//DrawDebugPoint(GetWorld(), wayPoint[index], 5, FColor::Yellow, false, 0.1f);
-			if (wayPoint.Num() > index + 1)
-				DrawDebugLine(GetWorld(), wayPoint[index], wayPoint[index + 1], FColor::Yellow, false, 0.1f);
-		}
-	}
-	targetVector.Z = 0.0f;
-	nextPointDistance = FVector::Dist(targetVector, GetActorLocation());
-	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
+	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
+	moveTargetVector.Z = 0.0f;
 
 	//checks distance and Angle For start Acceleration.
-	if (nextPointDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
-		if (FMath::Abs(targetRotate.Yaw) < startAccelAngle)
-			targetSpeed = maxSpeed;
+	if (remainDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(minAcceleration * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+		if (FMath::Abs(moveTargetRotate.Yaw) < startAccelAngle)
+			targetSpeed = targetSpeed * maxSpeed;
 		else targetSpeed = 0.0f;
-	} else targetSpeed = 0.0f;
-
-	//arrive to Destination. use upper of Nyquist Rate for high precision.
-	if (!bIsStraightMove && nextPointDistance <= FMath::Max(5.0f, currentSpeed * tempDeltaTime * 20.0f)) 
-		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex + 1, 0, wayPoint.Num() - 1);
-	//if (remainDistance < currentSpeed * tempDeltaTime * 50.0f) {
-	if (remainDistance < lengthToLongAsix * 0.25f) {
+	} else {
 		targetSpeed = 0.0f;
-		currentClosedPathIndex = 0;
-		bIsStraightMove = false;
 		return true;
 	}
 	//arrive to Destination not yet.
@@ -785,27 +723,18 @@ bool AShip::MoveDistanceCheck() {
 }
 
 void AShip::RotateCheck() {
-	if (bIsStraightMove) {
-		targetVector = moveTargetVector;
-	} else {
-		currentClosedPathIndex = FMath::Clamp(currentClosedPathIndex, 0, wayPoint.Num() - 1);
-		if (wayPoint.IsValidIndex(currentClosedPathIndex))
-			targetVector = wayPoint[currentClosedPathIndex];
-		else return;
-	}
-	targetVector.Z = 0;
 
-	realMoveFactor = targetVector - GetActorLocation();
-	targetRotate = realMoveFactor.Rotation() - GetActorRotation();
-	nextPointOuter = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), realMoveFactor));
+	moveTargetVector.Z = 0;
+	moveTargetRotate = (moveTargetVector - GetActorLocation()).Rotation() - GetActorRotation();
+	RotationDot = FVector::DotProduct(FVector::UpVector, FVector::CrossProduct(GetActorForwardVector(), moveTargetVector - GetActorLocation()));
 
-	if (nextPointOuter > 0.01f) {
-		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+	if (RotationDot > 0.01f) {
+		if (FMath::Abs(moveTargetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
 			targetRotateRateFactor = maxRotateRate;
 		else
 			targetRotateRateFactor = 0.0f;
-	} else if (nextPointOuter < -0.01f) {
-		if (FMath::Abs(targetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
+	} else if (RotationDot < -0.01f) {
+		if (FMath::Abs(moveTargetRotate.Yaw) > FMath::Abs(FMath::Pow(realRotateRateFactor, 2) / FMath::Clamp(rotateDeceleration * 2.0f, 1.0f, 9999.0f)))
 			targetRotateRateFactor = -maxRotateRate;
 		else
 			targetRotateRateFactor = 0.0f;
@@ -995,53 +924,5 @@ bool AShip::CheckCanBehavior() const {
 	default:
 		return true;
 	}
-}
-#pragma endregion
-
-#pragma region Path Finder
-/*
-* Called by GameMode - (Space)'s Broadcast In Tick. interval is 0.5 seconds.
-* Check 1 : Check front obstacle detect, Length : Object's LongAsix's Length * 2.0f + 1000.0f.
-* Check 2 : Check obstacle detection to Target, Length : to Target Distance.
-* if(Check1 or Check2 is true, request Path Update.)
-*/
-void AShip::CheckPath() {
-	FVector _forTargetDirectionVector = moveTargetVector - GetActorLocation();
-	_forTargetDirectionVector.Normalize();
-
-	if (!CheckCanBehavior() || behaviorState == BehaviorState::Idle)
-		return;
-
-	bool bMoveTargetHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + _forTargetDirectionVector * (lengthToLongAsix * 1.2f)
-		, moveTargetVector, FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), _forTargetDirectionVector.Rotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
-	bool bFrontHited = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 1.2f)
-		, GetActorLocation() + GetActorForwardVector() * (lengthToLongAsix * 2.0f + 200.0f), FVector(0.0f, lengthToLongAsix * 0.5f + 10.0f, 50.0f), GetActorRotation()
-		, ETraceTypeQuery::TraceTypeQuery1, false, TArray<AActor*>(), EDrawDebugTrace::None, frontTraceResult, true);
-	
-	bIsStraightMove = !bMoveTargetHited;
-	if (!(!bMoveTargetHited || !bFrontHited))
-		RequestPathUpdate();
-}
-
-/*
-* Called by Movement Command or Check LineTrace of Obstacle when Hitted Cast.
-* this is based on NavMesh. but, Movement logic is Custom.
-*/
-void AShip::RequestPathUpdate() {
-	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
-	if (IsValid(targetObject)) {
-		moveTargetVector = targetObject->GetActorLocation();
-		remainDistance = FVector::Dist(moveTargetVector, GetActorLocation()) - (lengthToLongAsix + targetObject->GetValue(GetStatType::halfLength));
-		moveTargetVector.Normalize();
-		moveTargetVector *= remainDistance;
-	}
-
-	waypointData = UNavigationSystem::GetCurrent(GetWorld())->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), moveTargetVector);
-	wayPoint = waypointData->PathPoints;
-	if (!waypointData)
-		return;
-	bIsStraightMove = false;
-	currentClosedPathIndex = 0;
 }
 #pragma endregion

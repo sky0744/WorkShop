@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include "PaperFlipbook.h"
+#include "PaperFlipbookComponent.h"
 #include "ProjectNausForBP.h"
 #include "SpaceObject.generated.h"
-
-
 
 UCLASS()
 class PROJECTNAUSFORBP_API ASpaceObject : public APawn
@@ -51,7 +51,9 @@ public:
 #pragma region Components
 protected:
 	UPROPERTY(VisibleAnyWhere, Category = "Space Object Data")
-		UStaticMeshComponent* objectMesh;
+		USphereComponent* objectCollision;
+	UPROPERTY(VisibleAnyWhere, Category = "Space Object Data")
+		UPaperFlipbookComponent* objectFlipBook;
 #pragma endregion
 
 #pragma region Variables
@@ -60,8 +62,8 @@ protected:
 		UPROPERTY()
 			FText objectName;
 		Faction faction;
-		float lengthToLongAsix;
 		float strategicPoint;
+		float objectYaw;
 
 		float maxDurability;
 		float currentDurability;

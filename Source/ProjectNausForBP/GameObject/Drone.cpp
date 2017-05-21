@@ -6,21 +6,6 @@
 
 
 ADrone::ADrone() {
-	objectMesh->SetCanEverAffectNavigation(true);
-	objectMesh->SetEnableGravity(false);
-	objectMesh->SetSimulatePhysics(true);
-	objectMesh->BodyInstance.LinearDamping = 500.0f;
-	objectMesh->BodyInstance.AngularDamping = 5000.0f;
-	objectMesh->BodyInstance.bLockZTranslation = true;
-	objectMesh->BodyInstance.bLockXRotation = true;
-	objectMesh->BodyInstance.bLockYRotation = true;
-	objectMesh->Mobility = EComponentMobility::Movable;
-	RootComponent = objectMesh;
-
-	objectMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("ObjectMovement"));
-	objectMovement->SetPlaneConstraintEnabled(true);
-	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
-
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 	AIControllerClass = ASpaceAIController::StaticClass();
 
@@ -161,12 +146,6 @@ float ADrone::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 }
 
 void ADrone::BeginDestroy() {
-
-	if (GetWorld() && UGameplayStatics::GetGameState(GetWorld()) && UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD()->IsA(ASpaceHUDBase::StaticClass())) {
-		Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->AccumulateToShipCapacity(true);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->RemoveFromObjectList(this);
-	}
-	UnregisterAllComponents();
 	Super::BeginDestroy();
 }
 #pragma endregion
@@ -211,8 +190,9 @@ bool ADrone::InitObject(const int objectId) {
 	if (sShipID.GetValue() != objectId) {
 	sShipID.SetValue(objectId);
 	objectName = ...?
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *tempData.MeshPath.ToString()));
-	objectMesh->SetStaticMesh(newMesh);
+	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempObjectData.SpritePath.ToString()));
+	if (_newFlipBook)
+	objectFlipBook->SetFlipbook(_newFlipBook);
 
 	targetModuleList.Empty();
 	for (int index = 0; index < tempData.SlotTarget; index++)
@@ -262,7 +242,7 @@ float ADrone::GetValue(const GetStatType statType) const {
 
 	switch (statType) {
 	case GetStatType::halfLength:
-		_value = lengthToLongAsix * 0.5f;
+		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
 		break;
 	case GetStatType::maxShield:
 		_value = maxShield;

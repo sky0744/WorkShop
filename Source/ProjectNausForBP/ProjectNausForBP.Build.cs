@@ -6,7 +6,7 @@ public class ProjectNausForBP : ModuleRules
 {
 	public ProjectNausForBP(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AIModule" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AIModule", "Paper2D" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
