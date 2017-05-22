@@ -85,9 +85,10 @@ bool ACargoContainer::InitObject(const int objectId) {
 
 	FObjectData _tempObjectData = _tempInstance->GetCargoContainerData(objectId);
 	objectName = _tempObjectData.Name;
-	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempObjectData.SpritePath.ToString()));
-	if (_newFlipBook)
-		objectFlipBook->SetFlipbook(_newFlipBook);
+	if (_tempObjectData.FlipSprite) {
+		objectFlipBook = _tempObjectData.FlipSprite;
+		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
+	}
 
 	return false;
 }
@@ -100,9 +101,6 @@ float ACargoContainer::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::maxHull:
 		_value = maxDurability;
 		break;

@@ -15,9 +15,10 @@ APlayerShip::APlayerShip() {
 	playerViewpointArm->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
 	playerViewpointCamera->SetupAttachment(playerViewpointArm, playerViewpointArm->GetAttachSocketName());
 
-	playerViewpointArm->AddWorldRotation(FRotator(-45.0f, 0.0f, 0.0f));
-	playerViewpointArm->CameraLagMaxDistance = 1000.0f;
-	playerViewpointArm->bEnableCameraRotationLag = true;
+	playerViewpointArm->AddWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	lengthCamDistanceMin = 100.0f;
+	lengthCamDistanceMax = playerViewpointArm->CameraLagMaxDistance = 1000.0f;
+	//playerViewpointArm->bEnableCameraRotationLag = true;
 	playerViewpointArm->bEnableCameraLag = true;
 	playerViewpointArm->CameraLagSpeed = 100.0f;
 	playerViewpointArm->CameraRotationLagSpeed = 7.0f;
@@ -58,6 +59,12 @@ void APlayerShip::BeginPlay()
 void APlayerShip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	for (FTargetModule& module : slotTargetModule) {
+		DrawDebugPoint(GetWorld(), GetActorLocation() + GetActorRotation().RotateVector(module.hardPoint.leftLaunchPoint), 5.0f, FColor::Blue, false, 0.1f);
+		DrawDebugPoint(GetWorld(), GetActorLocation() + GetActorRotation().RotateVector(module.hardPoint.rightLaunchPoint), 5.0f, FColor::Red, false, 0.1f);
+	}
+
 	tempDeltaTime = DeltaTime;
 	checkTime += DeltaTime;
 	if (checkTime >_define_ModuleANDPathTick) {
@@ -237,15 +244,18 @@ bool APlayerShip::InitObject(const int objectId) {
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
 	objectName = _tempShipData.Name;
-	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempShipData.SpritePath.ToString()));
-	if (_newFlipBook)
-		objectFlipBook->SetFlipbook(_newFlipBook);
+	if (_tempShipData.FlipSprite) {
+		objectFlipBook = _tempShipData.FlipSprite;
+		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
+	}
 
 	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min(_tempShipData.SlotTarget, _tempShipData.HardPoints.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
 	slotTargetModule.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
-	for (int index = 0; index < _tempModuleSlotNumber; index++)
+	for (int index = 0; index < _tempModuleSlotNumber; index++) {
 		slotTargetModule[index].hardPoint = _tempShipData.HardPoints[index];
-	
+		slotTargetModule[index].hardPoint.leftLaunchPoint.Z = 0.0f;
+		slotTargetModule[index].hardPoint.rightLaunchPoint.Z = 0.0f;
+	}
 	slotActiveModule.SetNum(FMath::Clamp(_tempShipData.SlotActive, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 	slotPassiveModule.SetNum(FMath::Clamp(_tempShipData.SlotPassive, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
 	slotSystemModule.SetNum(FMath::Clamp(_tempShipData.SlotSystem, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
@@ -271,9 +281,11 @@ bool APlayerShip::InitObject(const int objectId) {
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
-	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
-	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CameraDinstanceMAX, objectCollision->GetScaledSphereRadius() * 0.5f * _define_CameraDinstanceMAXFactor);
+	lengthCamDistanceMin = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMINFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
+	lengthCamDistanceMax = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMAXFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
+	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CameraDinstanceMAX, lengthRadarRange * _define_CameraDinstanceMAXFactor);
 
+	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -285,7 +297,6 @@ bool APlayerShip::InitObject(const int objectId) {
 
 	if (TotalStatsUpdate() == false)
 		return false;
-
 	return true;
 }
 
@@ -297,9 +308,6 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::raderDistance:
 		_value = lengthRadarRange;
 		break;
@@ -474,6 +482,9 @@ bool APlayerShip::TotalStatsUpdate() {
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+	lengthCamDistanceMin = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMINFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
+	lengthCamDistanceMax = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMAXFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
+	playerViewpointArm->CameraLagMaxDistance = lengthCamDistanceMax;
 
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -841,7 +852,6 @@ bool APlayerShip::LoadFromSave(const USaveLoader* loader) {
 				slotTargetModule[index].compatibleAmmo = _tempModuleData.UsageAmmo;
 				slotTargetModule[index].ammoLifeSpanBonus = _tempModuleData.AmmoLifeSpanBonus;
 			}
-			else slotTargetModule[index] = FTargetModule();
 		}
 
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][LoadModuleInit] Currnet Active Module List : %d, Load Module List : %d"), slotActiveModule.Num(), loader->slotActiveModule.Num());
@@ -1014,13 +1024,16 @@ bool APlayerShip::UnEquipModule(const ItemType moduleItemType, const int slotNum
 		case ModuleType::Beam:
 		case ModuleType::TractorBeam:
 		case ModuleType::MinerLaser:
-			slotTargetModule[slotNumber] = FTargetModule();
+			slotTargetModule[slotNumber].moduleID = 0;
+			slotTargetModule[slotNumber].moduleType = ModuleType::NotModule;
 			break;
 		case ModuleType::Cannon:
 		case ModuleType::Railgun:
 		case ModuleType::MissileLauncher:
-			if (userState->AddPlayerCargo(slotTargetModule[slotNumber].ammo))
-				slotTargetModule[slotNumber] = FTargetModule();
+			if (userState->AddPlayerCargo(slotTargetModule[slotNumber].ammo)) {
+				slotTargetModule[slotNumber].moduleID = 0;
+				slotTargetModule[slotNumber].moduleType = ModuleType::NotModule;
+			}
 			else return false;
 			break;
 		default:
@@ -1249,35 +1262,18 @@ UCameraComponent* APlayerShip::GetCamera() {
 	return playerViewpointCamera;
 }
 
-void APlayerShip::ControlCamRotateX(const float factorX) {
-	if (!playerViewpointArm)
-		return;
-	playerViewpointArm->AddRelativeRotation(FRotator(0.0f, factorX, 0.0f) * GetWorld()->DeltaTimeSeconds * _define_CameraSensitivityultipleRotate);
-	playerViewpointArm->RelativeRotation.Pitch = FMath::Clamp(playerViewpointArm->RelativeRotation.Pitch, _define_CameraPitchMAX, _define_CameraPitchMIN);
-	playerViewpointArm->RelativeRotation.Roll = 0.0f;
-}
-
-void APlayerShip::ControlCamRotateY(const float factorY) {
-	if (!playerViewpointArm)
-		return;
-	playerViewpointArm->AddRelativeRotation(FRotator(-factorY, 0.0f, 0.0f) * GetWorld()->DeltaTimeSeconds * _define_CameraSensitivityultipleRotate);
-	playerViewpointArm->RelativeRotation.Pitch = FMath::Clamp(playerViewpointArm->RelativeRotation.Pitch, _define_CameraPitchMAX, _define_CameraPitchMIN);
-	playerViewpointArm->RelativeRotation.Roll = 0.0f;
-}
-
-void APlayerShip::ControlCamDistance(const float value) {
-	if (!playerViewpointArm)
-		return;
-	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CameraSensitivityMultipleZoom * objectCollision->GetScaledSphereRadius() * 0.5f,
-		FMath::Max(_define_CameraDinstanceMIN, objectCollision->GetScaledSphereRadius() * 0.5f), FMath::Min(_define_CameraDinstanceMAX, playerViewpointArm->CameraLagMaxDistance));
-}
-
 void APlayerShip::ControlViewPointX(const float value) {
 	//playerViewpointArm->AddWorldOffset(FVector(0.0f, value * _define_CamZoomFactor, 0.0f));
 }
 
 void APlayerShip::ControlViewPointY(const float value) {
 	//playerViewpointArm->AddWorldOffset(FVector(-value * _define_CamZoomFactor, 0.0f, 0.0f));
+}
+
+void APlayerShip::ControlCamDistance(const float value) {
+	if (!playerViewpointArm)
+		return;
+	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CameraSensitivityMultipleZoom, lengthCamDistanceMin, lengthCamDistanceMax);
 }
 
 void APlayerShip::ControlViewPointOrigin() {
@@ -1318,7 +1314,7 @@ bool APlayerShip::CommandMoveToPosition(FVector position) {
 		targetObject = nullptr;
 		behaviorState = BehaviorState::Move;
 		
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, objectCollision->GetScaledSphereRadius() * 0.5f);
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, 20.0f);
 		return true; 
 	}
 	else return false;
@@ -1376,7 +1372,7 @@ bool APlayerShip::CommandJump(TScriptInterface<IStructureable> target) {
 	if (!CheckCanBehavior() || target == nullptr || !target.GetObjectRef()->IsA(AGate::StaticClass()))
 		return false;
 
-	if (USafeENGINE::CheckDistanceConsiderSize(this, Cast<ASpaceObject>(target.GetObjectRef())) < _define_AvailableDistanceToJump) {
+	if (this->GetDistanceTo(Cast<AActor>(target.GetObjectRef())) < _define_AvailableDistanceToJump) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandJump] Receive Command Jump! : %s"), *target->GetDestinationName());
 		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->Jump(target->GetDestinationName());
 		return true;
@@ -1405,7 +1401,7 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
 
-			if (USafeENGINE::CheckDistanceConsiderSize(this, targetObject) < _define_AvailableDistanceToDock) {
+			if (this->GetDistanceTo(targetObject) < 100.0f) {
 				targetObject = nullptr;
 				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 				behaviorState = BehaviorState::Docked;
@@ -1449,14 +1445,10 @@ bool APlayerShip::CommandLaunch(const TArray<int>& baySlot) {
 bool APlayerShip::MoveDistanceCheck() {
 
 	if (IsValid(targetObject))
-		moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, targetObject->GetValue(GetStatType::halfLength) + objectCollision->GetScaledSphereRadius() * 0.5f);
+		moveTargetVector = targetObject->GetActorLocation();
 
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 	moveTargetVector.Z = 0.0f;
-	
-	DrawDebugLine(GetWorld(), GetActorLocation(), moveTargetVector, FColor::Yellow, false, 0.1f, 0, 10.0f);
-	DrawDebugCircle(GetWorld(), moveTargetVector, objectCollision->GetScaledSphereRadius(), 40, FColor::Yellow, false, 0.1f, 0, 1.0f, FVector::ForwardVector, FVector::RightVector);
-
 	//checks distance and Angle For start Acceleration.
 	if (remainDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(sMinAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
 		if (FMath::Abs(moveTargetRotate.Yaw) < sStartAccelAngle)

@@ -181,8 +181,6 @@ bool ADrone::InitObject(const int objectId) {
 	if (tmpInstance == nullptr)
 	return false;
 
-	lengthToLongAsix = tempData.lengthToLongAsix;
-
 	FShipData tempData = tmpInstance->GetShipData(objectId);
 	if (&tempData == nullptr)
 	return false;
@@ -190,9 +188,10 @@ bool ADrone::InitObject(const int objectId) {
 	if (sShipID.GetValue() != objectId) {
 	sShipID.SetValue(objectId);
 	objectName = ...?
-	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempObjectData.SpritePath.ToString()));
-	if (_newFlipBook)
-	objectFlipBook->SetFlipbook(_newFlipBook);
+	if (_tempDroneData.FlipSprite){
+	objectFlipBook = _tempShipData.FlipSprite;
+	objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
+	}
 
 	targetModuleList.Empty();
 	for (int index = 0; index < tempData.SlotTarget; index++)
@@ -241,9 +240,6 @@ float ADrone::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::maxShield:
 		_value = maxShield;
 		break;

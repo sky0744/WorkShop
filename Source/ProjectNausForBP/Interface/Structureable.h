@@ -31,11 +31,12 @@ public:
 		*/
 		virtual StructureType GetStationType() const;
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
-		/** 도킹을 요청
+		/** 스테이션에 도킹을 요청합니다.
 		*	@param requestFaction - 도킹을 요청한 팩션
+		*   @param requestFaction - 도킹을 요청한 팩션
 		*	@return - 도킹 허가 여부
 		*/
-		virtual bool RequestedDock(const Faction requestFaction) const;
+		virtual bool RequestedDock(const Faction requestFaction, const ShipClass requestClass, FDockSlot*& dockSlotData, FVector dockLocation);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
 		/** 점프를 요청
 		*	@param requestFaction - 점프를 요청한 팩션

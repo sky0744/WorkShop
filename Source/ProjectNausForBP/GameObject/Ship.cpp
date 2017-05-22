@@ -229,20 +229,21 @@ bool AShip::InitObject(const int npcID) {
 
 	npcShipID = _tempNpcShipData.NPCID;
 	objectName = _tempNpcShipData.Name;
-
-	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempShipData.SpritePath.ToString()));
-	if (_newFlipBook)
-		objectFlipBook->SetFlipbook(_newFlipBook);
-
+	if (_tempShipData.FlipSprite) {
+		objectFlipBook = _tempShipData.FlipSprite;
+		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
+	}
 	shipClass = _tempShipData.Shipclass;
 	faction = _tempNpcShipData.FactionOfProduction;
 	behaviorType = _tempNpcShipData.BehaviorTypeOfNPC;
 
 	int _tempModuleSlotNumber = FMath::Clamp(FMath::Min3(_tempShipData.SlotTarget, _tempNpcShipData.EquipedSlotTarget.Num(), _tempShipData.HardPoints.Num()), _define_StatModuleSlotMIN, _define_StatModuleSlotMAX);
 	slotTargetModule.SetNum(FMath::Clamp(_tempModuleSlotNumber, _define_StatModuleSlotMIN, _define_StatModuleSlotMAX));
-	for (int index = 0; index < _tempModuleSlotNumber; index++)
+	for (int index = 0; index < _tempModuleSlotNumber; index++) {
 		slotTargetModule[index].hardPoint = _tempShipData.HardPoints[index];
-
+		slotTargetModule[index].hardPoint.leftLaunchPoint.Z = 0.0f;
+		slotTargetModule[index].hardPoint.rightLaunchPoint.Z = 0.0f;
+	}
 	for (int index = 0; index < _tempModuleSlotNumber; index++) {
 		_tempModuleData = _tempInstance->GetItemData(_tempNpcShipData.EquipedSlotTarget[index]);
 		if (_tempModuleData.Type == ItemType::TargetModule) {
@@ -471,9 +472,6 @@ float AShip::GetValue(const GetStatType statType) const {
 	float _value;
 	
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::raderDistance:
 		_value = lengthRadarRange;
 		break;
@@ -636,7 +634,7 @@ bool AShip::CommandJump(TScriptInterface<IStructureable> target) {
 	if (!CheckCanBehavior() || target == nullptr || !target.GetObjectRef()->IsA(AGate::StaticClass()))
 		return false;
 
-	if (USafeENGINE::CheckDistanceConsiderSize(this, Cast<ASpaceObject>(target.GetObjectRef())) < _define_AvailableDistanceToJump) {
+	if (this->GetDistanceTo(Cast<AActor>(target.GetObjectRef())) < _define_AvailableDistanceToJump) {
 		Destroy();
 		return true;
 	} else 
@@ -660,7 +658,7 @@ bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
 
-			if (USafeENGINE::CheckDistanceConsiderSize(this, targetObject) < _define_AvailableDistanceToDock) {
+			if (this->GetDistanceTo(targetObject) < 100.0f) {
 				targetObject = nullptr;
 				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 				behaviorState = BehaviorState::Docked;
@@ -704,7 +702,7 @@ void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) c
 bool AShip::MoveDistanceCheck() {
 
 	if (IsValid(targetObject))
-		moveTargetVector = USafeENGINE::CheckLocationMovetoTarget(this, targetObject, targetObject->GetValue(GetStatType::halfLength) + objectCollision->GetScaledSphereRadius() * 0.5f);
+		moveTargetVector = targetObject->GetActorLocation();
 
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 	moveTargetVector.Z = 0.0f;

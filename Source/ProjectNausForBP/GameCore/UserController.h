@@ -31,6 +31,8 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void ControlCamY(float value);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void ControlMouseWheel(float value);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void ControlCamReset();
 
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
@@ -54,13 +56,6 @@ public:
 		void OpenInfoMenu();
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void KeyUndock();
-
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlMouseX(float value);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlMouseY(float value);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlMouseWheel(float value);
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void ClickPressMouseLeft(FKey key);

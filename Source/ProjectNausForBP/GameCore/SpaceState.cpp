@@ -618,9 +618,9 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 			else return _result;
 
 			if (isRealRelation)
-				_relation = FMath::Clamp(factionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::Empire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+				_relation = FMath::Clamp(factionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::Empire, 0, factionRelationship.Num() - 1)], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
 			else
-				_relation = FMath::Clamp(tempFactionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::Empire, 0, factionRelationship.Num())], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
+				_relation = FMath::Clamp(tempFactionRelationship[FMath::Clamp((int)_targetFaction - (int)Faction::Empire, 0, factionRelationship.Num() - 1)], _define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
 		}
 		if (_relation >= _define_RelationThresholdAllyStrong)
 			_result = Peer::AllyStrong;

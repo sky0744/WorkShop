@@ -7,6 +7,7 @@
 
 ASpaceObject::ASpaceObject()
 {
+	/*
 	objectCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ObjectCollision"));
 	objectCollision->SetEnableGravity(false);
 	objectCollision->SetCollisionProfileName(TEXT("SpaceObject"));
@@ -15,10 +16,22 @@ ASpaceObject::ASpaceObject()
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	RootComponent = objectCollision;
 
-	objectFlipBook = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("ObjectFlipbook"));
-	objectFlipBook->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	objectFlipBook->bAbsoluteRotation = true;
-	objectFlipBook->SetWorldRotation(FRotator(0.0f, 90.0f, -90.0f));
+	//objectFlipBook = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("ObjectFlipbook"));
+	//objectFlipBook->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	//objectFlipBook->bAbsoluteRotation = true;
+	//objectFlipBook->SetWorldRotation(FRotator(0.0f, 90.0f, -90.0f));
+	*/
+	objectRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ObjectRoot"));
+	RootComponent = objectRoot;
+	objectSprite = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("ObjectSprite"));
+	objectSprite->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	objectSprite->bAbsoluteRotation = true;
+	objectSprite->SetWorldRotation(FRotator(0.0f, 90.0f, -90.0f));
+	objectSprite->SetEnableGravity(false);
+	objectSprite->SetCollisionProfileName(TEXT("SpaceObject"));
+	objectSprite->BodyInstance.DOFMode = EDOFMode::XYPlane;
+	objectSprite->Mobility = EComponentMobility::Movable;
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -44,13 +57,14 @@ void ASpaceObject::Tick( float DeltaTime )
 {
 	Super::Tick(DeltaTime);
 
-	if (objectFlipBook->GetFlipbookLengthInFrames() > 1) {
+	if (IsValid(objectFlipBook) && objectFlipBook->GetNumFrames() > 1) {
 		objectYaw = GetActorRotation().Yaw;
-		objectYaw += (360.0f / objectFlipBook->GetFlipbookLengthInFrames()) * 0.5f;
+		objectYaw += (360.0f / objectFlipBook->GetNumFrames()) * 0.5f;
 		if (objectYaw < 0.0f)
 			objectYaw += 360.0f;
-		objectYaw /= (360.0f / objectFlipBook->GetFlipbookLengthInFrames());
-		objectFlipBook->SetNewTime(objectYaw);
+		objectYaw /= (360.0f / objectFlipBook->GetNumFrames());
+		//objectFlipBook->SetNewTime(objectYaw);
+		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(FMath::TruncToInt(objectYaw)));
 	}
 }
 
@@ -149,9 +163,6 @@ float ASpaceObject::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::maxHull:
 		_value = maxDurability;
 		break;

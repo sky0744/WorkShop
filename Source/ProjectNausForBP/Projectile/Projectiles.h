@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "PaperFlipbook.h"
+#include "PaperSpriteComponent.h"
 #include "GameFramework/Actor.h"
 #include "Projectiles.generated.h"
 
@@ -46,9 +48,11 @@ public:
 #pragma region Projectile Property
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
-		UStaticMeshComponent* projectileMesh;
-	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		USphereComponent* projectileHitSensor;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		UPaperFlipbook* projectileFlipBook;
+	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
+		UPaperSpriteComponent* projectileSprite;
 	UPROPERTY(VisibleAnyWhere, Category = "Projectile Data")
 		UParticleSystemComponent* projectileParticle;
 
@@ -69,6 +73,7 @@ private:
 		ASpaceObject* projectileOwner;
 	UPROPERTY()
 		ASpaceObject* target;
+	float projectileYaw;
 
 	Faction launchedFaction;
 	bool isHoming;

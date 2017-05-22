@@ -22,7 +22,7 @@ StructureType IStructureable::GetStationType() const {
 	return StructureType::TradingCenter;
 }
 
-bool IStructureable::RequestedDock(const Faction requestFaction) const {
+bool IStructureable::RequestedDock(const Faction requestFaction, const ShipClass requestClass, FDockSlot*& dockSlotData, FVector dockLocation) {
 	unimplemented();
 	return false;
 }

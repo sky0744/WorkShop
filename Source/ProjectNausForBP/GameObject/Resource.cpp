@@ -91,13 +91,13 @@ bool AResource::InitObject(const int objectId) {
 			objectName = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "Rich {name}"), _tempResourceData.Name);
 		else objectName = _tempResourceData.Name;
 
-		UPaperFlipbook* _newFlipBook;
-		if(_tempResourceData.SpritePath.Num() > 0)
-			_newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempResourceData.SpritePath[FMath::RandRange(0, _tempResourceData.SpritePath.Num() - 1)].ToString()));
-		else _newFlipBook = nullptr;
-		if (_newFlipBook)
-			objectFlipBook->SetFlipbook(_newFlipBook);
-
+	
+		if(_tempResourceData.FlipSprite.Num() > 1)
+			objectFlipBook = _tempResourceData.FlipSprite[FMath::RandRange(0, _tempResourceData.FlipSprite.Num() - 1)];
+		else if(_tempResourceData.FlipSprite.Num() == 1)
+			objectFlipBook = _tempResourceData.FlipSprite[0];
+		if(objectFlipBook)
+			objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
 		resourceType = _tempResourceData.Type;
 
 		maxDurability = FMath::FRandRange(_tempResourceData.DurabilityRange.X, _tempResourceData.DurabilityRange.Y);
@@ -120,9 +120,6 @@ float AResource::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::maxHull:
 		_value = maxDurability;
 		break;

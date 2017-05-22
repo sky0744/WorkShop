@@ -3,9 +3,8 @@
 #include "ProjectNausForBP.h"
 #include "Gate.h"
 
-AGate::AGate()
-{
-	objectCollision->Mobility = EComponentMobility::Static;
+AGate::AGate(){
+	//objectCollision->Mobility = EComponentMobility::Static;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -193,9 +192,6 @@ float AGate::GetValue(const GetStatType statType) const {
 	float _value;
 
 	switch (statType) {
-	case GetStatType::halfLength:
-		_value = objectCollision->GetScaledSphereRadius() * 0.5f;
-		break;
 	case GetStatType::maxShield:
 		_value = maxShield;
 		break;
@@ -272,10 +268,26 @@ StructureType AGate::GetStationType() const {
 	return StructureType::Gate;
 }
 
-bool AGate::RequestedDock(const Faction requestFaction) const {
-	if (structureInfo != nullptr)
-		return true;
-	else return false;
+bool AGate::RequestedDock(const Faction requestFaction, const ShipClass requestClass, FDockSlot*& dockSlotData, FVector dockLocation) {
+	dockSlotData = nullptr;
+	if (!structureInfo || DockingSlot.Num < 1) {
+		return false;
+		if (Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->PeerIdentify(faction, requestFaction, false) < Peer::Boundary)
+			return false;
+
+		for (FDockSlot& slot : DockingSlot) {
+			if (slot.isDockSlotEmpty == false || slot.isDockSlotBooked == true)
+				continue;
+
+			for (ShipClass& availableClass : slot.dockAvailableClass) {
+				if (availableClass == requestClass) {
+					dockSlotData = &slot;
+					dockLocation = GetActorLocation() + GetActorRotation().RotateVector(slot.dockPosition);
+					return true;
+				}
+			}
+		}
+		return false;
 }
 bool AGate::RequestedJump(const Faction requestFaction) const {
 	if(structureInfo != nullptr)
@@ -294,9 +306,10 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	_tempStationData = _tempInstance->GetStationData(structureInfo->structureID);
 	objectName = _tempStationData.Name;
 
-	UPaperFlipbook* _newFlipBook = Cast<UPaperFlipbook>(StaticLoadObject(UPaperFlipbook::StaticClass(), NULL, *_tempStationData.SpritePath.ToString()));
-	if (_newFlipBook)
-		objectFlipBook->SetFlipbook(_newFlipBook);
+	if (_tempStationData.FlipSprite) {
+		objectFlipBook = _tempStationData.FlipSprite;
+		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
+	}
 	strategicPoint = FMath::Clamp(_tempStationData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 
 	maxShield = _tempStationData.Shield;
@@ -314,6 +327,7 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	repairHull = _tempStationData.RepairHull;
 	defHull = _tempStationData.DefHull;
 
+	DockingSlot = _tempStationData.DockingSlot;
 	isInited = true;
 	return true;
 }

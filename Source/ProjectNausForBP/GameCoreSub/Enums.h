@@ -115,10 +115,10 @@ enum class BehaviorType : uint8 {
 
 UENUM(BlueprintType)
 enum class GetStatType : uint8 {
-	Etc				UMETA(DisplayName = "Etc"),
-	halfLength			UMETA(DisplayName = "halfLength"),
-	raderDistance			UMETA(DisplayName = "raderDistance"),
-	engageDistance			UMETA(DisplayName = "engageDistance"),
+	Etc					UMETA(DisplayName = "Etc"),
+
+	raderDistance		UMETA(DisplayName = "raderDistance"),
+	engageDistance		UMETA(DisplayName = "engageDistance"),
 	bounty				UMETA(DisplayName = "bounty"),
 
 	maxShield			UMETA(DisplayName = "maxShield"),

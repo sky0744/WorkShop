@@ -87,16 +87,11 @@ public:
 
 	UCameraComponent* GetCamera();
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		void ControlCamRotateX(const float factorX);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		void ControlCamRotateY(const float factorY);
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
-		void ControlCamDistance(const float value);
-
-	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		void ControlViewPointX(const float value);
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		void ControlViewPointY(const float value);
+	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
+		void ControlCamDistance(const float value);
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		void ControlViewPointOrigin();
 #pragma endregion
@@ -165,6 +160,8 @@ private:
 
 	float lengthRadarRange;
 	float lengthWeaponRange;
+	float lengthCamDistanceMin;
+	float lengthCamDistanceMax;
 
 	UPROPERTY()
 		ASpaceObject* targetObject;

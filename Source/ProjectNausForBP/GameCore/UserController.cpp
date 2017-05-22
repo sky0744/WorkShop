@@ -81,8 +81,8 @@ void AUserController::SetupInputComponent() {
 	InputComponent->BindAxis("CamX", this, &AUserController::ControlCamX);
 	InputComponent->BindAxis("CamY", this, &AUserController::ControlCamY);
 
-	InputComponent->BindAxis("MouseInX", this, &AUserController::ControlMouseX);
-	InputComponent->BindAxis("MouseInY", this, &AUserController::ControlMouseY);
+	//InputComponent->BindAxis("MouseInX", this, &AUserController::ControlMouseX);
+	//InputComponent->BindAxis("MouseInY", this, &AUserController::ControlMouseY);
 	InputComponent->BindAxis("MouseWheel", this, &AUserController::ControlMouseWheel);
 #pragma endregion
 }
@@ -147,14 +147,6 @@ void AUserController::ControlCamY(float value) {
 		controlledPawn->ControlViewPointY(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
 }
 
-void AUserController::ControlMouseX(float value) {
-	if (IsValid(controlledPawn) && mouseLeftClicked == true)
-		controlledPawn->ControlCamRotateX(value);
-}
-void AUserController::ControlMouseY(float value) {
-	if (IsValid(controlledPawn) && mouseLeftClicked == true)
-		controlledPawn->ControlCamRotateY(value);
-}
 void AUserController::ControlMouseWheel(float value) {
 	if (IsValid(controlledPawn))
 		controlledPawn->ControlCamDistance(value * 10.0f);
@@ -180,6 +172,8 @@ void AUserController::ClickReleaseMouseLeft(FKey key) {
 
 	if (hitResult.bBlockingHit &&hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) {
 		SetTarget(Cast<ASpaceObject>(hitResult.Actor.Get()));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, "Click Responsed Component is " + hitResult.Component->GetName());
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, "Click Responsed Object is " + hitResult.Actor.Get()->GetName());
 		UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseLeft] Click Object : %s"), *hitResult.Actor.Get()->GetName());
 	}
 }
@@ -254,7 +248,7 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 		commandInterface->CommandJump(_sObj);
 		break;
 	case InteractionType::Warp:
-		commandInterface->CommandWarp(USafeENGINE::CheckLocationMovetoTarget(controlledPawn, tObj, 500.0f));
+		commandInterface->CommandWarp(tObj->GetActorLocation());
 		break;
 	case InteractionType::Collect:
 		if (!tObj->IsA(AResource::StaticClass()))
@@ -269,7 +263,7 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 		if (!tObj->IsA(ACargoContainer::StaticClass()))
 			return;
 		_cargoContainer = Cast<ACargoContainer>(tObj);
-		if (USafeENGINE::CheckDistanceConsiderSize(controlledPawn, _cargoContainer) > 250.0f)
+		if (controlledPawn->GetDistanceTo(_cargoContainer) > _define_AvailableDistanceGetCargo)
 			return;
 		_item = _cargoContainer->GetCargo();
 		if (Cast<AUserState>(PlayerState)->AddPlayerCargo(_item))

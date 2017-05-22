@@ -7,16 +7,20 @@
 // Sets default values
 AProjectiles::AProjectiles() {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-
-	projectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
-	RootComponent = projectileMesh;
-	projectileMesh->SetCollisionProfileName(TEXT("Projectile"));
-	projectileMesh->SetEnableGravity(false);
-	projectileMesh->SetSimulatePhysics(false);
-	projectileParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleBeam"));
-	projectileHitSensor = CreateDefaultSubobject<USphereComponent>(TEXT("ExplosionSensor"));
-	projectileHitSensor->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	projectileHitSensor = CreateDefaultSubobject<USphereComponent>(TEXT("ProjectileSensor"));
 	projectileHitSensor->OnComponentBeginOverlap.AddDynamic(this, &AProjectiles::OnCollisionActor);
+	projectileHitSensor->SetEnableGravity(false);
+	projectileHitSensor->SetCollisionProfileName(TEXT("SpaceObject"));
+	projectileHitSensor->BodyInstance.DOFMode = EDOFMode::XYPlane;
+	projectileHitSensor->Mobility = EComponentMobility::Movable;
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	RootComponent = projectileHitSensor;
+
+	projectileSprite = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("projectileSprte"));
+	projectileSprite->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	projectileSprite->bAbsoluteRotation = true;
+	projectileSprite->SetWorldRotation(FRotator(0.0f, 90.0f, -90.0f));
+	projectileParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleBeam"));
 
 	projectileShotAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundProjectileShot"));
 	projectileShotAudio->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -44,6 +48,15 @@ void AProjectiles::BeginPlay() {
 void AProjectiles::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
+	if (IsValid(projectileFlipBook) && projectileFlipBook->GetNumFrames() > 1) {
+		projectileYaw = GetActorRotation().Yaw;
+		projectileYaw += (360.0f / projectileFlipBook->GetNumFrames()) * 0.5f;
+		if (projectileYaw < 0.0f)
+			projectileYaw += 360.0f;
+		projectileYaw /= (360.0f / projectileFlipBook->GetNumFrames());
+		//objectFlipBook->SetNewTime(objectYaw);
+		projectileSprite->SetSprite(projectileFlipBook->GetSpriteAtFrame(FMath::TruncToInt(projectileYaw)));
+	}
 	activateTime += DeltaTime;
 	//유도탄이 아닌 경우 -> 현재 방향 및 발사 속도를 유지하며 진행
 	if (!isHoming) {
@@ -89,9 +102,10 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	FItemData _tempItemData = _tempInstance->GetItemData(ammoID);
 	FProjectileData _tempProjectileData = _tempInstance->GetProjectileData(_tempItemData.ProjectileID);
 
-	UStaticMesh* newMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), NULL, *_tempProjectileData.MeshPath.ToString()));
-	if (newMesh)
-		projectileMesh->SetStaticMesh(newMesh);
+	if (_tempProjectileData.FlipSprite) {
+		projectileFlipBook = _tempProjectileData.FlipSprite;
+		projectileSprite->SetSprite(projectileFlipBook->GetSpriteAtFrame(0));
+	}
 
 	launchedFaction = launchActor->GetFaction();
 	setedDamage = _tempItemData.Damage * damageMultiple;
@@ -131,7 +145,6 @@ void AProjectiles::SetProjectileProperty(int ammoID, ASpaceObject* launchActor, 
 	} else
 		isHoming = false;
 
-	projectileMesh->IgnoreActorWhenMoving(projectileOwner, true);
 	SetLifeSpan(FMath::Clamp(_tempItemData.LifeTime * (1.0f + lifetimeMultiple), _define_ProjectileLifeTimeMIN, _define_ProjectileLifeTimeMAX));
 }
 

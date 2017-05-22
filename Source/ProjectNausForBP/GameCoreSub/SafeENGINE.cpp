@@ -211,55 +211,6 @@ bool USafeENGINE::CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkil
 	return false;
 }
 
-float USafeENGINE::CheckDistanceConsiderSize(const ASpaceObject* actor1, const ASpaceObject* actor2) {
-	if (!IsValid(actor1) || !IsValid(actor2))
-		return 0.0f;
-
-	float _realDistance = FVector::Dist(actor1->GetActorLocation(), actor2->GetActorLocation());
-	_realDistance -= actor1->GetValue(GetStatType::halfLength);
-	_realDistance -= actor2->GetValue(GetStatType::halfLength);
-
-	return FMath::Max(0.0f, _realDistance);
-}
-
-FVector USafeENGINE::CheckLocationMovetoTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance) {
-	if (!IsValid(requestor) || !IsValid(target))
-		return FVector::ZeroVector;
-
-	FVector _location = target->GetActorLocation();
-	FVector _directiveVector = _location - requestor->GetActorLocation();
-	_directiveVector.Normalize();
-
-	distance -= requestor->GetValue(GetStatType::halfLength);
-	distance -= target->GetValue(GetStatType::halfLength);
-	distance = FMath::Max(distance, 0.0f);
-
-	_location -= _directiveVector * distance;
-	_location.X = FMath::Clamp(_location.X, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
-	_location.Y = FMath::Clamp(_location.Y, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
-	_location.Z = 0.0f;
-	
-	return _location;
-}
-
-FVector USafeENGINE::GetRandomLocationToTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance) {
-	if (!IsValid(requestor) || !IsValid(target))
-		return FVector::ZeroVector;
-
-	FVector _location = target->GetActorLocation();
-	FVector _directiveVector = FMath::VRand().GetSafeNormal();
-
-	distance += requestor->GetValue(GetStatType::halfLength);
-	distance += target->GetValue(GetStatType::halfLength);
-
-	_location -= _directiveVector * distance;
-	_location.X = FMath::Clamp(_location.X, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
-	_location.Y = FMath::Clamp(_location.Y, _define_LimitSectorSizeMIN, _define_LimitSectorSizeMAX);
-	_location.Z = 0.0f;
-
-	return _location;
-}
-
 FVector USafeENGINE::GetRandomLocationToLocation(FVector location, float distance) {
 
 	FVector _directiveVector;

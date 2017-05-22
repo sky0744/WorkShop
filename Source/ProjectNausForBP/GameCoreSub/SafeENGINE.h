@@ -3,6 +3,8 @@
 #pragma once
 #include "ProjectNausForBP.h"
 #include "Enums.h"
+#include "PaperFlipbook.h"
+#include "../GameObject/SpaceObject.h"
 #include "SafeENGINE.generated.h"
 
 
@@ -49,14 +51,11 @@ const float _define_SPToRenownHostile = 0.01f;
 const float _define_SPToRenownNotHostile = -0.05f;
 
 //플레이어 카메라 컨트롤 Const
-const float _define_CameraPitchMIN = -10.0f;
-const float _define_CameraPitchMAX = -75.0f;
-const float _define_CameraSensitivityultipleRotate = 20.0f;
 const float _define_CameraSensitivityultipleMovement = 20.0f;
 const float _define_CameraDinstanceMIN = 100.0f;
-const float _define_CameraDinstanceMAX = 10000.0f;
-const float _define_CameraDinstanceMINFactor = 1.0f;
-const float _define_CameraDinstanceMAXFactor = 10.0f;
+const float _define_CameraDinstanceMAX = 2000.0f;
+const float _define_CameraDinstanceMINFactor = 0.01f;
+const float _define_CameraDinstanceMAXFactor = 0.05f;
 const float _define_CameraSensitivityMultipleZoom = 0.2f;
 const float _define_CameraLerpMultipleZoom = 0.98f;
 
@@ -77,8 +76,6 @@ const float _define_ModuleANDPathTick = 0.5f;
 const int _define_StatModuleSlotMIN = 0;
 const int _define_StatModuleSlotMAX = 8;
 
-const float _define_StatLengthMIN = 10.0f;
-const float _define_StatLengthMAX = 10000.0f;
 const float _define_StatRadarRangeMIN = 10.0f;
 const float _define_StatRadarRangeMAX = 100000.0f;
 const float _define_StatStrategicPointMIN = 0.0f;
@@ -125,7 +122,6 @@ const float _define_SetDistanceToRotateForward = 1000.0f;
 #pragma endregion
 
 #pragma region Constant Value In Structure
-const float _define_AvailableDistanceToDock = 300.0f;
 const float _define_AvailableDistanceToRestartSet = 500.0f;
 const float _define_AvailableDistanceToJump = 500.0f;
 const float _define_StructureTick = 5.0f;
@@ -139,6 +135,7 @@ const float _define_RandomRotateSpeedMAX = 3.0f;
 #pragma endregion
 
 #pragma region Constant Value In Cargo
+const float _define_AvailableDistanceGetCargo = 500.0f;
 const float _define_DropChanceMIN = 0.0f;
 const float _define_DropChanceMAX = 100.0f;
 #pragma endregion
@@ -244,6 +241,28 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
 		float bonusStat;
 };
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FDockSlot {
+	GENERATED_USTRUCT_BODY()
+public:
+	FDockSlot(TArray<ShipClass> availableClass, FVector location, FVector direction)
+		: dockAvailableClass(availableClass)
+		, dockPosition(FVector(location.X, location.Y, 0.0f))
+		, dockPosition(FVector(direction.X, direction.Y, 0.0f)) 
+		, isDockSlotEmpty(true)
+		, isDockSlotBooked(false) {}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		TArray<ShipClass> dockAvailableClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		FVector dockPosition;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		FVector dockDirection;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		bool isDockSlotEmpty;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		bool isDockSlotBooked;
+};
 #pragma endregion
 
 #pragma region Usage Data Struct in Actor Instance
@@ -265,22 +284,24 @@ USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FHardpoint {
 	GENERATED_USTRUCT_BODY()
 public:
-	FHardpoint() {}
+	FHardpoint(FVector rightPoint, FVector leftPoint)
+		: rightLaunchPoint(FVector(rightPoint.X, rightPoint.Y, 0.0f))
+		, leftLaunchPoint(FVector(leftPoint.X, leftPoint.Y, 0.0f)) {}
 	UPROPERTY(VisibleAnywhere, Category = "HardPoint Data")
 		FVector rightLaunchPoint;
 	UPROPERTY(VisibleAnywhere, Category = "HardPoint Data")
 		FVector leftLaunchPoint;
 };
 USTRUCT(BlueprintType)
-struct PROJECTNAUSFORBP_API FTargetModule
-{
+struct PROJECTNAUSFORBP_API FTargetModule {
 	GENERATED_USTRUCT_BODY()
 public:
-	FTargetModule() 
+	FTargetModule()
 		: moduleID(0)
 		, moduleType(ModuleType::NotModule)
-		, isBookedForOff(false)
 		, moduleState(ModuleState::NotActivate)
+		, isBookedForOff(false)
+		
 		, maxCooltime(0.0f)
 		, remainCooltime(0.0f)
 
@@ -293,10 +314,10 @@ public:
 		, launchSpeedMultiple(0.0f)
 		, accaucy(0.0f)
 		, ammoLifeSpanBonus(0.0f)
-		
+
 		, ammo(FItem(-1, 0))
 		, compatibleAmmo(TArray<int>())
-		, ammoCapacity(0) 
+		, ammoCapacity(0)
 		, target(nullptr) {}
 
 	UPROPERTY(VisibleAnywhere, Category = "Instance Module Data")
@@ -491,7 +512,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		FName SpritePath;
+		UPaperFlipbook* FlipSprite;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ship Data")
 		UTexture2D* Icon;
 
@@ -623,7 +644,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		FName SpritePath;
+		UPaperFlipbook* FlipSprite;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
 		UTexture2D* Icon;
 
@@ -659,6 +680,8 @@ public:
 		float DefHull;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
+		TArray<FDockSlot> DockingSlot;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FItemSellData> ItemSellListId;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		float ItemListRefreshTime;
@@ -678,7 +701,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		TArray<FName> SpritePath;
+		TArray<UPaperFlipbook*> FlipSprite;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
 		UTexture2D* Icon;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
@@ -708,7 +731,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		FName SpritePath;
+		UPaperFlipbook* FlipSprite;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Resource Data")
 		UTexture2D* Icon;
 
@@ -866,7 +889,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		int ItemLinkedID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
-		FName MeshPath;
+		UPaperFlipbook* FlipSprite;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Proejctile Data")
 		UTexture2D* Icon;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
@@ -1071,18 +1094,11 @@ public:
 		static bool CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkill>& requsetCheckSkillList);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static float CheckDistanceConsiderSize(const ASpaceObject* actor1, const ASpaceObject* actor2);
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static FVector CheckLocationMovetoTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance);
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static FVector GetRandomLocationToTarget(const ASpaceObject* requestor, const ASpaceObject* target, float distance);
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocationToLocation(FVector location, float distance);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocation(bool requestNormalizedVector);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetLocationLimitedSector(FVector location);
-
 #pragma endregion
 
 #pragma region GamePlay - Non Static

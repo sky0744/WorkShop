@@ -3,7 +3,7 @@
 #pragma once
 
 #include "PaperFlipbook.h"
-#include "PaperFlipbookComponent.h"
+#include "PaperSpriteComponent.h"
 #include "ProjectNausForBP.h"
 #include "SpaceObject.generated.h"
 
@@ -51,9 +51,11 @@ public:
 #pragma region Components
 protected:
 	UPROPERTY(VisibleAnyWhere, Category = "Space Object Data")
-		USphereComponent* objectCollision;
+		USceneComponent* objectRoot;
 	UPROPERTY(VisibleAnyWhere, Category = "Space Object Data")
-		UPaperFlipbookComponent* objectFlipBook;
+		UPaperFlipbook* objectFlipBook;
+	UPROPERTY(VisibleAnyWhere, Category = "Space Object Data")
+		UPaperSpriteComponent* objectSprite;
 #pragma endregion
 
 #pragma region Variables
