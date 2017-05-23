@@ -3,9 +3,6 @@
 #pragma once
 
 #include "ProjectNausForBP.h"
-#include "AI/Navigation/NavigationSystem.h"
-#include "AI/Navigation/NavigationPath.h"
-
 #include "SpaceObject.h"
 #include "../Interface/Commandable.h"
 #include "PlayerShip.generated.h"
@@ -145,8 +142,6 @@ private:
 	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
 		UFloatingPawnMovement* objectMovement;
 	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
-		USpringArmComponent* playerViewpointArm;
-	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
 		UCameraComponent* playerViewpointCamera;
 #pragma endregion
 
@@ -160,8 +155,6 @@ private:
 
 	float lengthRadarRange;
 	float lengthWeaponRange;
-	float lengthCamDistanceMin;
-	float lengthCamDistanceMax;
 
 	UPROPERTY()
 		ASpaceObject* targetObject;
@@ -169,6 +162,8 @@ private:
 		TScriptInterface<ICommandable> targetCommand;
 	UPROPERTY()
 		TScriptInterface<IStructureable> targetStructure;
+	FVector dockingLocation;
+	FRotator dockingRotation;
 
 	float sMaxShield;
 	float sRechargeShield;

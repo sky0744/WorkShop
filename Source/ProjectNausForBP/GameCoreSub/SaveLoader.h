@@ -192,9 +192,11 @@ public:
 		TArray<FItem> targetModuleAmmo;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
-		TArray<FSkill> skillList;
+		TArray<FSkill> userSkillData;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
-		TArray<FItem> itemList;
+		int userLearningSkillId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
+		TArray<FItem> userItemData;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FItem> playerDronesInHanger;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)

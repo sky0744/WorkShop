@@ -5,14 +5,18 @@
 
 
 AUserState::AUserState() {
-	listSkill = TArray<FSkill>();
-	queueSkillLearn = TArray<FSkill>();
+	playerSkill = TMap<int, FSkill>();
 	listItem = TArray<FItem>();
 
 	ev_BGMClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/BGM.BGM'")));
 	ev_SfxClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/Sfx.Sfx'")));
 	ev_BGMMix = Cast<USoundMix>(StaticLoadObject(USoundMix::StaticClass(), NULL, TEXT("SoundMix'/Game/Resource/Sound/SoundAsset/BGMMixer.BGMMixer'")));
 	ev_SfxMix = Cast<USoundMix>(StaticLoadObject(USoundMix::StaticClass(), NULL, TEXT("SoundMix'/Game/Resource/Sound/SoundAsset/SfxMixer.SfxMixer'")));
+
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
+	PrimaryActorTick.bTickEvenWhenPaused = false;
+	PrimaryActorTick.TickInterval = _define_SkillLearningTick;
 }
 
 void AUserState::BeginPlay() {
@@ -21,6 +25,19 @@ void AUserState::BeginPlay() {
 	if (!UGameplayStatics::GetCurrentLevelName(GetWorld()).Equals("MainTitle", ESearchCase::IgnoreCase)) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][BeginPlay] Current World is %s, Start Loading Save File."), *UGameplayStatics::GetCurrentLevelName(GetWorld()));
 		TotalLoad();
+	}
+}
+
+void AUserState::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+
+	if (learningSkillId > -1 && playerSkill.Contains(learningSkillId)) {
+		playerSkill[learningSkillId].skillLearning -= DeltaTime;
+		if (playerSkill[learningSkillId].skillLearning < 0) {
+			playerSkill[learningSkillId].skillLevel = FMath::Clamp(playerSkill[learningSkillId].skillLevel + 1,
+				_define_SkillLevelMIN + 1, _define_SkillLevelMAX);
+			learningSkillId = -1;
+		}
 	}
 }
 
@@ -50,8 +67,9 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	_saver->position = _saver->restartLocation = _tempStartInfo.StartPosition;
 	_saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
 
-	_saver->skillList = _tempStartInfo.StartSkillList;
-	_saver->itemList = _tempStartInfo.StartItemList;
+	_saver->userSkillData = _tempStartInfo.StartSkillList;
+	_saver->userLearningSkillId = -1;
+	_saver->userItemData = _tempStartInfo.StartItemList;
 
 	FShipData _tempShipData = _tempInstance->GetShipData(_tempStartInfo.StartShipID);
 	_saver->shield = _tempShipData.Shield;
@@ -65,9 +83,8 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	_saver->slotSystemModule = TArray<int>();
 
 	_saver->saveState = SaveState::NewGameCreate;
-	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
 	_saver->relation = _tempStartInfo.StartFactionRelation;
-
+	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (_spaceState->SaveSpaceState(_saver) != true) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][NewGameSetting] Space Info Save Fail."));
 		return false;
@@ -78,7 +95,6 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 		UE_LOG(LogClass, Warning, TEXT("[Warning][PlayerState][TotalSave] SaveLoader Can't Save in SaveSlot. Try again."));
 		return false;
 	}
-
 	FSectorData _tempSectorData = _tempInstance->GetSectorData(_tempStartInfo.StartSector);
 	UGameplayStatics::OpenLevel(GetWorld(), _tempSectorData.nSectorName, TRAVEL_Absolute);
 	return true;
@@ -188,33 +204,33 @@ void AUserState::PlayerDeath() {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGate::StaticClass(), _gatesInSector);
 
 	//파기 불가능한 모듈 및 아이템은 카고에 저장하는 상태에서 사망 처리
-	for (int index = 0; index < _Repositioning->itemList.Num(); index++) {
-		_tempItemData = _tempInstance->GetItemData(_Repositioning->itemList[index].itemID);
+	for (int index = 0; index < _Repositioning->userItemData.Num(); index++) {
+		_tempItemData = _tempInstance->GetItemData(_Repositioning->userItemData[index].itemID);
 		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
 			continue;
-		_Repositioning->itemList.RemoveAtSwap(index);
+		_Repositioning->userItemData.RemoveAtSwap(index);
 	}
 	for (int& moduleID : _Repositioning->slotTargetModule) {
 		_tempItemData = _tempInstance->GetItemData(moduleID);
 		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
-			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+			USafeENGINE::AddCargo(_Repositioning->userItemData, FItem(moduleID, 1));
 	}
 	for (int& moduleID : _Repositioning->slotActiveModule) {
 		_tempItemData = _tempInstance->GetItemData(moduleID);
 		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
-			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+			USafeENGINE::AddCargo(_Repositioning->userItemData, FItem(moduleID, 1));
 	}
 	for (int& moduleID : _Repositioning->slotPassiveModule) {
 		_tempItemData = _tempInstance->GetItemData(moduleID);
 		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
-			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+			USafeENGINE::AddCargo(_Repositioning->userItemData, FItem(moduleID, 1));
 	}
 	for (int& moduleID : _Repositioning->slotSystemModule) {
 		_tempItemData = _tempInstance->GetItemData(moduleID);
 		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
-			USafeENGINE::AddCargo(_Repositioning->itemList, FItem(moduleID, 1));
+			USafeENGINE::AddCargo(_Repositioning->userItemData, FItem(moduleID, 1));
 	}
-	_Repositioning->itemList.Shrink();
+	_Repositioning->userItemData.Shrink();
 
 	//함선 초기화 및 현상금 제거, 일정량의 크레딧 손실
 	_Repositioning->shipID = 0;
@@ -269,8 +285,10 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 	_obj->GetModule(ItemType::SystemModule, _saver->slotSystemModule);
 	_obj->GetTargetModuleAmmo(_saver->targetModuleAmmo);
 
-	_saver->itemList = listItem;
-	_saver->skillList = listSkill;
+	_saver->userItemData = listItem;
+	for (auto& skill : playerSkill)
+		_saver->userSkillData.Emplace(skill.Value);
+	_saver->userLearningSkillId = learningSkillId;
 
 	if (_saver->saveState == SaveState::UserRequest) {
 		_saver->position = FVector2D(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation());
@@ -297,8 +315,14 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	sShipID = loader->shipID;
 	sCredit = loader->credit;
 
-	listItem = loader->itemList;
-	listSkill = loader->skillList;
+	for (FSkill& skill : loader->userSkillData) {
+		if (!playerSkill.Contains(skill.skillID))
+			playerSkill.Emplace(skill.skillID, skill);
+		else if (skill.skillLevel > playerSkill[skill.skillID].skillLevel && playerSkill[skill.skillID].skillLevel > 0)
+			playerSkill[skill.skillID].skillLevel = FMath::Clamp(skill.skillLevel, _define_SkillLevelMIN + 1, _define_SkillLevelMAX);
+	}
+	learningSkillId = loader->userLearningSkillId;
+	listItem = loader->userItemData;
 
 	if(!_obj->InitObject(loader->shipID)) {
 		UE_LOG(LogClass, Warning, TEXT("[Invaild Access][PlayerState][PlayerLoad] Player's Pawn Already Inited."));
@@ -308,7 +332,6 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 		UE_LOG(LogClass, Warning, TEXT("[Invaild Access][PlayerState][PlayerLoad] Player's Pawn Already Inited."));
 		return false;
 	}
-
 	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorLocation(FVector(loader->position, 0.0f));
 	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorRotation(FRotator(0.0f, loader->rotation.Yaw, 0.0f));
 	return true;
@@ -794,15 +817,48 @@ void AUserState::GetUserDataItem(TArray<FItem>& setArray) const {
 }
 
 void AUserState::GetUserDataSkill(TArray<FSkill>& setArray) const {
-	setArray = listSkill;
+	setArray.Empty();
+	for (int index = 0; index < playerSkill.Num(); index++)
+		setArray.Emplace(playerSkill[index]);
 }
 
-void AUserState::AddSkillQueue(const FSkill addSkill){
-	
+void AUserState::GetLearningSkill(FSkill& learningSkill) const {
+	if (playerSkill.Contains(learningSkillId) && learningSkillId > -1)
+		learningSkill = playerSkill[learningSkillId];
+	else {
+		learningSkill.skillID = -1;
+		learningSkill.skillLearning = -1.0f;
+		learningSkill.skillLevel = -1;
+	}
 }
 
-void AUserState::DropSkillQueue(const FSkill dropSkill) {
-	
+void AUserState::SetLearningSkill(const int learningId) {
+	learningSkillId = learningSkillId;
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIUser();
+}
+
+void AUserState::StopLearningSkill() {
+	SetLearningSkill(-1);
+}
+
+bool AUserState::NewLearningSkill(const int NewLearningSkillId) {
+	//기본적인 체크
+	if (playerSkill.Contains(NewLearningSkillId) || NewLearningSkillId < 0)
+		return false;
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	FSkillData _tempSkillData = _tempInstance->GetSkillData(NewLearningSkillId);
+
+	//DataTable로부터 획득한 데이터를 체크
+	if (playerSkill.Contains(_tempSkillData.SkillID))
+		return false;
+	if (_tempSkillData.RequireSkillBookID > -1 && USafeENGINE::FindItemSlot(listItem, FItem(_tempSkillData.RequireSkillBookID, 1)) < 0)
+		return false;
+	if (!CheckSkill(_tempSkillData.RequireSkill))
+		return false;
+
+	playerSkill.Emplace(_tempSkillData.SkillID, FSkill(_tempSkillData.SkillID, 0, 0.0f));
+	learningSkillId = _tempSkillData.SkillID;
+	return true;
 }
 
 void AUserState::GetAchievments(TArray<int>& _achievmentsLevels) const {
@@ -810,19 +866,12 @@ void AUserState::GetAchievments(TArray<int>& _achievmentsLevels) const {
 }
 
 bool AUserState::CheckSkill(const TArray<FSkill>& checkSkill) const {
-	bool _isFind;
-	for (int index1 = 0; index1 < checkSkill.Num(); index1++) {
-		_isFind = false;
-		for (int index2 = 0; index2 < listSkill.Num(); index2++) {
-			if (listSkill[index2].skillID == checkSkill[index1].skillID) {
-				if (listSkill[index2].skillLevel >= checkSkill[index1].skillLevel)
-					_isFind = true;
-				break;
-			}
-		}
-		if (_isFind == true) 
-			continue;
-		else return false;
+
+	for (int index = 0; index < checkSkill.Num(); index++) {
+		if (!playerSkill.Contains(checkSkill[index].skillID))
+			return false;
+		if (playerSkill[checkSkill[index].skillID].skillLevel < checkSkill[index].skillLevel)
+			return false;
 	}
 	return true;
 }

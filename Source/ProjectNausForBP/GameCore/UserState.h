@@ -17,7 +17,7 @@ public:
 #pragma region Event Calls
 protected:
 	virtual void BeginPlay() override;
-
+	virtual void Tick(float DeltaTime) override;
 #pragma endregion
 
 #pragma region Save/Load & Player Death
@@ -111,10 +111,27 @@ public:
 		void GetUserDataItem(TArray<FItem>& setArray) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		void GetUserDataSkill(TArray<FSkill>& setArray) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/*	현재 수련중인 스킬 데이터를 가져옵니다.
+		*	@param learningSkill - 수련중인 스킬 데이터
+		*/
+		void GetLearningSkill(FSkill& learningSkill) const;
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void AddSkillQueue(const FSkill addSkill);
+		/*	수련할 스킬을 변경합니다. 기존의 수련은 중단되며, -1을 입력으로 할 경우 StopLearningSkill()과 같습니다.
+		*	@param learningId - 수련을 진행할 스킬 ID
+		*/
+		void SetLearningSkill(const int learningId);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		void DropSkillQueue(const FSkill dropSkill);
+		/*	수련을 중지합니다.
+		*/
+		void StopLearningSkill();
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/*	스킬 습득을 시도합니다.
+		*	@param NewLearningSkillId - 습득하고자 하는 스킬의 ID
+		*	@return - 스킬 습득 시도에 대한 결과
+		*/
+		bool NewLearningSkill(const int NewLearningSkillId);
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		void GetAchievments(TArray<int>& _achievmentsLevels) const;
 
@@ -180,9 +197,10 @@ private:
 	FVector2D restartLocation;
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-		TArray<FSkill> listSkill;
-	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-		TArray<FSkill> queueSkillLearn;
+		TMap<int, FSkill> playerSkill;
+	//UPROPERTY(BlueprintReadOnly, Category = "User Data")
+	//	TMap<int, FSkill> playerSkill;
+	int learningSkillId;
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
 		TArray<FItem> listItem;
 

@@ -5,6 +5,9 @@
 
 AGate::AGate(){
 	//objectCollision->Mobility = EComponentMobility::Static;
+	DockingSlot = TArray<FDockSlot>();
+	DockingClassMapper = TMap<ShipClass, TArray<int>>();
+	objectSprite->SetWorldScale3D(FVector(_define_StructureScale, _define_StructureScale, _define_StructureScale));
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -268,30 +271,31 @@ StructureType AGate::GetStationType() const {
 	return StructureType::Gate;
 }
 
-bool AGate::RequestedDock(const Faction requestFaction, const ShipClass requestClass, FDockSlot*& dockSlotData, FVector dockLocation) {
-	dockSlotData = nullptr;
-	if (!structureInfo || DockingSlot.Num < 1) {
+bool AGate::RequestedDock(const Faction requestFaction, const ShipClass requestClass, FVector& slotLocation, FRotator& slotRotation) {
+	if (!structureInfo || DockingSlot.Num() < 1 || !DockingClassMapper.Contains(requestClass))
 		return false;
-		if (Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->PeerIdentify(faction, requestFaction, false) < Peer::Boundary)
-			return false;
+	if (Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()))->PeerIdentify(faction, requestFaction, false) < Peer::Boundary)
+		return false;
 
-		for (FDockSlot& slot : DockingSlot) {
-			if (slot.isDockSlotEmpty == false || slot.isDockSlotBooked == true)
-				continue;
+	//도킹 가능한 슬롯에서 랜덤으로 얻어낸 슬롯 인덱스
+	int _slotIndex = DockingClassMapper[requestClass][FMath::RandRange(0, DockingClassMapper[requestClass].Num() - 1)];
 
-			for (ShipClass& availableClass : slot.dockAvailableClass) {
-				if (availableClass == requestClass) {
-					dockSlotData = &slot;
-					dockLocation = GetActorLocation() + GetActorRotation().RotateVector(slot.dockPosition);
-					return true;
-				}
-			}
+	for (ShipClass& availableClass : DockingSlot[FMath::Clamp(_slotIndex, 0, DockingSlot.Num() - 1)].dockAvailableClass) {
+		if (availableClass == requestClass) {
+			slotLocation = DockingSlot[FMath::Clamp(_slotIndex, 0, DockingSlot.Num() - 1)].dockPosition * _define_StructureScale;
+			slotRotation = DockingSlot[FMath::Clamp(_slotIndex, 0, DockingSlot.Num() - 1)].dockDirection;
+			return true;
 		}
-		return false;
+	}
+	return false;
 }
+
 bool AGate::RequestedJump(const Faction requestFaction) const {
-	if(structureInfo != nullptr)
-		return true;
+	if (structureInfo != nullptr) {
+		if(!structureInfo->LinkedSector.IsEmpty())
+			return true;
+		else return false;
+	}
 	else return false;
 }
 
@@ -306,10 +310,8 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	_tempStationData = _tempInstance->GetStationData(structureInfo->structureID);
 	objectName = _tempStationData.Name;
 
-	if (_tempStationData.FlipSprite) {
-		objectFlipBook = _tempStationData.FlipSprite;
-		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
-	}
+	if (_tempStationData.FlipSprite)
+		objectSprite->SetSprite(_tempStationData.FlipSprite);
 	strategicPoint = FMath::Clamp(_tempStationData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 
 	maxShield = _tempStationData.Shield;
@@ -328,6 +330,15 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	defHull = _tempStationData.DefHull;
 
 	DockingSlot = _tempStationData.DockingSlot;
+	for (int index = 0; index < DockingSlot.Num(); index++) {
+		for (ShipClass& shipClass : DockingSlot[index].dockAvailableClass) {
+			if (!DockingClassMapper.Contains(shipClass))
+				DockingClassMapper.Emplace(shipClass, TArray<int>());
+			DockingClassMapper[shipClass].Emplace(index);
+		}
+	}
+	for (FDockSlot& slot : DockingSlot)
+		DrawDebugDirectionalArrow(GetWorld(), GetActorLocation() + GetActorRotation().RotateVector(slot.dockPosition), GetActorLocation() + (slot.dockDirection).RotateVector(FVector::ForwardVector) * 100.0f, 20.0f, FColor::White, false, 3600.0f, 0, 3.0f);
 	isInited = true;
 	return true;
 }

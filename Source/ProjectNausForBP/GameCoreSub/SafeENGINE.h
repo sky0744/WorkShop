@@ -41,6 +41,7 @@ const float _define_RegenShipFactor = 0.025f;
 //플레이어 데이터 Const
 const int _define_SkillLevelMIN = 0;
 const int _define_SkillLevelMAX = 5;
+const float _define_SkillLearningTick = 1.0f;
 
 const float _define_CreditMIN = -999999999999.0f;
 const float _define_CreditMAX = 999999999999.0f;
@@ -52,12 +53,9 @@ const float _define_SPToRenownNotHostile = -0.05f;
 
 //플레이어 카메라 컨트롤 Const
 const float _define_CameraSensitivityultipleMovement = 20.0f;
-const float _define_CameraDinstanceMIN = 100.0f;
+const float _define_CameraDinstanceMIN = 500.0f;
 const float _define_CameraDinstanceMAX = 2000.0f;
-const float _define_CameraDinstanceMINFactor = 0.01f;
-const float _define_CameraDinstanceMAXFactor = 0.05f;
-const float _define_CameraSensitivityMultipleZoom = 0.2f;
-const float _define_CameraLerpMultipleZoom = 0.98f;
+const float _define_CameraMultipleZoom = 10.0f;
 
 //환경 설정 ini Const
 const float _define_ev_SoundVolumeMIN = 0.0f;
@@ -125,6 +123,7 @@ const float _define_SetDistanceToRotateForward = 1000.0f;
 const float _define_AvailableDistanceToRestartSet = 500.0f;
 const float _define_AvailableDistanceToJump = 500.0f;
 const float _define_StructureTick = 5.0f;
+const float _define_StructureScale = 1.5f;
 #pragma endregion
 
 #pragma region Constant Value In Resource
@@ -245,23 +244,21 @@ USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FDockSlot {
 	GENERATED_USTRUCT_BODY()
 public:
-	FDockSlot(TArray<ShipClass> availableClass, FVector location, FVector direction)
+	FDockSlot()
+		: dockAvailableClass(TArray<ShipClass>())
+		, dockPosition(FVector())
+		, dockDirection(FRotator()) {}
+	FDockSlot(TArray<ShipClass> availableClass, FVector location, FRotator direction)
 		: dockAvailableClass(availableClass)
 		, dockPosition(FVector(location.X, location.Y, 0.0f))
-		, dockPosition(FVector(direction.X, direction.Y, 0.0f)) 
-		, isDockSlotEmpty(true)
-		, isDockSlotBooked(false) {}
+		, dockDirection(FRotator(0.0f, direction.Yaw, 0.0f)) {}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<ShipClass> dockAvailableClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FVector dockPosition;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		FVector dockDirection;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		bool isDockSlotEmpty;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		bool isDockSlotBooked;
+		FRotator dockDirection;
 };
 #pragma endregion
 
@@ -284,9 +281,13 @@ USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FHardpoint {
 	GENERATED_USTRUCT_BODY()
 public:
+	FHardpoint()
+		: rightLaunchPoint(FVector())
+		, leftLaunchPoint(FVector()) {}
 	FHardpoint(FVector rightPoint, FVector leftPoint)
 		: rightLaunchPoint(FVector(rightPoint.X, rightPoint.Y, 0.0f))
-		, leftLaunchPoint(FVector(leftPoint.X, leftPoint.Y, 0.0f)) {}
+		, leftLaunchPoint(FVector(leftPoint.X, leftPoint.Y, 0.0f)) {
+	}
 	UPROPERTY(VisibleAnywhere, Category = "HardPoint Data")
 		FVector rightLaunchPoint;
 	UPROPERTY(VisibleAnywhere, Category = "HardPoint Data")
@@ -300,6 +301,7 @@ public:
 		: moduleID(0)
 		, moduleType(ModuleType::NotModule)
 		, moduleState(ModuleState::NotActivate)
+		, hardPoint(FHardpoint())
 		, isBookedForOff(false)
 		
 		, maxCooltime(0.0f)
@@ -429,6 +431,56 @@ public:
 		float skillLearning;
 };
 USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FQuestPlot {
+	GENERATED_USTRUCT_BODY()
+public:
+	FQuestPlot() {}
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		int plotID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText plotName;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText plotDesc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText agentStartDesc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText agentProgressDesc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText agentFinishDesc;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		QuestConditionType plotClearCondition;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		int conditionValue_TypeInt;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		FItem conditionValue_TypeItem;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		FSkill conditionValue_TypeSkill;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		FString conditionValue_TypeString;
+};
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FQuest {
+	GENERATED_USTRUCT_BODY()
+public:
+	FQuest() {}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		int questID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		int currentPlotID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		QuestPlotState currentPlotState;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		int currentConditionValue_TypeInt;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		FItem currentConditionValue_TypeItem;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		FSkill currentConditionValue_TypeSkill;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		FString currentConditionValue_TypeString;
+};
+USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FProductProcess {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -461,8 +513,6 @@ public:
 		int techLevel;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FVector2D structureLocation;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		FRotator structureRotation;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FString LinkedSector;
@@ -644,7 +694,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		UPaperFlipbook* FlipSprite;
+		UPaperSprite* FlipSprite;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
 		UTexture2D* Icon;
 
@@ -778,6 +828,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		int SkillID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		int RequireSkillBookID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		SkillGroup SkillGroupType;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		int LearningMultiple;
@@ -790,6 +842,31 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		float BonusAmountPerLevel;
 	FSkillData() {}
+};
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FQuestData : public FTableRowBase {
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText Name;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText Desc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill Data")
+		UTexture2D* QuestIcon;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill Data")
+		UTexture2D* AgentIcon;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText AgentStartDesc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText AgentReStartDesc;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		FText AgentFinishDesc;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		TArray<int> RequireQuestID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
+		TArray<FQuestPlot> QuestPlot;
+	FQuestData() {}
 };
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FItemData : public FTableRowBase
@@ -1048,6 +1125,13 @@ public:
 		*/
 		const struct FSkillData& GetSkillData(const int& id) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
+		/**	데이터 테이블로부터 퀘스트의 데이터를 획득합니다.
+		*	퀘스트의 플롯 및 선행 조건, 달성 조건 등의 데이터를 포함합니다.
+		*	@param id - 획득하고자 하는 퀘스의 ID입니다.
+		*	@return 획득한 퀘스트의 데이터.
+		*/
+		const struct FQuestData& GetQuestData(const int& id) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		/**	데이터 테이블로부터 아이템의 데이터를 획득합니다.
 		*	모든 타입의 아이템에 대한 데이터를 포함합니다. 아이템 타입에 무관한 데이터는 Zero-Inited Value
 		*	@param id - 획득하고자 하는 오브젝트의 ID입니다.
@@ -1091,9 +1175,6 @@ public:
 		static bool DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dropItem);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static bool CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkill>& requsetCheckSkillList);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocationToLocation(FVector location, float distance);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocation(bool requestNormalizedVector);
@@ -1127,6 +1208,8 @@ private:
 
 	UPROPERTY()
 		UDataTable* SkillData;
+	UPROPERTY()
+		UDataTable* QuestData;
 	UPROPERTY()
 		UDataTable* ItemData;
 	UPROPERTY()

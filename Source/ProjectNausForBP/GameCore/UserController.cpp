@@ -149,7 +149,7 @@ void AUserController::ControlCamY(float value) {
 
 void AUserController::ControlMouseWheel(float value) {
 	if (IsValid(controlledPawn))
-		controlledPawn->ControlCamDistance(value * 10.0f);
+		controlledPawn->ControlCamDistance(value);
 }
 
 void AUserController::ClickPressMouseLeft(FKey key) {

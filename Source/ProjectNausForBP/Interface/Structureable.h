@@ -34,9 +34,10 @@ public:
 		/** 스테이션에 도킹을 요청합니다.
 		*	@param requestFaction - 도킹을 요청한 팩션
 		*   @param requestFaction - 도킹을 요청한 팩션
+		*	@param out dockSlotData - 도킹이 허가된 슬롯
 		*	@return - 도킹 허가 여부
 		*/
-		virtual bool RequestedDock(const Faction requestFaction, const ShipClass requestClass, FDockSlot*& dockSlotData, FVector dockLocation);
+		virtual bool RequestedDock(const Faction requestFaction, const ShipClass requestClass, FVector& slotLocation, FRotator& slotRotation);
 	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
 		/** 점프를 요청
 		*	@param requestFaction - 점프를 요청한 팩션

@@ -98,7 +98,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 		//리젠 갱신
 		if (stationData.isDestroyed && stationData.isRespawnable && stationData.remainRespawnTime < 0.0f) {
 			AStation* _regenStation = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
-				FTransform(stationData.structureRotation, FVector(stationData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+				FTransform(FRotator(), FVector(stationData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
 			if (IsValid(_regenStation) && _regenStation->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
 				Cast<IStructureable>(_regenStation)->SetStructureData(stationData);
@@ -123,7 +123,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 		//리젠 갱신
 		if (gateData.isDestroyed && gateData.isRespawnable && gateData.remainRespawnTime < 0.0f) {
 			AGate* _regenGate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
-				FTransform(gateData.structureRotation, FVector(gateData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
+				FTransform(FRotator(), FVector(gateData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
 			if (IsValid(_regenGate) && _regenGate->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
 				Cast<IStructureable>(_regenGate)->SetStructureData(gateData);
@@ -165,7 +165,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				currentSectorInfo->GateList[_randomGateIndex].structureLocation;
 
 				AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), 
-					FTransform(FRotator(0.0f, currentSectorInfo->GateList[_randomGateIndex].structureRotation.Yaw, 0.0f), FVector(currentSectorInfo->GateList[_randomGateIndex].structureLocation, 0.0f)), 
+					FTransform(FRotator(0.0f, FMath::FRandRange(0.0f, 360.0f), 0.0f), FVector(currentSectorInfo->GateList[_randomGateIndex].structureLocation, 0.0f)), 
 					ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
 				if (IsValid(_regenShip)) {
@@ -325,7 +325,7 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 					_tempStationData = _tempInstance->GetStationData(_nextSectorInfo->GateList[index].structureID);
 					_tempShipData = _tempInstance->GetShipData(saver->shipID);
 
-					saver->rotation.Yaw = _nextSectorInfo->GateList[index].structureRotation.Yaw;
+					saver->rotation.Yaw = FMath::FRandRange(0.0f, 360.0f);
 					saver->position = _nextSectorInfo->GateList[index].structureLocation;
 					break;
 				}
@@ -392,7 +392,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		//Load Structure Data
 		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
 			if (!structureData.isDestroyed) {
-				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
 				if (IsValid(_station) && _station->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
 					_sObj = Cast<IStructureable>(_station);
@@ -404,7 +404,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		}
 		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
 			if (!structureData.isDestroyed) {
-				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
 				if (IsValid(_gate) && _gate->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
 					_sObj = Cast<IStructureable>(_gate);
@@ -470,7 +470,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		//Load Structure
 		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
 			if (!structureData.isDestroyed) {
-				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
 				if (IsValid(_station) && _station->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
 					_sObj = Cast<IStructureable>(_station);
@@ -482,7 +482,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		}
 		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
 			if (!structureData.isDestroyed) {
-				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(0.0f, structureData.structureRotation.Yaw, 0.0f),
+				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
 				if (IsValid(_gate) && _gate->StaticClass()->ImplementsInterface(UStructureable::StaticClass())) {
 					_sObj = Cast<IStructureable>(_gate);

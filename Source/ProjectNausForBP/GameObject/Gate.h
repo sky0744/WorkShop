@@ -53,7 +53,7 @@ protected:
 	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
 		virtual StructureType GetStationType() const override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
-		virtual bool RequestedDock(const Faction requestFaction, const ShipClass requestClass, FDockSlot*& dockSlotData, FVector dockLocation) override;
+		virtual bool RequestedDock(const Faction requestFaction, const ShipClass requestClass, FVector& slotLocation, FRotator& slotRotation) override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
 		virtual bool RequestedJump(const Faction requestFaction) const override;
 
@@ -97,5 +97,6 @@ private:
 
 	UPROPERTY()
 		TArray<FDockSlot> DockingSlot;
+	TMap<ShipClass, TArray<int>> DockingClassMapper;
 #pragma endregion
 };

@@ -19,7 +19,6 @@ AShip::AShip() {
 	PrimaryActorTick.TickInterval = 0.0f;
 	npcShipID = -1;
 	isInited = false;
-
 	slotTargetModule = TArray<FTargetModule>();
 }
 
@@ -58,7 +57,8 @@ void AShip::Tick(float DeltaTime)
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
-			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
+			moveTargetVector = GetActorLocation() + dockingRotation.RotateVector(FVector::ForwardVector) * _define_SetDistanceToRotateForward;
+			targetObject = nullptr;
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
@@ -654,21 +654,16 @@ bool AShip::CommandWarp(FVector location) {
 bool AShip::CommandDock(TScriptInterface<IStructureable> target) {
 
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
-		if (target->RequestedDock(faction)) {
+		if (target->RequestedDock(faction, shipClass, dockingLocation, dockingRotation)) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
-
-			if (this->GetDistanceTo(targetObject) < 100.0f) {
-				targetObject = nullptr;
-				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
-				behaviorState = BehaviorState::Docked;
-			} else 
-				behaviorState = BehaviorState::Docking;
+			moveTargetVector = targetObject->GetActorLocation() + dockingRotation.RotateVector(dockingLocation);
+			behaviorState = BehaviorState::Docking;
 			return true;
 		}
 		else return false;
 	}
-	else return false;
+	return false;
 }
 
 bool AShip::CommandUndock() {
@@ -700,8 +695,7 @@ void AShip::GetDockedStructure(TScriptInterface<IStructureable>& getStructure) c
 }
 
 bool AShip::MoveDistanceCheck() {
-
-	if (IsValid(targetObject))
+	if (IsValid(targetObject) && targetObject->GetObjectType() != ObjectType::Station && targetObject->GetObjectType() != ObjectType::Gate)
 		moveTargetVector = targetObject->GetActorLocation();
 
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());

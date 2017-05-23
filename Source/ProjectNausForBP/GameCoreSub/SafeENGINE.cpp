@@ -20,6 +20,8 @@ USafeENGINE::USafeENGINE() {
 
 	static ConstructorHelpers::FObjectFinder<UDataTable> _SkillDataTable(TEXT("DataTable'/Game/DataTable/SkillData.SkillData'"));
 	SkillData = _SkillDataTable.Object;
+	static ConstructorHelpers::FObjectFinder<UDataTable> _QuestDataTable(TEXT("DataTable'/Game/DataTable/QuestData.QuestData'"));
+	QuestData = _QuestDataTable.Object;
 	static ConstructorHelpers::FObjectFinder<UDataTable> _ItemDataTable(TEXT("DataTable'/Game/DataTable/ItemData.ItemData'"));
 	ItemData = _ItemDataTable.Object;
 	static ConstructorHelpers::FObjectFinder<UDataTable> _ProjectileDataTable(TEXT("DataTable'/Game/DataTable/ProjectileData.ProjectileData'"));
@@ -80,6 +82,13 @@ const FSkillData& USafeENGINE::GetSkillData(const int& id) const {
 	if (_data)
 		return *_data;
 	else return *SkillData->FindRow<FSkillData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
+}
+
+const FQuestData& USafeENGINE::GetQuestData(const int& id) const {
+	FQuestData* _data = QuestData->FindRow<FQuestData>(*FString::Printf(TEXT("%d"), FMath::Max(id, 0)), TEXT("DataTableLoadError"));
+	if (_data)
+		return *_data;
+	else return *QuestData->FindRow<FQuestData>(*FString::Printf(TEXT("%d"), 0), TEXT("DataTableLoadError"));
 }
 
 const FItemData& USafeENGINE::GetItemData(const int& id) const {
@@ -195,20 +204,6 @@ bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dro
 	else return false;
 
 	return true;
-}
-
-bool USafeENGINE::CheckSkill(const TArray<FSkill>& skillList, const TArray<FSkill>& requsetCheckSkillList) {
-	/*bool tempCheckSu
-	for (int index = 0; index < skillList.Num(); index++) {
-	for (int index1 = 0; index1 < requsetCheckSkillList.Num(); index1++) {
-	if (skillList[index].skillID == requsetCheckSkillList[index].skillID) {
-	if (skillList[index].skillLevel >= requsetCheckSkillList[index].skillLevel)
-	return true;
-	else return false;
-	}
-	}
-	}*/
-	return false;
 }
 
 FVector USafeENGINE::GetRandomLocationToLocation(FVector location, float distance) {

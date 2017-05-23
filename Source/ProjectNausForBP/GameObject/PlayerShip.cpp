@@ -10,21 +10,11 @@ APlayerShip::APlayerShip() {
 	objectMovement->SetPlaneConstraintEnabled(true);
 	objectMovement->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Z);
 
-	playerViewpointArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FixArm"));
 	playerViewpointCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FixedCamera"));
-	playerViewpointArm->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
-	playerViewpointCamera->SetupAttachment(playerViewpointArm, playerViewpointArm->GetAttachSocketName());
-
-	playerViewpointArm->AddWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	lengthCamDistanceMin = 100.0f;
-	lengthCamDistanceMax = playerViewpointArm->CameraLagMaxDistance = 1000.0f;
-	//playerViewpointArm->bEnableCameraRotationLag = true;
-	playerViewpointArm->bEnableCameraLag = true;
-	playerViewpointArm->CameraLagSpeed = 100.0f;
-	playerViewpointArm->CameraRotationLagSpeed = 7.0f;
-	playerViewpointArm->bAbsoluteRotation = true;
-	playerViewpointArm->bDoCollisionTest = false;
-	playerViewpointArm->bUsePawnControlRotation = false;
+	playerViewpointCamera->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
+	playerViewpointCamera->bAbsoluteRotation = true;
+	playerViewpointCamera->AddWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	playerViewpointCamera->SetProjectionMode(ECameraProjectionMode::Orthographic);
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
@@ -87,16 +77,12 @@ void APlayerShip::Tick(float DeltaTime)
 		break;
 	case BehaviorState::Docking:
 		if (MoveDistanceCheck()) {
+			moveTargetVector = GetActorLocation() + dockingRotation.RotateVector(FVector::ForwardVector) * _define_SetDistanceToRotateForward;
 			targetObject = nullptr;
-			moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
 			behaviorState = BehaviorState::Docked;
 			Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
 		}
-		break;
-	case BehaviorState::Battle:
-		break;
-	case BehaviorState::Warping:
 		break;
 	default:
 		break;
@@ -281,10 +267,6 @@ bool APlayerShip::InitObject(const int objectId) {
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
-	lengthCamDistanceMin = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMINFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
-	lengthCamDistanceMax = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMAXFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
-	playerViewpointArm->CameraLagMaxDistance = FMath::Min(_define_CameraDinstanceMAX, lengthRadarRange * _define_CameraDinstanceMAXFactor);
-
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -482,10 +464,6 @@ bool APlayerShip::TotalStatsUpdate() {
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
 
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
-	lengthCamDistanceMin = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMINFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
-	lengthCamDistanceMax = FMath::Clamp(lengthRadarRange * _define_CameraDinstanceMAXFactor, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
-	playerViewpointArm->CameraLagMaxDistance = lengthCamDistanceMax;
-
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -1263,23 +1241,24 @@ UCameraComponent* APlayerShip::GetCamera() {
 }
 
 void APlayerShip::ControlViewPointX(const float value) {
-	//playerViewpointArm->AddWorldOffset(FVector(0.0f, value * _define_CamZoomFactor, 0.0f));
+	//playerViewpointCamera->AddWorldOffset(FVector(0.0f, value * _define_CamZoomFactor, 0.0f));
 }
 
 void APlayerShip::ControlViewPointY(const float value) {
-	//playerViewpointArm->AddWorldOffset(FVector(-value * _define_CamZoomFactor, 0.0f, 0.0f));
+	//playerViewpointCamera->AddWorldOffset(FVector(-value * _define_CamZoomFactor, 0.0f, 0.0f));
 }
 
 void APlayerShip::ControlCamDistance(const float value) {
-	if (!playerViewpointArm)
+	if (!playerViewpointCamera)
 		return;
-	playerViewpointArm->TargetArmLength = FMath::Clamp(playerViewpointArm->TargetArmLength + value * _define_CameraSensitivityMultipleZoom, lengthCamDistanceMin, lengthCamDistanceMax);
+	playerViewpointCamera->OrthoWidth
+		= FMath::Clamp(playerViewpointCamera->OrthoWidth + value * _define_CameraMultipleZoom, _define_CameraDinstanceMIN, _define_CameraDinstanceMAX);
 }
 
 void APlayerShip::ControlViewPointOrigin() {
-	if (!playerViewpointArm)
+	if (!playerViewpointCamera)
 		return;
-	playerViewpointArm->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	playerViewpointCamera->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 }
 
 void APlayerShip::SetTargetSpeed(const float value) {
@@ -1397,20 +1376,12 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 	
 	if (CheckCanBehavior() == true && target.GetObjectRef()->IsA(ASpaceObject::StaticClass())) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Receive Command Dock! Docking to Station Request : %s"), *target.GetObjectRef()->GetName());
-		if (target->RequestedDock(Faction::Player)) {
+		if (target->RequestedDock(faction, shipClass, dockingLocation, dockingRotation)) {
 			targetStructure = target;
 			targetObject = Cast<ASpaceObject>(target.GetObjectRef());
-
-			if (this->GetDistanceTo(targetObject) < 100.0f) {
-				targetObject = nullptr;
-				moveTargetVector = Cast<AActor>(targetStructure.GetObjectRef())->GetActorForwardVector() * _define_SetDistanceToRotateForward + GetActorLocation();
-				behaviorState = BehaviorState::Docked;
-				Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(targetStructure);
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIStationButton();
-			} else {
-				behaviorState = BehaviorState::Docking;
-				UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
-			}
+			moveTargetVector = targetObject->GetActorLocation() + dockingRotation.RotateVector(dockingLocation);
+			behaviorState = BehaviorState::Docking;
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandDock] Docking to Station Accepted. Start Sequence Dock."));
 			return true;
 		}
 		else {
@@ -1418,15 +1389,16 @@ bool APlayerShip::CommandDock(TScriptInterface<IStructureable> target) {
 			return false;
 		}
 	}
-	else return false;
+	return false;
 }
 
 bool APlayerShip::CommandUndock() {
-	if (behaviorState == BehaviorState::Docked) { 
+	if (behaviorState == BehaviorState::Docked) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandUndock] Receive Command Undock!"));
 		Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState)->SetDockedStructure(nullptr);
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OffUIStationButton();
-		behaviorState = BehaviorState::Idle;	
+		targetObject = nullptr;
+		behaviorState = BehaviorState::Idle;
 		return true;
 	}
 	else return false;
@@ -1443,8 +1415,7 @@ bool APlayerShip::CommandLaunch(const TArray<int>& baySlot) {
 
 #pragma region Functions
 bool APlayerShip::MoveDistanceCheck() {
-
-	if (IsValid(targetObject))
+	if (IsValid(targetObject) && targetObject->GetObjectType() != ObjectType::Station && targetObject->GetObjectType() != ObjectType::Gate)
 		moveTargetVector = targetObject->GetActorLocation();
 
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());

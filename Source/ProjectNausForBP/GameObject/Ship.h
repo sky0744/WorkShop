@@ -122,7 +122,8 @@ private:
 		TScriptInterface<ICommandable> targetCommand;
 	UPROPERTY()
 		TScriptInterface<IStructureable> targetStructure;
-
+	FVector dockingLocation;
+	FRotator dockingRotation;
 	float maxShield;
 	float rechargeShield;
 	float currentShield;

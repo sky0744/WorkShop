@@ -7,20 +7,6 @@
 
 ASpaceObject::ASpaceObject()
 {
-	/*
-	objectCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ObjectCollision"));
-	objectCollision->SetEnableGravity(false);
-	objectCollision->SetCollisionProfileName(TEXT("SpaceObject"));
-	objectCollision->BodyInstance.DOFMode = EDOFMode::XYPlane;
-	objectCollision->Mobility = EComponentMobility::Movable;
-	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	RootComponent = objectCollision;
-
-	//objectFlipBook = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("ObjectFlipbook"));
-	//objectFlipBook->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	//objectFlipBook->bAbsoluteRotation = true;
-	//objectFlipBook->SetWorldRotation(FRotator(0.0f, 90.0f, -90.0f));
-	*/
 	objectRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ObjectRoot"));
 	RootComponent = objectRoot;
 	objectSprite = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("ObjectSprite"));
@@ -56,14 +42,26 @@ void ASpaceObject::BeginPlay()
 void ASpaceObject::Tick( float DeltaTime )
 {
 	Super::Tick(DeltaTime);
-
+	/* 위쪽 방향부터 시계 방향으로 회전시
 	if (IsValid(objectFlipBook) && objectFlipBook->GetNumFrames() > 1) {
 		objectYaw = GetActorRotation().Yaw;
 		objectYaw += (360.0f / objectFlipBook->GetNumFrames()) * 0.5f;
 		if (objectYaw < 0.0f)
 			objectYaw += 360.0f;
 		objectYaw /= (360.0f / objectFlipBook->GetNumFrames());
-		//objectFlipBook->SetNewTime(objectYaw);
+		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(FMath::TruncToInt(objectYaw)));
+	}
+	*/
+	//현 : 왼쪽 방향부터 반시계 방향
+	float _temp = DeltaTime;
+	if (IsValid(objectFlipBook) && objectFlipBook->GetNumFrames() > 1) {
+		//성능을 위해 캐싱으로 활용
+		DeltaTime = 360.0f / objectFlipBook->GetNumFrames();
+		objectYaw = -GetActorRotation().Yaw - 90.0f + DeltaTime * 0.5f;
+		if (objectYaw < 0.0f)
+			objectYaw += 360.0f;
+		objectYaw /= DeltaTime;
+		GEngine->AddOnScreenDebugMessage(-1, _temp, FColor::White, FString::SanitizeFloat(objectYaw) + ", "+ FString::FromInt(FMath::TruncToInt(objectYaw)) +", " + FString::FromInt(objectFlipBook->GetNumFrames()));
 		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(FMath::TruncToInt(objectYaw)));
 	}
 }

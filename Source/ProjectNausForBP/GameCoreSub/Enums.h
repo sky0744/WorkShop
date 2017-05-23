@@ -266,6 +266,28 @@ enum class SkillGroup : uint8 {
 	TypeOfIndustry			UMETA(DisplayName = "Type Of Industry"),
 	TypeOfCommunity			UMETA(DisplayName = "Type Of Community")
 };
+UENUM(BlueprintType)
+enum class QuestPlotState : uint8 {
+	NotStart				UMETA(DisplayName = "Not Start"),
+	Progress				UMETA(DisplayName = "Progress"),
+	ConditionSatisfying		UMETA(DisplayName = "ConditionSatisfying"),
+	Finished				UMETA(DisplayName = "Finished")
+};
+UENUM(BlueprintType)
+/*	int형 조건 : 0U, 4U, 5U
+*	Item형 조건 : 2U, 3U
+*	Skill형 조건 : 1U
+*	문자열형 조건 : 6U
+*/
+enum class QuestConditionType : uint8 {
+	EnemyDestroy			UMETA(DisplayName = "Enemy Destroy"),
+	HavingSkill				UMETA(DisplayName = "Having Skill"),
+	HavingItem				UMETA(DisplayName = "Having Item"),
+	HavingItemAndGiving		UMETA(DisplayName = "Having Item And Giving"),
+	HavingCredit				UMETA(DisplayName = "Having Credit"),
+	HavingCreditAndGiving		UMETA(DisplayName = "Having Credit And Giving"),
+	MoveToSector			UMETA(DisplayName = "Move To Sector")
+};
 
 UENUM(BlueprintType)
 enum class ItemType : uint8 {
