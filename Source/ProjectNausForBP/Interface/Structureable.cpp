@@ -3,7 +3,6 @@
 #include "ProjectNausForBP.h"
 #include "Structureable.h"
 
-
 // This function does not need to be modified.
 UStructureable::UStructureable(const class FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)

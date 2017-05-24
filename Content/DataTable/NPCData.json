@@ -1,0 +1,248 @@
+[
+	{
+		"Name": "0",
+		"NPCID": 0,
+		"ShipID": 0,
+		"NPCName": "",
+		"Desc": "NSLOCTEXT(\"[717C81C549796B6132B475A1A5DF4D37]\", \"602798324239DDD619D56C970B120BA7\", \"This is Guard.\")",
+		"FactionOfProduction": "Empire",
+		"BehaviorTypeOfNPC": "Active",
+		"NpcBounty": 0,
+		"StrategicPointBonus": 10,
+		"EquipedSlotTarget": [ 20000, 20000 ],
+		"EquipedAmmoForTarget": [],
+		"BonusStats": [
+			{
+				"bonusStatType": "BonusDefShield",
+				"bonusStat": 0.40000000596046448
+			}
+		],
+		"TradeItems": [],
+		"DropItems": [
+			{
+				"dropItemID": 2000,
+				"dropAmountMin": 5,
+				"dropAmountMax": 10,
+				"dropChance": 100
+			},
+			{
+				"dropItemID": 16000,
+				"dropAmountMin": 7,
+				"dropAmountMax": 10,
+				"dropChance": 90
+			},
+			{
+				"dropItemID": 20000,
+				"dropAmountMin": 1,
+				"dropAmountMax": 2,
+				"dropChance": 3
+			}
+		]
+	},
+	{
+		"Name": "1",
+		"NPCID": 1,
+		"ShipID": 1,
+		"NPCName": "",
+		"Desc": "NSLOCTEXT(\"[717C81C549796B6132B475A1A5DF4D37]\", \"AE7D296E47C87CAC81D2718E64D963E1\", \"This is Guard.\")",
+		"FactionOfProduction": "TradeCoalition",
+		"BehaviorTypeOfNPC": "Active",
+		"NpcBounty": 0,
+		"StrategicPointBonus": 10,
+		"EquipedSlotTarget": [ 20000, 20000 ],
+		"EquipedAmmoForTarget": [],
+		"BonusStats": [
+			{
+				"bonusStatType": "BonusDefShield",
+				"bonusStat": 0.40000000596046448
+			}
+		],
+		"TradeItems": [],
+		"DropItems": [
+			{
+				"dropItemID": 2000,
+				"dropAmountMin": 5,
+				"dropAmountMax": 10,
+				"dropChance": 100
+			},
+			{
+				"dropItemID": 16000,
+				"dropAmountMin": 7,
+				"dropAmountMax": 10,
+				"dropChance": 90
+			},
+			{
+				"dropItemID": 20000,
+				"dropAmountMin": 1,
+				"dropAmountMax": 2,
+				"dropChance": 3
+			}
+		]
+	},
+	{
+		"Name": "2",
+		"NPCID": 2,
+		"ShipID": 2,
+		"NPCName": "",
+		"Desc": "NSLOCTEXT(\"[717C81C549796B6132B475A1A5DF4D37]\", \"B24AECBD4AA25A1953F0B9877D9C41E9\", \"This is Guard.\")",
+		"FactionOfProduction": "CitizenFederation",
+		"BehaviorTypeOfNPC": "Active",
+		"NpcBounty": 0,
+		"StrategicPointBonus": 10,
+		"EquipedSlotTarget": [ 20000, 20000 ],
+		"EquipedAmmoForTarget": [],
+		"BonusStats": [
+			{
+				"bonusStatType": "BonusDefShield",
+				"bonusStat": 0.40000000596046448
+			}
+		],
+		"TradeItems": [],
+		"DropItems": [
+			{
+				"dropItemID": 2000,
+				"dropAmountMin": 5,
+				"dropAmountMax": 10,
+				"dropChance": 100
+			},
+			{
+				"dropItemID": 16000,
+				"dropAmountMin": 7,
+				"dropAmountMax": 10,
+				"dropChance": 90
+			},
+			{
+				"dropItemID": 20000,
+				"dropAmountMin": 1,
+				"dropAmountMax": 2,
+				"dropChance": 3
+			}
+		]
+	},
+	{
+		"Name": "3",
+		"NPCID": 3,
+		"ShipID": 3,
+		"NPCName": "",
+		"Desc": "NSLOCTEXT(\"[717C81C549796B6132B475A1A5DF4D37]\", \"16D8E1F9462EC6C6692BA6847C905D12\", \"This is Guard.\")",
+		"FactionOfProduction": "Protectorate",
+		"BehaviorTypeOfNPC": "Active",
+		"NpcBounty": 0,
+		"StrategicPointBonus": 10,
+		"EquipedSlotTarget": [ 20000, 20000 ],
+		"EquipedAmmoForTarget": [],
+		"BonusStats": [
+			{
+				"bonusStatType": "BonusDefShield",
+				"bonusStat": 0.40000000596046448
+			}
+		],
+		"TradeItems": [],
+		"DropItems": [
+			{
+				"dropItemID": 2000,
+				"dropAmountMin": 5,
+				"dropAmountMax": 10,
+				"dropChance": 100
+			},
+			{
+				"dropItemID": 16000,
+				"dropAmountMin": 7,
+				"dropAmountMax": 10,
+				"dropChance": 90
+			},
+			{
+				"dropItemID": 20000,
+				"dropAmountMin": 1,
+				"dropAmountMax": 2,
+				"dropChance": 3
+			}
+		]
+	},
+	{
+		"Name": "4",
+		"NPCID": 4,
+		"ShipID": 0,
+		"NPCName": "",
+		"Desc": "NSLOCTEXT(\"[717C81C549796B6132B475A1A5DF4D37]\", \"A0D6EE8447FD3BFCBB8DE9851CB75E60\", \"This Is Guard.\")",
+		"FactionOfProduction": "LibertyAdvocacyNation",
+		"BehaviorTypeOfNPC": "Active",
+		"NpcBounty": 0,
+		"StrategicPointBonus": 10,
+		"EquipedSlotTarget": [ 20000 ],
+		"EquipedAmmoForTarget": [],
+		"BonusStats": [
+			{
+				"bonusStatType": "BonusMobilitySpeed",
+				"bonusStat": 5
+			},
+			{
+				"bonusStatType": "BonusMaxHull",
+				"bonusStat": -5
+			}
+		],
+		"TradeItems": [],
+		"DropItems": [
+			{
+				"dropItemID": 0,
+				"dropAmountMin": 0,
+				"dropAmountMax": 0,
+				"dropChance": 0
+			},
+			{
+				"dropItemID": 0,
+				"dropAmountMin": 0,
+				"dropAmountMax": 0,
+				"dropChance": 0
+			}
+		]
+	},
+	{
+		"Name": "5",
+		"NPCID": 5,
+		"ShipID": 0,
+		"NPCName": "",
+		"Desc": "NSLOCTEXT(\"[717C81C549796B6132B475A1A5DF4D37]\", \"CAFFDD2F4CD58D78109FE9BAF0EEF100\", \"This is Pirate.\")",
+		"FactionOfProduction": "Pirate",
+		"BehaviorTypeOfNPC": "Rage",
+		"NpcBounty": 100,
+		"StrategicPointBonus": 15,
+		"EquipedSlotTarget": [ 20000, 20000 ],
+		"EquipedAmmoForTarget": [],
+		"BonusStats": [
+			{
+				"bonusStatType": "BonusMobilitySpeed",
+				"bonusStat": 0.10000000149011612
+			},
+			{
+				"bonusStatType": "BonusRailGunDamage",
+				"bonusStat": 5
+			},
+			{
+				"bonusStatType": "BonusMaxShield",
+				"bonusStat": -0.10000000149011612
+			}
+		],
+		"TradeItems": [],
+		"DropItems": [
+			{
+				"dropItemID": 2000,
+				"dropAmountMin": 5,
+				"dropAmountMax": 10,
+				"dropChance": 100
+			},
+			{
+				"dropItemID": 16000,
+				"dropAmountMin": 7,
+				"dropAmountMax": 10,
+				"dropChance": 90
+			},
+			{
+				"dropItemID": 18000,
+				"dropAmountMin": 1,
+				"dropAmountMax": 2,
+				"dropChance": 3
+			}
+		]
+	}
+]

@@ -67,6 +67,11 @@ void AUserController::SetupInputComponent() {
 	InputComponent->BindAction("OpenInfoMenu", IE_Released, this, &AUserController::OpenInfoMenu);
 	InputComponent->BindAction("UnDock", IE_Released, this, &AUserController::KeyUndock);
 
+	InputComponent->BindAction("Finger1", IE_Pressed, this, &AUserController::Touch1Press);
+	InputComponent->BindAction("Finger1", IE_Released, this, &AUserController::Touch1Release);
+	InputComponent->BindAction("Finger2", IE_Pressed, this, &AUserController::Touch2Press);
+	InputComponent->BindAction("Finger2", IE_Released, this, &AUserController::Touch2Release);
+
 	InputComponent->BindAction("ClickLeft", IE_Pressed, this, &AUserController::ClickPressMouseLeft);
 	InputComponent->BindAction("ClickLeft", IE_Released, this, &AUserController::ClickReleaseMouseLeft);
 	InputComponent->BindAction("ClickWheel", IE_Pressed, this, &AUserController::ClickPressMouseWheel);
@@ -134,6 +139,22 @@ void AUserController::OpenInfoMenu() {
 void AUserController::KeyUndock() {
 	if (IsValid(controlledPawn) && controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
 		Cast<ICommandable>(controlledPawn)->CommandUndock();
+}
+
+void AUserController::Touch1Press(FKey key) {
+
+}
+
+void AUserController::Touch1Release(FKey key) {
+
+}
+
+void AUserController::Touch2Press(FKey key) {
+
+}
+
+void AUserController::Touch2Release(FKey key) {
+
 }
 #pragma endregion
 

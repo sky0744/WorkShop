@@ -8,7 +8,6 @@ ASpaceState::ASpaceState() {
 	ev_BGMComponent = CreateDefaultSubobject <UAudioComponent>(TEXT("BGMComponent"));
 	ev_BGMComponent->bAutoActivate = false;
 	ev_BGMComponent->OnAudioFinished.AddDynamic(this, &ASpaceState::OnBGMSettingAndPlay);
-	ev_BGMComponent->VolumeMultiplier;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = _define_SectorRefreshTime;
@@ -162,7 +161,6 @@ void ASpaceState::Tick(float DeltaSecondes) {
 			//게이트로부터 출현하는 함선 생성 및 연출
 			if (respawnData.isPlacementToGate && currentSectorInfo->GateList.Num() > 0) {
 				_randomGateIndex = FMath::RandRange(0, currentSectorInfo->GateList.Num() - 1);
-				currentSectorInfo->GateList[_randomGateIndex].structureLocation;
 
 				AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), 
 					FTransform(FRotator(0.0f, FMath::FRandRange(0.0f, 360.0f), 0.0f), FVector(currentSectorInfo->GateList[_randomGateIndex].structureLocation, 0.0f)), 
@@ -594,7 +592,7 @@ Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, co
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
 			}
-		case Faction::LibertyAdvocacyNation:
+		case Faction::LibertyNation:
 			switch (target) {
 			case Faction::Pirate:					_result = Peer::EnemyStrong; break;
 			default:								_result = Peer::Enemy; break;
@@ -642,17 +640,6 @@ float ASpaceState::GetRelationshipArray(TArray<float>& relationshipArray, bool i
 
 	relationshipArray = isRealRelation ? factionRelationship : tempFactionRelationship;
 	return relationwithPlayerEmpire;
-}
-
-void ASpaceState::ApplyRelation(const Faction targetFaction, float damageForConvertRelation) {
-
-	damageForConvertRelation = FMath::Clamp(damageForConvertRelation * FMath::FRandRange(_define_DamagetoRelationFactorMIN, _define_DamagetoRelationFactorMAX),
-		_define_LimitApplyRelationPerOnceMIN, _define_LimitApplyRelationPerOnceMAX);
-
-	int _tempIndex = FMath::Min3(tempFactionRelationship.Num(), (int)targetFaction, 0);
-	tempFactionRelationship[_tempIndex] = FMath::Clamp(tempFactionRelationship[_tempIndex] - damageForConvertRelation,
-		_define_FactionRelationshipMIN, _define_FactionRelationshipMAX);
-	return;
 }
 
 void ASpaceState::ApplyRelation(const Faction targetFaction, float SPForConvertRelation, const bool isRealRelation) {

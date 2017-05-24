@@ -41,7 +41,13 @@ const float _define_RegenShipFactor = 0.025f;
 //플레이어 데이터 Const
 const int _define_SkillLevelMIN = 0;
 const int _define_SkillLevelMAX = 5;
+const int _define_SkillLearningMultipleUnknown = 50;
 const float _define_SkillLearningTick = 1.0f;
+const float _define_SkillLearningTimeBase1 = 60.0f;
+const float _define_SkillLearningTimeBase2 = 180.0f;
+const float _define_SkillLearningTimeBase3 = 300.0f;
+const float _define_SkillLearningTimeBase4 = 450.0f;
+const float _define_SkillLearningTimeBase5 = 600.0f;
 
 const float _define_CreditMIN = -999999999999.0f;
 const float _define_CreditMAX = 999999999999.0f;
@@ -113,7 +119,7 @@ const float _define_StatPowerGridPerformanceMAX = 99999.0f;
 const float _define_StatCargoSizeMIN = 0.0f;
 const float _define_StatCargoSizeMAX = 200000.0f;
 
-const float _define_SetDistanceToRotateForward = 1000.0f;
+const float _define_SetDistanceToRotateForward = 10000.0f;
 #pragma endregion
 
 #pragma region Constant Value In Drone
@@ -558,7 +564,7 @@ struct PROJECTNAUSFORBP_API FShipData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ship Data")
-		FText Name;
+		FText ShipName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
@@ -657,7 +663,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		int ShipID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		FText Name;
+		FText NPCName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		FText Desc;
 
@@ -690,7 +696,7 @@ struct PROJECTNAUSFORBP_API FStationData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		FText Name;
+		FText StationName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
@@ -747,7 +753,7 @@ struct PROJECTNAUSFORBP_API FResourceData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		FText Name;
+		FText ResourceName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
@@ -777,7 +783,7 @@ struct PROJECTNAUSFORBP_API FObjectData : public FTableRowBase {
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
-		FText Name;
+		FText ObjectName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Resource Data")
@@ -819,7 +825,7 @@ struct PROJECTNAUSFORBP_API FSkillData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		FText Name;
+		FText SkillName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill Data")
@@ -848,7 +854,7 @@ struct PROJECTNAUSFORBP_API FQuestData : public FTableRowBase {
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		FText Name;
+		FText QuestName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill Data")
@@ -876,7 +882,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
 		int ItemID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
-		FText Name;
+		FText ItemName;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
 		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Data")
@@ -963,6 +969,10 @@ struct PROJECTNAUSFORBP_API FProjectileData : public FTableRowBase
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		int ItemID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
+		FName ProjectileName;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Data")
+		FText Desc;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")
 		int ItemLinkedID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Proejctile Data")

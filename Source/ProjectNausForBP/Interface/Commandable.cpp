@@ -3,7 +3,6 @@
 #include "ProjectNausForBP.h"
 #include "Commandable.h"
 
-
 // This function does not need to be modified.
 UCommandable::UCommandable(const class FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)

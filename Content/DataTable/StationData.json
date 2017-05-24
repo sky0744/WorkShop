@@ -1,0 +1,671 @@
+[
+	{
+		"Name": "0",
+		"StationName": "",
+		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"024815F745F3B23C0DED20BE18E341C4\", \"It is a station belonging to the central administration responsible for major administration within the empire.\")",
+		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/1/000_Sprite.000_Sprite'",
+		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/1/000.000'",
+		"FactionOfProduction": "Neutral",
+		"Type": "Hub",
+		"StrategicPoint": 0,
+		"RespawnTime": 0,
+		"Shield": 100000,
+		"RechargeShield": 120,
+		"DefShield": 50,
+		"Armor": 75000,
+		"RepairArmor": 10,
+		"DefArmor": 50,
+		"Hull": 50000,
+		"RepairHull": 5,
+		"DefHull": 20,
+		"DockingSlot": [
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": 80,
+					"Y": 0,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 180,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": 70,
+					"Y": 60,
+					"Z": 80
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": -135,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": 0,
+					"Y": 80,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": -90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": -30,
+					"Y": 60,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": -45,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": -50,
+					"Y": 0,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 0,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": -30,
+					"Y": -60,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 45,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": 0,
+					"Y": -80,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": 70,
+					"Y": -60,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 135,
+					"Roll": 0
+				}
+			}
+		],
+		"ItemSellListId": [],
+		"ItemListRefreshTime": 0,
+		"shipSellList": []
+	},
+	{
+		"Name": "1",
+		"StationName": "",
+		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"B23D3CF8479271184CF6379BDA77E7EC\", \"The majority of the goods needed by the empire are traded here. It is as high security as that.\")",
+		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/2/001_Sprite.001_Sprite'",
+		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/2/001.001'",
+		"FactionOfProduction": "Neutral",
+		"Type": "TradingCenter",
+		"StrategicPoint": 0,
+		"RespawnTime": 0,
+		"Shield": 30000,
+		"RechargeShield": 50,
+		"DefShield": 20,
+		"Armor": 10000,
+		"RepairArmor": 7,
+		"DefArmor": 10,
+		"Hull": 10000,
+		"RepairHull": 3,
+		"DefHull": 5,
+		"DockingSlot": [
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": 30,
+					"Y": -30,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 180,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": 30,
+					"Y": 0,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 180,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": 30,
+					"Y": 30,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 180,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": 10,
+					"Y": 50,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": -90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -20,
+					"Y": 50,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": -90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -50,
+					"Y": 50,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": -90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -80,
+					"Y": -30,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 0,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -80,
+					"Y": 0,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 0,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -80,
+					"Y": 30,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 0,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": 10,
+					"Y": -50,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -20,
+					"Y": -50,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 90,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": -50,
+					"Y": -50,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 90,
+					"Roll": 0
+				}
+			}
+		],
+		"ItemSellListId": [],
+		"ItemListRefreshTime": 0,
+		"shipSellList": []
+	},
+	{
+		"Name": "2",
+		"StationName": "",
+		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"20D02342460C57DB8AF43BBF3E0D4D21\", \"The power of the Empire was born right here. Numerous skilled workers reside to create ships needed by the Empire. One of the important facilities, the powerful Imperial Navy is protecting this place.\")",
+		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/15/station-shipyard_Sprite.station-shipyard_Sprite'",
+		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/15/station-shipyard.station-shipyard'",
+		"FactionOfProduction": "Neutral",
+		"Type": "Shipyard",
+		"StrategicPoint": 0,
+		"RespawnTime": 0,
+		"Shield": 100000,
+		"RechargeShield": 100,
+		"DefShield": 25,
+		"Armor": 100000,
+		"RepairArmor": 80,
+		"DefArmor": 10,
+		"Hull": 70000,
+		"RepairHull": 50,
+		"DefHull": 10,
+		"DockingSlot": [
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": -60,
+					"Y": -60,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 135,
+					"Roll": 0
+				}
+			},
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"BattleCruiser",
+					"BattleShip",
+					"Carrier",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge",
+					"Hulk"
+				],
+				"dockPosition":
+				{
+					"X": 60,
+					"Y": 60,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 135,
+					"Roll": 0
+				}
+			}
+		],
+		"ItemSellListId": [],
+		"ItemListRefreshTime": 0,
+		"shipSellList": []
+	},
+	{
+		"Name": "10000",
+		"StationName": "",
+		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"76BA4E4442D02009ECC55EA6B54A15B8\", \"Warp Gate is a high-tech structure. In response to a warp driver, you can transfer objects to another warp gate connected to a node in the warp network. In the early days, it had to pay high costs due to low efficiency, but now it is actually free of charge.\")",
+		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/7/station-commerce_Sprite.station-commerce_Sprite'",
+		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/7/station-commerce.station-commerce'",
+		"FactionOfProduction": "Neutral",
+		"Type": "Gate",
+		"StrategicPoint": 0,
+		"RespawnTime": 0,
+		"Shield": 70000,
+		"RechargeShield": 150,
+		"DefShield": 50,
+		"Armor": 20000,
+		"RepairArmor": 10,
+		"DefArmor": 5,
+		"Hull": 20000,
+		"RepairHull": 5,
+		"DefHull": 0,
+		"DockingSlot": [
+			{
+				"dockAvailableClass": [
+					"Frigate",
+					"Destroyer",
+					"Cruiser",
+					"TransfortShip",
+					"Freighter",
+					"MiningShip",
+					"MiningBarge"
+				],
+				"dockPosition":
+				{
+					"X": 0,
+					"Y": -100,
+					"Z": 0
+				},
+				"dockDirection":
+				{
+					"Pitch": 0,
+					"Yaw": 90,
+					"Roll": 0
+				}
+			}
+		],
+		"ItemSellListId": [],
+		"ItemListRefreshTime": 0,
+		"shipSellList": []
+	}
+]

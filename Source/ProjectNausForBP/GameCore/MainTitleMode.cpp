@@ -11,7 +11,7 @@ AMainTitleMode::AMainTitleMode() {
 	PlayerStateClass = AUserState::StaticClass();
 	DefaultPawnClass = nullptr;
 
-	static ConstructorHelpers::FObjectFinder<UClass> HUDFinder(TEXT("Blueprint'/Game/BluePrint/GameModes/HUD/MainTitleHUD.MainTitleHUD_C'"));
+	static ConstructorHelpers::FObjectFinder<UClass> HUDFinder(TEXT("Blueprint'/Game/BluePrint/HUD/TouchMode/mTitleHUD.mTitleHUD_C'"));
 	if(HUDFinder.Succeeded())
 		HUDClass = (UClass *)HUDFinder.Object;
 }

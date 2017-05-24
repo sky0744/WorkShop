@@ -11,7 +11,7 @@ ASpaceMode::ASpaceMode() {
 	PlayerStateClass = AUserState::StaticClass();
 	DefaultPawnClass = APlayerShip::StaticClass();
 	
-	static ConstructorHelpers::FObjectFinder<UClass> HUDFinder(TEXT("Blueprint'/Game/BluePrint/GameModes/HUD/SpaceHUD.SpaceHUD_C'"));
+	static ConstructorHelpers::FObjectFinder<UClass> HUDFinder(TEXT("Blueprint'/Game/BluePrint/HUD/MouseMode/SpaceHUD.SpaceHUD_C''"));
 	if (HUDFinder.Succeeded())
 		HUDClass = (UClass *)HUDFinder.Object;
 

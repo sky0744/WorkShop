@@ -146,8 +146,16 @@ public:
 		bool SetRestartLocation();
 #pragma endregion
 
+#pragma region Debugging Cheat
+	
+public:
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+	void CheatCommand(CheatType cheatType, UPARAM(ref) FString& parameters);
+#pragma endregion
+	
 #pragma region Environment Functions & Components & Variables
 public:
+	/*
 	//그래픽 설정 함수
 	//사운드 볼륨 설정 컴포넌트 및 변수
 	UFUNCTION(BlueprintCallable, Category = "Call Environment Setting Function : State")
@@ -168,6 +176,7 @@ public:
 	bool ev_GrahpicHDR;
 	bool ev_GrahpicSSAO;
 	//사운드 볼륨 설정 컴포넌트 및 변수
+	*/
 	UPROPERTY()
 		USoundClass* ev_BGMClass;
 	UPROPERTY()
@@ -176,12 +185,21 @@ public:
 		USoundMix* ev_BGMMix;
 	UPROPERTY()
 		USoundMix* ev_SfxMix;
+	/*
 	float ev_BGMVolume;
 	float ev_SfxVolume;
 	//입력 설정 컴포넌트 및 변수
 	float ev_KeyAsixSensitivity;
 	float ev_MouseAsixSensitivity;
 	//게임 플레이 설정 컴포넌트 및 변수
+	*/
+	/*
+	//UI Color
+	float ev_UIWndowTopColor;
+	float ev_UIBodyTopColor;
+	float ev_UIBodyLineColor;
+	float ev_UIButtonColor;
+	*/
 #pragma endregion
 
 #pragma region Components & Variables
@@ -208,5 +226,7 @@ private:
 	FString nextSectorName;
 	TScriptInterface<IStructureable> dockedStructure;
 	float currentCargo;
+	
 #pragma endregion
+
 };

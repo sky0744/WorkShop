@@ -1,7 +1,5 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#pragma once
-
 #include "ProjectNausForBP.h"
 #include "PlayerShip.h"
 
@@ -229,7 +227,7 @@ bool APlayerShip::InitObject(const int objectId) {
 		return false;
 	FShipData _tempShipData = _tempInstance->GetShipData(objectId);
 
-	objectName = _tempShipData.Name;
+	objectName = _tempShipData.ShipName;
 	if (_tempShipData.FlipSprite) {
 		objectFlipBook = _tempShipData.FlipSprite;
 		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));
@@ -1573,7 +1571,7 @@ void APlayerShip::ModuleCheck() {
 								module.damageMultiple, _hardPointLocation, module.ammoLifeSpanBonus);
 						}
 						//탄도 무기류의 경우
-						else if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerLaser)
+						else if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerLaser) {
 							if (module.ammo.itemAmount < 1) {
 								module.moduleState = ModuleState::ReloadAmmo;
 								module.isBookedForOff = false;
@@ -1597,6 +1595,7 @@ void APlayerShip::ModuleCheck() {
 								}
 								UGameplayStatics::FinishSpawningActor(_projectile, _spawnedTransform);
 							}
+						}
 					} 
 					else {
 						module.moduleState = ModuleState::NotActivate;

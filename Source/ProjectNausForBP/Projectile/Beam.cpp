@@ -3,7 +3,6 @@
 #include "ProjectNausForBP.h"
 #include "Beam.h"
 
-
 // Sets default values
 ABeam::ABeam()
 {

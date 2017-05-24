@@ -1,7 +1,5 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#pragma once
-
 #include "ProjectNausForBP.h"
 #include "Ship.h"
 
@@ -228,7 +226,7 @@ bool AShip::InitObject(const int npcID) {
 	FItemData _tempModuleData;
 
 	npcShipID = _tempNpcShipData.NPCID;
-	objectName = _tempNpcShipData.Name;
+	objectName = _tempNpcShipData.NPCName;
 	if (_tempShipData.FlipSprite) {
 		objectFlipBook = _tempShipData.FlipSprite;
 		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));

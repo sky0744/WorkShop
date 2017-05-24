@@ -308,7 +308,7 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 	
 	structureInfo = &structureData;
 	_tempStationData = _tempInstance->GetStationData(structureInfo->structureID);
-	objectName = _tempStationData.Name;
+	objectName = _tempStationData.StationName;
 
 	if (_tempStationData.FlipSprite)
 		objectSprite->SetSprite(_tempStationData.FlipSprite);

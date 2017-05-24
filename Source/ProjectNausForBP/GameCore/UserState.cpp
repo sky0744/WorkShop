@@ -31,12 +31,29 @@ void AUserState::BeginPlay() {
 void AUserState::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	if (learningSkillId > -1 && playerSkill.Contains(learningSkillId)) {
+	if (learningSkillId > -1 && playerSkill.Contains(learningSkillId) && playerSkill[learningSkillId].skillLevel < 5) {
 		playerSkill[learningSkillId].skillLearning -= DeltaTime;
 		if (playerSkill[learningSkillId].skillLearning < 0) {
 			playerSkill[learningSkillId].skillLevel = FMath::Clamp(playerSkill[learningSkillId].skillLevel + 1,
 				_define_SkillLevelMIN + 1, _define_SkillLevelMAX);
-			learningSkillId = -1;
+
+			USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+			FSkillData _tempSkillData;
+			int _skillLearnMultiple = 0;
+			if (_tempInstance) {
+				_tempSkillData = _tempInstance->GetSkillData(learningSkillId);
+				_skillLearnMultiple = _tempSkillData.LearningMultiple;
+			}
+			else _skillLearnMultiple = _define_SkillLearningMultipleUnknown;
+
+			switch (playerSkill[learningSkillId].skillLevel) {
+				case 1:		playerSkill[learningSkillId].skillLearning = _skillLearnMultiple * _define_SkillLearningTimeBase2;	break;
+				case 2:		playerSkill[learningSkillId].skillLearning = _skillLearnMultiple * _define_SkillLearningTimeBase3;	break;
+				case 3:		playerSkill[learningSkillId].skillLearning = _skillLearnMultiple * _define_SkillLearningTimeBase4;	break;
+				case 4:		playerSkill[learningSkillId].skillLearning = _skillLearnMultiple * _define_SkillLearningTimeBase5;	break;
+				case 5:		playerSkill[learningSkillId].skillLearning = -1.0f;	break;
+				default:	playerSkill[learningSkillId].skillLearning = _skillLearnMultiple * _define_SkillLearningTimeBase5;	break;
+			}
 		}
 	}
 }
@@ -833,8 +850,10 @@ void AUserState::GetLearningSkill(FSkill& learningSkill) const {
 }
 
 void AUserState::SetLearningSkill(const int learningId) {
-	learningSkillId = learningSkillId;
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIUser();
+	if (playerSkill.Contains(learningId)) {
+		learningSkillId = learningId;
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIUser();
+	}
 }
 
 void AUserState::StopLearningSkill() {
@@ -846,7 +865,14 @@ bool AUserState::NewLearningSkill(const int NewLearningSkillId) {
 	if (playerSkill.Contains(NewLearningSkillId) || NewLearningSkillId < 0)
 		return false;
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
-	FSkillData _tempSkillData = _tempInstance->GetSkillData(NewLearningSkillId);
+	FSkillData _tempSkillData;
+	int _skillLearnMultiple = 0;
+
+	if (_tempInstance) {
+		_tempSkillData = _tempInstance->GetSkillData(NewLearningSkillId);
+		_skillLearnMultiple = _tempSkillData.LearningMultiple;
+	} else
+		return false;
 
 	//DataTable로부터 획득한 데이터를 체크
 	if (playerSkill.Contains(_tempSkillData.SkillID))
@@ -856,7 +882,7 @@ bool AUserState::NewLearningSkill(const int NewLearningSkillId) {
 	if (!CheckSkill(_tempSkillData.RequireSkill))
 		return false;
 
-	playerSkill.Emplace(_tempSkillData.SkillID, FSkill(_tempSkillData.SkillID, 0, 0.0f));
+	playerSkill.Emplace(_tempSkillData.SkillID, FSkill(_tempSkillData.SkillID, 0, _skillLearnMultiple * _define_SkillLearningTimeBase1));
 	learningSkillId = _tempSkillData.SkillID;
 	return true;
 }
@@ -912,7 +938,83 @@ bool AUserState::SetRestartLocation() {
 }
 #pragma endregion
 
+#pragma region Debugging Cheat
+void AUserState::CheatCommand(CheatType cheatType, UPARAM(ref) FString& parameters) {
+	ASpaceHUDBase* _hud = Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	FString _parameter1;
+	FString _parameter2;
+	bool _isSplited = parameters.Split(" ", &_parameter1, &_parameter2);
+	bool _isCheckSuccess = false;
+
+	switch (cheatType) {
+	case CheatType::AddCredit:
+		if (!_isSplited) {
+			ChangeCredit(FMath::Abs(FCString::Atoi(*parameters)));
+			_isCheckSuccess = true;
+		}
+		break;
+	case CheatType::RemoveCredit:
+		if (!_isSplited) 
+			_isCheckSuccess = ChangeCredit(-FMath::Abs(FCString::Atoi(*parameters)));
+		break;
+	case CheatType::AddItem:
+		if (_isSplited) 
+			_isCheckSuccess = AddPlayerCargo(FItem(FCString::Atoi(*_parameter1), FCString::Atoi(*_parameter2)));
+		break;
+	case CheatType::RemoveItem:
+		if (_isSplited) 
+			_isCheckSuccess = DropPlayerCargo(FItem(FCString::Atoi(*_parameter1), FCString::Atoi(*_parameter2)));
+		break;
+	case CheatType::AddSkill:
+		if (_isSplited) {
+			playerSkill.Emplace(FCString::Atoi(*_parameter1), FSkill(FCString::Atoi(*_parameter1), FCString::Atoi(*_parameter2)));
+			_isCheckSuccess = true;
+		}
+		break;
+	case CheatType::RemoveSkill:
+		if (!_isSplited) {
+			playerSkill.Remove(FCString::Atoi(*parameters));
+			_isCheckSuccess = true;
+		}
+		break;
+	case CheatType::GetSkillList:
+		if (!_hud)
+			break;
+		for (auto& skills : playerSkill)
+			_hud->AddUILogMessage(FText::Format(NSLOCTEXT("UIText", "LogMessage_DebugCommand_GetSkillList", "스킬 ID : {ID}, 레벨 : {Level}"), skills.Value.skillID, skills.Value.skillLevel) , FColor::Blue);
+		_isCheckSuccess = true;
+		break;
+	case CheatType::WarpTo:
+		if (!_isSplited)
+			_isCheckSuccess = Jump(parameters);
+		break;
+	case CheatType::BGMVolume:
+		if (!_isSplited && ev_BGMMix && ev_BGMClass) {
+				UGameplayStatics::SetSoundMixClassOverride(GetWorld(), ev_BGMMix, ev_BGMClass, FMath::Clamp(FCString::Atof(*parameters), 0.0f, 1.0f));
+				_isCheckSuccess = true;
+			}
+		break;
+	case CheatType::SfxVolume:
+		if (!_isSplited && ev_SfxMix && ev_SfxClass) {
+			UGameplayStatics::SetSoundMixClassOverride(GetWorld(), ev_SfxMix, ev_SfxClass, FMath::Clamp(FCString::Atof(*parameters), 0.0f, 1.0f));
+			_isCheckSuccess = true;
+		}
+		break;
+	default:
+		break;
+	}
+	if (_hud) {
+		if (_isCheckSuccess)
+			_hud->AddUILogMessage(NSLOCTEXT("UIText", "LogMessage_DebugCommandResult_Success", "커맨드 적용 성공"), FColor::White);
+		else
+			_hud->AddUILogMessage(NSLOCTEXT("UIText", "LogMessage_DebugCommandResult_Fail", "커맨드 적용 실패"), FColor::Red);
+	}
+	return;
+}
+#pragma endregion
+
 #pragma region Changing Environment Setting Functions
+/*
 float AUserState::Ev_ChangeBGMVolume(float volume) {
 
 	if (!ev_BGMClass->IsValidLowLevelFast() || !ev_BGMMix->IsValidLowLevelFast())
@@ -934,4 +1036,5 @@ float AUserState::Ev_ChangeSfxVolume(float volume) {
 
 	return ev_SfxVolume;
 }
+*/
 #pragma endregion

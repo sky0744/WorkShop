@@ -16,7 +16,7 @@ enum class Faction : uint8 {
 	TradeCoalition				UMETA(DisplayName = "Trade Coalition"),
 	CitizenFederation			UMETA(DisplayName = "Citizen Federation"),
 	Protectorate				UMETA(DisplayName = "Protectorate"),
-	LibertyAdvocacyNation		UMETA(DisplayName = "Liberty Advocacy Nation"),
+	LibertyNation		UMETA(DisplayName = "Liberty Nation"),
 	Pirate						UMETA(DisplayName = "Pirate")
 };
 UENUM(BlueprintType)
@@ -251,11 +251,12 @@ enum class BonusStatType : uint8 {
 };
 UENUM(BlueprintType)
 enum class SkillGroup : uint8 {
+	TypeOfShipControl			UMETA(DisplayName = "Type Of Ship Conrol"),
 	TypeOfShield			UMETA(DisplayName = "Type Of Shield"),
 	TypeOfSArmor			UMETA(DisplayName = "Type Of Armor"),
 	TypeOfHull				UMETA(DisplayName = "Type Of Hull"),
 	TypeOfPower				UMETA(DisplayName = "Type Of Power"),
-	TypeOfShipEnhance		UMETA(DisplayName = "Type Of ShipEnhance"),
+	TypeOfShipEnhance		UMETA(DisplayName = "Type Of Ship Enhance"),
 	TypeOfElectronics		UMETA(DisplayName = "Type Of Electronics"),
 	TypeOfMovement			UMETA(DisplayName = "Type Of Movement"),
 	TypeOfWeaponBeam		UMETA(DisplayName = "Type Of Weapon - Beam"),
@@ -435,5 +436,21 @@ enum class SaveState : uint8 {
 	NewGameCreate			UMETA(DisplayName = "New Game Create"),
 	UserRequest			UMETA(DisplayName = "Save/Load User Request"),
 	BeforeWarp			UMETA(DisplayName = "Save/Load Before Warp"),
+};
+#pragma endregion
+
+#pragma region 임시 디버깅용...
+UENUM(BlueprintType)
+enum class CheatType : uint8 {
+	AddItem			UMETA(DisplayName = "Add Item"),
+	RemoveItem			UMETA(DisplayName = "Remove Item"),
+	AddCredit			UMETA(DisplayName = "Add Credit"),
+	RemoveCredit		UMETA(DisplayName = "Remove Credit"),
+	AddSkill			UMETA(DisplayName = "Add Skill"),
+	RemoveSkill		UMETA(DisplayName = "Remove Skill"),
+	GetSkillList		UMETA(DisplayName = "Get Skill List"),
+	WarpTo		UMETA(DisplayName = "Warp To"),
+	BGMVolume			UMETA(DisplayName = "Control BGM Volume"),
+	SfxVolume	UMETA(DisplayName = "Control Sfx Volume")
 };
 #pragma endregion

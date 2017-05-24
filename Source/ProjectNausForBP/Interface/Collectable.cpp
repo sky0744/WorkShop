@@ -3,7 +3,6 @@
 #include "ProjectNausForBP.h"
 #include "Collectable.h"
 
-
 // This function does not need to be modified.
 UCollectable::UCollectable(const class FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)

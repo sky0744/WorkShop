@@ -1,0 +1,154 @@
+[
+	{
+		"Name": "0",
+		"ProfileID": 0,
+		"StartShipID": 0,
+		"StartCredit": 5000000000,
+		"StartRenown": 0,
+		"StartSector": "Cansoe",
+		"StartPosition":
+		{
+			"X": 0,
+			"Y": 0
+		},
+		"StartSkillList": [
+			{
+				"skillID": 0,
+				"skillLevel": 1,
+				"skillLearning": 0
+			},
+			{
+				"skillID": 1,
+				"skillLevel": 2,
+				"skillLearning": 0
+			}
+		],
+		"StartItemList": [
+			{
+				"itemID": 20000,
+				"itemAmount": 3
+			},
+			{
+				"itemID": 21000,
+				"itemAmount": 2
+			},
+			{
+				"itemID": 21000,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 22000,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 26000,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 30000,
+				"itemAmount": 2
+			},
+			{
+				"itemID": 30001,
+				"itemAmount": 2
+			},
+			{
+				"itemID": 30002,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 30003,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 30004,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 30005,
+				"itemAmount": 1
+			},
+			{
+				"itemID": 40000,
+				"itemAmount": 2
+			},
+			{
+				"itemID": 40001,
+				"itemAmount": 6
+			},
+			{
+				"itemID": 50000,
+				"itemAmount": 2
+			},
+			{
+				"itemID": 50001,
+				"itemAmount": 6
+			}
+		],
+		"StartFactionRelation": [ 2, 0, 0, 1, -1, -5 ]
+	},
+	{
+		"Name": "1",
+		"ProfileID": 1,
+		"StartShipID": 0,
+		"StartCredit": 50000,
+		"StartRenown": 0,
+		"StartSector": "Nras",
+		"StartPosition":
+		{
+			"X": 0,
+			"Y": 0
+		},
+		"StartSkillList": [],
+		"StartItemList": [],
+		"StartFactionRelation": [ 0, 2, 1, 0, -1, -5 ]
+	},
+	{
+		"Name": "2",
+		"ProfileID": 2,
+		"StartShipID": 0,
+		"StartCredit": 50000,
+		"StartRenown": 0,
+		"StartSector": "Dodixii",
+		"StartPosition":
+		{
+			"X": 0,
+			"Y": 0
+		},
+		"StartSkillList": [],
+		"StartItemList": [],
+		"StartFactionRelation": [ 0, 1, 2, 0, -1, -5 ]
+	},
+	{
+		"Name": "3",
+		"ProfileID": 3,
+		"StartShipID": 0,
+		"StartCredit": 50000,
+		"StartRenown": 0,
+		"StartSector": "Kavars",
+		"StartPosition":
+		{
+			"X": 0,
+			"Y": 0
+		},
+		"StartSkillList": [],
+		"StartItemList": [],
+		"StartFactionRelation": [ 1, 0, 0, 2, -1, -5 ]
+	},
+	{
+		"Name": "4",
+		"ProfileID": 4,
+		"StartShipID": 0,
+		"StartCredit": 0,
+		"StartRenown": 0,
+		"StartSector": "CenterOfWorld",
+		"StartPosition":
+		{
+			"X": 0,
+			"Y": 0
+		},
+		"StartSkillList": [],
+		"StartItemList": [],
+		"StartFactionRelation": [ 0, 0, 0, 0, 0, 0 ]
+	}
+]

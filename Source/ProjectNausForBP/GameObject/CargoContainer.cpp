@@ -3,7 +3,6 @@
 #include "ProjectNausForBP.h"
 #include "CargoContainer.h"
 
-
 // Sets default values
 ACargoContainer::ACargoContainer()
 {
@@ -84,7 +83,7 @@ bool ACargoContainer::InitObject(const int objectId) {
 		return false;
 
 	FObjectData _tempObjectData = _tempInstance->GetCargoContainerData(objectId);
-	objectName = _tempObjectData.Name;
+	objectName = _tempObjectData.ObjectName;
 	if (_tempObjectData.FlipSprite) {
 		objectFlipBook = _tempObjectData.FlipSprite;
 		objectSprite->SetSprite(objectFlipBook->GetSpriteAtFrame(0));

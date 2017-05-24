@@ -1,13 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
 #include "ProjectNausForBP.h"
 #include "SpaceObject.h"
 #include "Interface/Commandable.h"
 #include "Drone.generated.h"
-
-
 
 UCLASS()
 class PROJECTNAUSFORBP_API ADrone : public ASpaceObject, public ICommandable

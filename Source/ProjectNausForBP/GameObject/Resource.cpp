@@ -88,8 +88,8 @@ bool AResource::InitObject(const int objectId) {
 	if (resourceID != objectId) {
 		resourceID = objectId;
 		if(_isRich)
-			objectName = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "Rich {name}"), _tempResourceData.Name);
-		else objectName = _tempResourceData.Name;
+			objectName = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "Rich {name}"), _tempResourceData.ResourceName);
+		else objectName = _tempResourceData.ResourceName;
 
 	
 		if(_tempResourceData.FlipSprite.Num() > 1)

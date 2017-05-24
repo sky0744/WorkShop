@@ -1,0 +1,14 @@
+[
+	{
+		"Name": "NewRow",
+		"QuestName": "",
+		"Desc": "",
+		"QuestIcon": "None",
+		"AgentIcon": "None",
+		"AgentStartDesc": "",
+		"AgentReStartDesc": "",
+		"AgentFinishDesc": "",
+		"RequireQuestID": [],
+		"QuestPlot": []
+	}
+]

@@ -19,10 +19,10 @@ public:
 
 #pragma region Components & Variables
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "Space AI")
-		UBehaviorTree* aiBehaviorTree;
-	UPROPERTY(BlueprintReadOnly, Category = "Space AI")
-		UBlackboardComponent* compAIBlackboard;
-	UPROPERTY(BlueprintReadOnly, Category = "Space AI")
-		UBlackboardData* aiBlackboard;
+	//UPROPERTY(BlueprintReadOnly, Category = "Space AI")
+	//	UBehaviorTree* aiBehaviorTree;
+	//UPROPERTY(BlueprintReadOnly, Category = "Space AI")
+	//	UBlackboardComponent* compAIBlackboard;
+	//UPROPERTY(BlueprintReadOnly, Category = "Space AI")
+	//	UBlackboardData* aiBlackboard;
 };

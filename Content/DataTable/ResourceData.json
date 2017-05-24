@@ -1,0 +1,401 @@
+[
+	{
+		"Name": "0",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"36559BE24F3C952161C6658411BEBEBE\", \"Fuchsite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/ore.ore'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 450,
+			"Y": 600
+		},
+		"DurabilityDef": 10,
+		"ResourceItemID": 0,
+		"OreAmountRange":
+		{
+			"X": 500,
+			"Y": 1500
+		},
+		"RichOreChance": 0.11999999731779099
+	},
+	{
+		"Name": "1",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"14EB53564F638289864E65A0A9E1CAA6\", \"Green Avenine\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/stone-pile.stone-pile'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 500,
+			"Y": 600
+		},
+		"DurabilityDef": 60,
+		"ResourceItemID": 1,
+		"OreAmountRange":
+		{
+			"X": 450,
+			"Y": 1200
+		},
+		"RichOreChance": 0.10000000149011612
+	},
+	{
+		"Name": "2",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"99D5315246DD4640DC6D78B91135F5ED\", \"katite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Trade/stone-tablet.stone-tablet'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 500,
+			"Y": 700
+		},
+		"DurabilityDef": 120,
+		"ResourceItemID": 2,
+		"OreAmountRange":
+		{
+			"X": 450,
+			"Y": 900
+		},
+		"RichOreChance": 0.090000003576278687
+	},
+	{
+		"Name": "3",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"5B70C6B048D0F11C3E3EFDB7678381AD\", \"Haitite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/ore.ore'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 550,
+			"Y": 800
+		},
+		"DurabilityDef": 170,
+		"ResourceItemID": 3,
+		"OreAmountRange":
+		{
+			"X": 350,
+			"Y": 750
+		},
+		"RichOreChance": 0.090000003576278687
+	},
+	{
+		"Name": "4",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"858E558940D950DB635CCEB1FC513A11\", \"Gaphite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/gold-nuggets.gold-nuggets'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 600,
+			"Y": 800
+		},
+		"DurabilityDef": 220,
+		"ResourceItemID": 4,
+		"OreAmountRange":
+		{
+			"X": 250,
+			"Y": 600
+		},
+		"RichOreChance": 0.075000002980232239
+	},
+	{
+		"Name": "5",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"75C49B0D40CCFDEF67BC569287B6CE7C\", \"Batinon\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Mineral/crystal-bars.crystal-bars'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 650,
+			"Y": 900
+		},
+		"DurabilityDef": 290,
+		"ResourceItemID": 5,
+		"OreAmountRange":
+		{
+			"X": 200,
+			"Y": 450
+		},
+		"RichOreChance": 0.059999998658895493
+	},
+	{
+		"Name": "6",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"BE3C6BFC4F1278F634931AA0938BCF0C\", \"Iceper\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/rock.rock'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 750,
+			"Y": 1200
+		},
+		"DurabilityDef": 350,
+		"ResourceItemID": 6,
+		"OreAmountRange":
+		{
+			"X": 200,
+			"Y": 350
+		},
+		"RichOreChance": 0.05000000074505806
+	},
+	{
+		"Name": "7",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"E2FD63EE48A8011171CA2BA91624FE88\", \"Kienite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/ore.ore'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 900,
+			"Y": 1500
+		},
+		"DurabilityDef": 350,
+		"ResourceItemID": 7,
+		"OreAmountRange":
+		{
+			"X": 150,
+			"Y": 250
+		},
+		"RichOreChance": 0.019999999552965164
+	},
+	{
+		"Name": "8",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"BF36CE1941894F13BE10BCBDF23A4319\", \"Orpimet\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/stone-pile.stone-pile'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 700,
+			"Y": 1000
+		},
+		"DurabilityDef": 250,
+		"ResourceItemID": 8,
+		"OreAmountRange":
+		{
+			"X": 300,
+			"Y": 500
+		},
+		"RichOreChance": 0.070000000298023224
+	},
+	{
+		"Name": "9",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"225B4048400CA259ED7BC786C4EFBE6D\", \"Emplaox\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Trade/stone-tablet.stone-tablet'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 950,
+			"Y": 1300
+		},
+		"DurabilityDef": 330,
+		"ResourceItemID": 9,
+		"OreAmountRange":
+		{
+			"X": 180,
+			"Y": 270
+		},
+		"RichOreChance": 0.035000000149011612
+	},
+	{
+		"Name": "10",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"C86927284A4AF684075F099A50DB7C37\", \"Quatz\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/ore.ore'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 700,
+			"Y": 1000
+		},
+		"DurabilityDef": 250,
+		"ResourceItemID": 10,
+		"OreAmountRange":
+		{
+			"X": 300,
+			"Y": 500
+		},
+		"RichOreChance": 0.070000000298023224
+	},
+	{
+		"Name": "11",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"13FB63404A45633A0CA855AF2428264F\", \"Selanite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/rock.rock'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 950,
+			"Y": 1300
+		},
+		"DurabilityDef": 330,
+		"ResourceItemID": 11,
+		"OreAmountRange":
+		{
+			"X": 180,
+			"Y": 270
+		},
+		"RichOreChance": 0.035000000149011612
+	},
+	{
+		"Name": "12",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"2A4F28AE4F7CE0F9004CFDACE287B4B6\", \"wrahite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Mineral/crystal-bars.crystal-bars'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 700,
+			"Y": 1000
+		},
+		"DurabilityDef": 250,
+		"ResourceItemID": 12,
+		"OreAmountRange":
+		{
+			"X": 300,
+			"Y": 500
+		},
+		"RichOreChance": 0.070000000298023224
+	},
+	{
+		"Name": "13",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"842A8CD74A7FBEEAE51CA69A11C6561C\", \"Culnite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/gold-nuggets.gold-nuggets'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 950,
+			"Y": 1300
+		},
+		"DurabilityDef": 330,
+		"ResourceItemID": 13,
+		"OreAmountRange":
+		{
+			"X": 180,
+			"Y": 270
+		},
+		"RichOreChance": 0.035000000149011612
+	},
+	{
+		"Name": "14",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"25625C6F42153A0478A383A2FA667D1F\", \"Albaxite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/ore.ore'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 700,
+			"Y": 1000
+		},
+		"DurabilityDef": 250,
+		"ResourceItemID": 14,
+		"OreAmountRange":
+		{
+			"X": 300,
+			"Y": 500
+		},
+		"RichOreChance": 0.070000000298023224
+	},
+	{
+		"Name": "15",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"2BEDAFFB41FA2464A5D499A075742CCC\", \"Anxite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/stone-pile.stone-pile'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 950,
+			"Y": 1300
+		},
+		"DurabilityDef": 330,
+		"ResourceItemID": 15,
+		"OreAmountRange":
+		{
+			"X": 180,
+			"Y": 270
+		},
+		"RichOreChance": 0.035000000149011612
+	},
+	{
+		"Name": "16",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"12BD12F640DA9A43C71D3BBD21BA1927\", \"Tribim\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/gold-nuggets.gold-nuggets'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 300,
+			"Y": 500
+		},
+		"DurabilityDef": 200,
+		"ResourceItemID": 16,
+		"OreAmountRange":
+		{
+			"X": 250,
+			"Y": 500
+		},
+		"RichOreChance": 0.05000000074505806
+	},
+	{
+		"Name": "17",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"21E490684217DE74BF2997920B3FA97E\", \"Hydrite\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Parts/dripping-stone.dripping-stone'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 400,
+			"Y": 500
+		},
+		"DurabilityDef": 50,
+		"ResourceItemID": 17,
+		"OreAmountRange":
+		{
+			"X": 100,
+			"Y": 150
+		},
+		"RichOreChance": 0.10000000149011612
+	},
+	{
+		"Name": "18",
+		"ResourceName": "",
+		"Desc": "NSLOCTEXT(\"[5106D64047CD9E8CC60640BCE9DA8D04]\", \"06846BE7448915F4338F6094C877833D\", \"Glacial Mass\")",
+		"FlipSprite": [],
+		"Icon": "Texture2D'/Game/Resource/Texture/GUI/Item/Ore/iceberg.iceberg'",
+		"Type": "Asteroid",
+		"DurabilityRange":
+		{
+			"X": 700,
+			"Y": 850
+		},
+		"DurabilityDef": 300,
+		"ResourceItemID": 18,
+		"OreAmountRange":
+		{
+			"X": 320,
+			"Y": 500
+		},
+		"RichOreChance": 0.019999999552965164
+	}
+]

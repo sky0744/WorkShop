@@ -118,13 +118,12 @@ USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FSavedResourceData {
 	GENERATED_USTRUCT_BODY()
 public:
-	FSavedResourceData(int id = 0, FVector2D location = FVector2D(), FRotator rotation = FRotator(),
-		float durability = .0f, int resourceAmount = 0)
+	FSavedResourceData(int id = 0, FVector2D location = FVector2D(), FRotator rotation = FRotator(), float durability = 0.0f, int resourceCount = 0)
 		: resourceID(id)
 		, resourceLocation(location)
 		, resourceRotation(rotation)
 		, resourceDurability(durability)
-		, resourceAmount(resourceAmount) {}
+		, resourceAmount(resourceCount) {}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int resourceID;

@@ -1,0 +1,50 @@
+[
+	{
+		"Name": "0",
+		"ItemID": 0,
+		"ProjectileName": "None",
+		"Desc": "",
+		"ItemLinkedID": 16000,
+		"FlipSprite": "None",
+		"Icon": "None",
+		"SfxShotPath": "SoundCue'/Game/Resource/Sound/SoundAsset/SoundCue/Sfx-Environment/MissileLauncher0_Cue.MissileLauncher0_Cue'",
+		"SfxMovementPath": "None",
+		"SfxHitPath": "None",
+		"ExplosionSensorRange": 25,
+		"ColdLaunchVelocityFactor": 0.10000000149011612,
+		"ColdLaunchAcceleration": 100,
+		"ColdLaunchDelayTime": 1
+	},
+	{
+		"Name": "1",
+		"ItemID": 0,
+		"ProjectileName": "None",
+		"Desc": "",
+		"ItemLinkedID": 17000,
+		"FlipSprite": "None",
+		"Icon": "None",
+		"SfxShotPath": "SoundCue'/Game/Resource/Sound/SoundAsset/SoundCue/Sfx-Environment/CannonShot0_Cue.CannonShot0_Cue'",
+		"SfxMovementPath": "None",
+		"SfxHitPath": "None",
+		"ExplosionSensorRange": 10,
+		"ColdLaunchVelocityFactor": 0,
+		"ColdLaunchAcceleration": 0,
+		"ColdLaunchDelayTime": 0
+	},
+	{
+		"Name": "2",
+		"ItemID": 0,
+		"ProjectileName": "None",
+		"Desc": "",
+		"ItemLinkedID": 18000,
+		"FlipSprite": "None",
+		"Icon": "None",
+		"SfxShotPath": "SoundCue'/Game/Resource/Sound/SoundAsset/SoundCue/Sfx-Environment/CannonShot1_Cue.CannonShot1_Cue'",
+		"SfxMovementPath": "None",
+		"SfxHitPath": "None",
+		"ExplosionSensorRange": 10,
+		"ColdLaunchVelocityFactor": 0,
+		"ColdLaunchAcceleration": 0,
+		"ColdLaunchDelayTime": 0
+	}
+]
