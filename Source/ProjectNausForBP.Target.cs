@@ -5,21 +5,10 @@ using System.Collections.Generic;
 
 public class ProjectNausForBPTarget : TargetRules
 {
-	public ProjectNausForBPTarget(TargetInfo Target)
+	public ProjectNausForBPTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
-	}
 
-	//
-	// TargetRules interface.
-	//
-
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.AddRange( new string[] { "ProjectNausForBP" } );
+		ExtraModuleNames.AddRange( new string[] { "ProjectNausForBP" } );
 	}
 }

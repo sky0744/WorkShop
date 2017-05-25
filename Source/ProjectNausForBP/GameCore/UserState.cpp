@@ -109,7 +109,7 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][NewGameSetting] Space Info Save Finish."));
 
-	if (UGameplayStatics::SaveGameToSlot(_saver, "SaveGame", 0) == false) {
+	if (UGameplayStatics::SaveGameToSlot(_saver, _define_SaveDataPath, 0) == false) {
 		UE_LOG(LogClass, Warning, TEXT("[Warning][PlayerState][TotalSave] SaveLoader Can't Save in SaveSlot. Try again."));
 		return false;
 	}
@@ -161,7 +161,7 @@ bool AUserState::TotalSave(const bool isBeforeWarp) {
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][TotalSave] Player Info Save Finish."));
 
-	if (UGameplayStatics::SaveGameToSlot(_saver, "SaveGame", 0) == false) {
+	if (UGameplayStatics::SaveGameToSlot(_saver, _define_SaveDataPath, 0) == false) {
 		UE_LOG(LogClass, Warning, TEXT("[Warning][PlayerState][TotalSave] SaveLoader Can't Save in SaveSlot. Try again."));
 		return false;
 	}
@@ -169,7 +169,7 @@ bool AUserState::TotalSave(const bool isBeforeWarp) {
 }
 bool AUserState::TotalLoad() {
 
-	USaveLoader* _loader = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
+	USaveLoader* _loader = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot(_define_SaveDataPath, 0));
 	if (!IsValid(_loader)) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][TotalLoad] Can't Find Save Files or casting SaveLoader"));
 		return false;
@@ -215,7 +215,7 @@ void AUserState::PlayerDeath() {
 		return;
 
 	TotalSave(true);
-	USaveLoader* _Repositioning = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot("SaveGame", 0));
+	USaveLoader* _Repositioning = Cast<USaveLoader>(UGameplayStatics::LoadGameFromSlot(_define_SaveDataPath, 0));
 	TArray<AActor*> _stationsInSector;
 	TArray<AActor*> _gatesInSector;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStation::StaticClass(), _stationsInSector);
@@ -268,7 +268,7 @@ void AUserState::PlayerDeath() {
 			_Repositioning->position = FVector2D(_gatesInSector[FMath::RandRange(0, _stationsInSector.Num() - 1)]->GetActorLocation());
 		else _Repositioning->position = FVector2D::ZeroVector;
 	}
-	UGameplayStatics::SaveGameToSlot(_Repositioning, "SaveGame", 0);
+	UGameplayStatics::SaveGameToSlot(_Repositioning, _define_SaveDataPath, 0);
 	//UGameplayStatics::OpenLevel(GetWorld(), "MainTitle", TRAVEL_Absolute);
 }
 void AUserState::PlayerDeathProcess() {

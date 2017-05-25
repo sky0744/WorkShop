@@ -285,6 +285,8 @@ bool AShip::InitObject(const int npcID) {
 	rechargePower = FMath::Clamp(_tempShipData.RechargePower, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	currentPower = maxPower;
 
+	warpMaxSpeed = FMath::Clamp(_tempShipData.MaxWarpSpeed, _define_WarpSpeedMIN, _define_WarpSpeedMAX);
+	warpAcceleration = FMath::Clamp(_tempShipData.WarpAcceleration, _define_WarpAccelerationMIN, _define_WarpAccelerationMAX);
 	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	minAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
 	maxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -519,6 +521,15 @@ float AShip::GetValue(const GetStatType statType) const {
 		_value = currentPower;
 		break;
 
+	case GetStatType::warpMaxSpeed:
+		_value = warpMaxSpeed;
+		break;
+	case GetStatType::warpAcceleration:
+		_value = warpAcceleration;
+		break;
+	case GetStatType::warpCurrentSpeed:
+		_value = warpCurrentSpeed;
+		break;
 	case GetStatType::maxSpeed:
 		_value = maxSpeed;
 		break;

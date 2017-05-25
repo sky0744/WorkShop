@@ -145,6 +145,9 @@ private:
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
 
+	float warpMaxSpeed;
+	float warpAcceleration;
+	float warpCurrentSpeed;
 	float maxSpeed;
 	float targetSpeed;
 	float currentSpeed;

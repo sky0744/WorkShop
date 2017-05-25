@@ -196,6 +196,9 @@ private:
 	float sMaxPowerGrid;
 	float sMaxCargo;
 
+	float sWarpMaxSpeed;
+	float sWarpAcceleration;
+	float sWarpCurrentSpeed;
 	float sMaxSpeed;
 	float targetSpeed;
 	float setedTargetSpeed;

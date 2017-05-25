@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class PROJECTNAUSFORBP_API AMainTitleMode : public AGameMode
+class PROJECTNAUSFORBP_API AMainTitleMode : public AGameModeBase
 {
 	GENERATED_BODY()
 public:

@@ -6,7 +6,7 @@
 AMainTitleController::AMainTitleController() {
 
 #pragma region Player Controller
-	bAutoManageActiveCameraTarget = true;
+	bAutoManageActiveCameraTarget = false;
 	PlayerCameraManagerClass = nullptr;
 	SmoothTargetViewRotationSpeed = 20.0f;
 	InputYawScale = 2.0f;
@@ -39,5 +39,5 @@ AMainTitleController::AMainTitleController() {
 	viewpointCamera->bAbsoluteRotation = true;
 	//playerViewpointCamera->AddWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	viewpointCamera->SetProjectionMode(ECameraProjectionMode::Orthographic);
-	viewpointCamera->OrthoWidth = 512.0f;
+	viewpointCamera->OrthoWidth = 1024.0f;
 }

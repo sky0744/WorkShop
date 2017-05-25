@@ -263,9 +263,11 @@ bool APlayerShip::InitObject(const int objectId) {
 	sMaxCompute = FMath::Clamp(_tempShipData.Compute, _define_StatComputePerformanceMIN, _define_StatComputePerformanceMAX);
 	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
-
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 	strategicPoint = FMath::Clamp(_tempShipData.StrategicPoint, _define_StatStrategicPointMIN, _define_StatStrategicPointMAX);
+
+	sWarpMaxSpeed = FMath::Clamp(_tempShipData.MaxWarpSpeed, _define_WarpSpeedMIN, _define_WarpSpeedMAX);
+	sWarpAcceleration = FMath::Clamp(_tempShipData.WarpAcceleration, _define_WarpAccelerationMIN, _define_WarpAccelerationMAX);
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -359,6 +361,15 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 		_value = sMaxCargo;
 		break;
 
+	case GetStatType::warpMaxSpeed:
+		_value = sWarpMaxSpeed;
+		break;
+	case GetStatType::warpAcceleration:
+		_value = sWarpAcceleration;
+		break;
+	case GetStatType::warpCurrentSpeed:
+		_value = sWarpCurrentSpeed;
+		break;
 	case GetStatType::maxSpeed:
 		_value = sMaxSpeed;
 		break;
@@ -460,8 +471,10 @@ bool APlayerShip::TotalStatsUpdate() {
 	sMaxCompute = FMath::Clamp(_tempShipData.Compute, _define_StatComputePerformanceMIN, _define_StatComputePerformanceMAX);
 	sMaxPowerGrid = FMath::Clamp(_tempShipData.PowerGrid, _define_StatPowerGridPerformanceMIN, _define_StatPowerGridPerformanceMAX);
 	sMaxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
-
 	lengthRadarRange = FMath::Clamp(_tempShipData.LengthRadarRange, _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+
+	sWarpMaxSpeed = FMath::Clamp(_tempShipData.MaxWarpSpeed, _define_WarpSpeedMIN, _define_WarpSpeedMAX);
+	sWarpAcceleration = FMath::Clamp(_tempShipData.WarpAcceleration, _define_WarpAccelerationMIN, _define_WarpAccelerationMAX);
 	sMaxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMinAcceleration = FMath::Clamp(_tempShipData.MinAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);
 	sMaxAcceleration = FMath::Clamp(_tempShipData.MaxAcceleration, _define_StatAccelMIN, _define_StatAccelMAX);

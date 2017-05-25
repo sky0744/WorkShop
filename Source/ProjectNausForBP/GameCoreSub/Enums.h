@@ -146,6 +146,9 @@ enum class GetStatType : uint8 {
 	currentPowerGrid		UMETA(DisplayName = "currentPowerGrid"),
 	maxCargo			UMETA(DisplayName = "maxCargo"),
 
+	warpMaxSpeed			UMETA(DisplayName = "warpMaxSpeed"),
+	warpAcceleration			UMETA(DisplayName = "warpAcceleration"),
+	warpCurrentSpeed			UMETA(DisplayName = "warpCurrentSpeed"),
 	maxSpeed			UMETA(DisplayName = "maxSpeed"),
 	targetSpeed			UMETA(DisplayName = "targetSpeed"),
 	currentSpeed			UMETA(DisplayName = "currentSpeed"),
@@ -421,15 +424,6 @@ enum class InteractionType : uint8 {
 	Collect				UMETA(DisplayName = "Collect"),
 	Repair				UMETA(DisplayName = "Repair"),
 	GetCargo				UMETA(DisplayName = "GetCargo")
-};
-UENUM(BlueprintType)
-enum class ConfirmState : uint8 {
-	Idle				UMETA(DisplayName = "Idle"),
-	WaitInMenu_Save			UMETA(DisplayName = "Wait Save In Menu"),
-	WaitInMenu_Load			UMETA(DisplayName = "Wait Load In Menu"),
-	WaitInMenu_ReturnToTitle	UMETA(DisplayName = "Wait Return To Title In Menu"),
-	WaitInMenu_GameExit		UMETA(DisplayName = "Wait Game Exit In Menu"),
-	Wait_ReloadORExit			UMETA(DisplayName = "Wait Reload OR Exit To Title")
 };
 UENUM(BlueprintType)
 enum class SaveState : uint8 {

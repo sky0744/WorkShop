@@ -56,7 +56,7 @@ const float _define_RenownMIN = -1000.0f;
 const float _define_RenownMAX = 1000.0f;
 const float _define_SPToRenownHostile = 0.01f;
 const float _define_SPToRenownNotHostile = -0.05f;
-
+const FString _define_SaveDataPath = FString("The_Footsteps_Of_Travelers");
 //플레이어 카메라 컨트롤 Const
 const float _define_CameraSensitivityultipleMovement = 20.0f;
 const float _define_CameraDinstanceMIN = 500.0f;
@@ -119,6 +119,10 @@ const float _define_StatPowerGridPerformanceMAX = 99999.0f;
 const float _define_StatCargoSizeMIN = 0.0f;
 const float _define_StatCargoSizeMAX = 200000.0f;
 
+const float _define_WarpSpeedMIN = 100000.0f;
+const float _define_WarpSpeedMAX = 500000.0f;
+const float _define_WarpAccelerationMIN = 10000.0f;
+const float _define_WarpAccelerationMAX = 50000.0f;
 const float _define_SetDistanceToRotateForward = 10000.0f;
 #pragma endregion
 
@@ -632,6 +636,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float Cargo;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		float MaxWarpSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		float WarpAcceleration;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float MaxSpeed;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
