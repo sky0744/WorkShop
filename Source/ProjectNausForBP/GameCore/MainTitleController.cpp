@@ -7,6 +7,7 @@ AMainTitleController::AMainTitleController() {
 
 #pragma region Player Controller
 	bAutoManageActiveCameraTarget = true;
+	PlayerCameraManagerClass = nullptr;
 	SmoothTargetViewRotationSpeed = 20.0f;
 	InputYawScale = 2.0f;
 	InputPitchScale = -2.0f;
@@ -32,4 +33,11 @@ AMainTitleController::AMainTitleController() {
 	bOnlyRelevantToOwner = false;
 	bNetLoadOnClient = false;
 #pragma endregion
+
+	viewpointCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FixedCamera"));
+	viewpointCamera->SetupAttachment(RootComponent, RootComponent->GetAttachSocketName());
+	viewpointCamera->bAbsoluteRotation = true;
+	//playerViewpointCamera->AddWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	viewpointCamera->SetProjectionMode(ECameraProjectionMode::Orthographic);
+	viewpointCamera->OrthoWidth = 512.0f;
 }

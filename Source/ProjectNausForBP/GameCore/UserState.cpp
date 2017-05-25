@@ -12,6 +12,7 @@ AUserState::AUserState() {
 	ev_SfxClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/Sfx.Sfx'")));
 	ev_BGMMix = Cast<USoundMix>(StaticLoadObject(USoundMix::StaticClass(), NULL, TEXT("SoundMix'/Game/Resource/Sound/SoundAsset/BGMMixer.BGMMixer'")));
 	ev_SfxMix = Cast<USoundMix>(StaticLoadObject(USoundMix::StaticClass(), NULL, TEXT("SoundMix'/Game/Resource/Sound/SoundAsset/SfxMixer.SfxMixer'")));
+	FPlatformMisc::ControlScreensaver(FPlatformMisc::EScreenSaverAction::Enable);
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;

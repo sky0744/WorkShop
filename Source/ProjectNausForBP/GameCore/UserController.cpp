@@ -67,11 +67,6 @@ void AUserController::SetupInputComponent() {
 	InputComponent->BindAction("OpenInfoMenu", IE_Released, this, &AUserController::OpenInfoMenu);
 	InputComponent->BindAction("UnDock", IE_Released, this, &AUserController::KeyUndock);
 
-	InputComponent->BindAction("Finger1", IE_Pressed, this, &AUserController::Touch1Press);
-	InputComponent->BindAction("Finger1", IE_Released, this, &AUserController::Touch1Release);
-	InputComponent->BindAction("Finger2", IE_Pressed, this, &AUserController::Touch2Press);
-	InputComponent->BindAction("Finger2", IE_Released, this, &AUserController::Touch2Release);
-
 	InputComponent->BindAction("ClickLeft", IE_Pressed, this, &AUserController::ClickPressMouseLeft);
 	InputComponent->BindAction("ClickLeft", IE_Released, this, &AUserController::ClickReleaseMouseLeft);
 	InputComponent->BindAction("ClickWheel", IE_Pressed, this, &AUserController::ClickPressMouseWheel);
@@ -89,6 +84,14 @@ void AUserController::SetupInputComponent() {
 	//InputComponent->BindAxis("MouseInX", this, &AUserController::ControlMouseX);
 	//InputComponent->BindAxis("MouseInY", this, &AUserController::ControlMouseY);
 	InputComponent->BindAxis("MouseWheel", this, &AUserController::ControlMouseWheel);
+#pragma endregion
+
+#pragma region Mobile Action
+	InputComponent->BindTouch(IE_Pressed, this, &AUserController::BeginTouch);
+	InputComponent->BindTouch(IE_Repeat, this, &AUserController::RepeatTouch);
+	InputComponent->BindTouch(IE_Released, this, &AUserController::EndTouch);
+	InputComponent->BindAction("MobileBack", IE_Released, this, &AUserController::TouchBack);
+	InputComponent->BindAction("MobileMenu", IE_Released, this, &AUserController::TouchMenu);
 #pragma endregion
 }
 #pragma endregion
@@ -139,22 +142,6 @@ void AUserController::OpenInfoMenu() {
 void AUserController::KeyUndock() {
 	if (IsValid(controlledPawn) && controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
 		Cast<ICommandable>(controlledPawn)->CommandUndock();
-}
-
-void AUserController::Touch1Press(FKey key) {
-
-}
-
-void AUserController::Touch1Release(FKey key) {
-
-}
-
-void AUserController::Touch2Press(FKey key) {
-
-}
-
-void AUserController::Touch2Release(FKey key) {
-
 }
 #pragma endregion
 
@@ -229,6 +216,28 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 		if(commandInterface != nullptr)
 			commandInterface->CommandMoveToPosition(mouseXYPlane);
 	}
+}
+#pragma endregion
+
+#pragma region Input Binding - Mobile Action
+void AUserController::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
+	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[Begin] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
+}
+
+void AUserController::RepeatTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
+	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[Repeat] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
+}
+
+void AUserController::EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
+	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[End] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
+}
+
+void AUserController::TouchBack() {
+	controlledHUD->OnMobileBack();
+}
+
+void AUserController::TouchMenu() {
+	controlledHUD->OnMobileMenu();
 }
 #pragma endregion
 

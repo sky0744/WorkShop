@@ -17,5 +17,6 @@ public:
 	AMainTitleController();
 
 protected:
-
+	UPROPERTY(VisibleAnyWhere, Category = "Ship Data")
+		UCameraComponent* viewpointCamera;
 };

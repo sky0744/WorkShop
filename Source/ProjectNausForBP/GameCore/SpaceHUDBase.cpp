@@ -102,6 +102,16 @@ void ASpaceHUDBase::OffUIStationButton_Implementation() {
 }
 #pragma endregion
 
+#pragma region Response by Controller
+void ASpaceHUDBase::OnMobileBack_Implementation() {
+	return;
+}
+
+void ASpaceHUDBase::OnMobileMenu_Implementation() {
+	return;
+}
+#pragma endregion
+
 #pragma region Messages
 void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(FText message, FColor color) {
 	return;

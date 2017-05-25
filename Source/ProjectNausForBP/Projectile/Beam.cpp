@@ -10,9 +10,9 @@ ABeam::ABeam()
 	PrimaryActorTick.bCanEverTick = false;
 	beamParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleBeam"));
 	RootComponent = beamParticle;
-	static ConstructorHelpers::FObjectFinder<UParticleSystem> particleSystem(TEXT("ParticleSystem'/Game/Resource/Particle/Beam/ParticleBeam.ParticleBeam'"));
-	if (particleSystem.Succeeded())
-		beamParticle->SetTemplate(particleSystem.Object);
+	//static ConstructorHelpers::FObjectFinder<UParticleSystem> particleSystem(TEXT("ParticleSystem'/Game/Resource/Particle/Beam/ParticleBeam.ParticleBeam'"));
+	//if (particleSystem.Succeeded())
+	//	beamParticle->SetTemplate(particleSystem.Object);
 
 	beamShotAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundBeamShot"));
 	beamShotAudio->bAutoActivate = false;

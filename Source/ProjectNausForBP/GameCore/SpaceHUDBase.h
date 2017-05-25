@@ -105,6 +105,15 @@ public:
 	virtual void OffUIStationButton_Implementation();
 #pragma endregion
 
+#pragma region Response by Controller
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void OnMobileBack();
+	virtual void OnMobileBack_Implementation();
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void OnMobileMenu();
+	virtual void OnMobileMenu_Implementation();
+#pragma endregion
+
 #pragma region Messages
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void SetUIIOnTopMessage(const FText& message, FColor color);

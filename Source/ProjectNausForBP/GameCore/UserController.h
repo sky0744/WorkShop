@@ -58,15 +58,6 @@ public:
 		void KeyUndock();
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void Touch1Press(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void Touch1Release(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void Touch2Press(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void Touch2Release(FKey key);
-
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void ClickPressMouseLeft(FKey key);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void ClickReleaseMouseLeft(FKey key);
@@ -78,6 +69,17 @@ public:
 		void ClickPressMouseRight(FKey key);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void ClickReleaseMouseRight(FKey key);
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void RepeatTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void TouchBack();
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void TouchMenu();
 #pragma endregion
 
 #pragma region player flow control
