@@ -88,16 +88,21 @@ public:
 		bool AddPlayerCargo(FItem addItem);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool DropPlayerCargo(FItem dropItem);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		bool WithdrawItem(FItem transferItem);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		bool KeepItem(FItem transferItem);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		bool BuyItem(FItem buyItem);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		bool SellItem(FItem sellItem);
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool BuyItem(FItem buyItems);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool SellItem(FItem sellItems);
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool TransferItem(const FItem transferItems, const bool isToStationDirection);
-
-	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		bool EquipModule(const int itemSlotIndex);
+		/*	아이템 착용을 시도합니다. 모듈이 아니거나 함선에 호환되지 않는 등의 문제가 발생할 경우
+		*	@param equipItemID - 작용할 아이템의 아이디.
+		*	@return - 착용 성공 여부. 모듈이 아니거나 착용조건을 만족하지 못한 경우 false
+		*/
+		bool EquipModule(const int equipItemID);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool UnEquipModule(const ItemType moduleType, const int slotIndex);
 
@@ -108,14 +113,27 @@ public:
 	TScriptInterface<IStructureable> DockedStructure() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/*	플레이어의 아이템 데이터를 배열로 획득합니다.
+		*	@param setArray - 획득할 아이템 데이터
+		*/
 		void GetUserDataItem(TArray<FItem>& setArray) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
-		void GetUserDataSkill(TArray<FSkill>& setArray) const;
+		/*	플레이어의 아이템 중 찾고자 하는 아이템의 갯수를 획득합니다.
+		*	@param setArray - 획득할 스킬 데이터
+		*	@return - 찾는 아이템의 보유 갯수. 만약 찾는 아이템이 존재하지 않는다면 -1을 반환합니다.
+		*/
+		int FindItemAmount(const int findItemID) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/*	플레이어의 스킬 데이터를 배열로 획득합니다.
+		*	@param setArray - 획득할 스킬 데이터
+		*/
+		void GetUserDataSkill(TArray<FSkillIDANDLevel>& setArray) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		/*	현재 수련중인 스킬 데이터를 가져옵니다.
 		*	@param learningSkill - 수련중인 스킬 데이터
+		*	@return 수련중인 스킬 ID
 		*/
-		void GetLearningSkill(FSkill& learningSkill) const;
+		int GetLearningSkill(FSkill& learningSkill) const;
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		/*	수련할 스킬을 변경합니다. 기존의 수련은 중단되며, -1을 입력으로 할 경우 StopLearningSkill()과 같습니다.
 		*	@param learningId - 수련을 진행할 스킬 ID
@@ -136,7 +154,7 @@ public:
 		void GetAchievments(TArray<int>& _achievmentsLevels) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
-		bool CheckSkill(const TArray<FSkill>& checkSkill) const;
+		bool CheckSkill(TArray<FSkillIDANDLevel>& checkSkill) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		float CheckCargoValue() const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
@@ -214,13 +232,11 @@ private:
 	FString restartSector;
 	FVector2D restartLocation;
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-		TMap<int, FSkill> playerSkill;
-	//UPROPERTY(BlueprintReadOnly, Category = "User Data")
-	//	TMap<int, FSkill> playerSkill;
 	int learningSkillId;
 	UPROPERTY(BlueprintReadOnly, Category = "User Data")
-		TArray<FItem> listItem;
+		TMap<int, FSkill> playerSkill;
+	UPROPERTY(BlueprintReadOnly, Category = "User Data")
+		TMap<int, int> playerItem;
 
 private:
 	FString nextSectorName;

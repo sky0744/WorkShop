@@ -127,20 +127,20 @@ float AGate::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		//카고 드랍
 		ACargoContainer* _cargoContainer;
 		if (structureInfo != nullptr) {
-			for (FItem& cargo : structureInfo->itemList) {
+			for (auto& item : structureInfo->itemSlot) {
 				//모든 카고를 절반의 확률로 드랍
-				if (FMath::FRandRange(_define_DropChanceMIN, _define_DropChanceMAX) > 0.5f)
+				if (FMath::FRandRange(_define_ChanceRandomMIN, _define_ChanceRandomMAX) > 0.5f)
 					continue;
 
 				_cargoContainer = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
 					FTransform(this->GetActorRotation(), this->GetActorLocation()), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 				if (_cargoContainer) {
 					_cargoContainer->InitObject(FMath::RandRange(0, 13));
-					_cargoContainer->SetCargo(cargo);
+					_cargoContainer->SetCargo(FItem(item.Key, item.Value));
 					UGameplayStatics::FinishSpawningActor(_cargoContainer, _cargoContainer->GetTransform());
 				}
 			}
-			structureInfo->itemList.Empty();
+			structureInfo->itemSlot.Empty();
 		}
 		Destroy();
 	}

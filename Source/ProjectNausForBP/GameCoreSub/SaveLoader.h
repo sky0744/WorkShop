@@ -191,11 +191,11 @@ public:
 		TArray<FItem> targetModuleAmmo;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
-		TArray<FSkill> userSkillData;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		int userLearningSkillId;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
-		TArray<FItem> userItemData;
+		TMap<int, FSkill> userSkillData;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
+		TMap<int, int> userItemData;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		TArray<FItem> playerDronesInHanger;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
@@ -222,6 +222,5 @@ public:
 #pragma endregion
 
 #pragma region Object Data In Current Sector
-
 #pragma endregion
 };

@@ -144,6 +144,9 @@ private:
 
 	UPROPERTY()
 		TArray<FTargetModule> slotTargetModule;
+	UPROPERTY()
+		TMap<int, int> shipCargo;
+	float maxCargo;
 
 	float warpMaxSpeed;
 	float warpAcceleration;

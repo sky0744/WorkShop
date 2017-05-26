@@ -1,1 +1,20 @@
-[]
+[
+	{
+		"Name": "0",
+		"ProductItem":
+		{
+			"itemID": 0,
+			"itemAmount": 1
+		},
+		"RequireBluePrint":
+		{
+			"itemID": 1,
+			"itemAmount": 1
+		},
+		"RequireSkill": [],
+		"RequireItems": [],
+		"RequireTechLevel": 0,
+		"IsCanProductInHub": false,
+		"ProductTime": 0
+	}
+]

@@ -6,7 +6,7 @@
 
 AUserState::AUserState() {
 	playerSkill = TMap<int, FSkill>();
-	listItem = TArray<FItem>();
+	playerItem = TMap<int, int>();
 
 	ev_BGMClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/BGM.BGM'")));
 	ev_SfxClass = Cast<USoundClass>(StaticLoadObject(USoundClass::StaticClass(), NULL, TEXT("SoundClass'/Game/Resource/Sound/SoundAsset/Sfx.Sfx'")));
@@ -79,17 +79,23 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	FNewStartPlayerData _tempStartInfo = _tempInstance->GetStartProfileData(_select);
 
 	_saver->name = sUserName;
-	_saver->shipID = _tempStartInfo.StartShipID;
-	_saver->credit = _tempStartInfo.StartCredit;
-	_saver->sectorName = _saver->restartSector = _tempStartInfo.StartSector;
-	_saver->position = _saver->restartLocation = _tempStartInfo.StartPosition;
+	_saver->shipID = _tempStartInfo.StartingShipID;
+	_saver->credit = _tempStartInfo.StartingCredit;
+	_saver->sectorName = _saver->restartSector = _tempStartInfo.StartingSector;
+	_saver->position = _saver->restartLocation = _tempStartInfo.StartingPosition;
 	_saver->rotation = FRotator(0.0f, 0.0f, 0.0f);
 
-	_saver->userSkillData = _tempStartInfo.StartSkillList;
+	_saver->userSkillData = TMap<int, FSkill>();
+	_saver->userSkillData.Reserve(_tempStartInfo.StartingSkill.Num());
+	for (FSkillIDANDLevel& skillSet : _tempStartInfo.StartingSkill)
+		_saver->userSkillData.Emplace(skillSet.skillID, FSkill(skillSet.skillLevel, 0.0f));
+		
 	_saver->userLearningSkillId = -1;
-	_saver->userItemData = _tempStartInfo.StartItemList;
+	_saver->userItemData.Reserve(_tempStartInfo.StartingItem.Num());
+	for (FItem& item : _tempStartInfo.StartingItem)
+		_saver->userItemData.Emplace(item.itemID, item.itemAmount);
 
-	FShipData _tempShipData = _tempInstance->GetShipData(_tempStartInfo.StartShipID);
+	FShipData _tempShipData = _tempInstance->GetShipData(_tempStartInfo.StartingShipID);
 	_saver->shield = _tempShipData.Shield;
 	_saver->armor = _tempShipData.Armor;
 	_saver->hull = _tempShipData.Hull;
@@ -101,7 +107,7 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 	_saver->slotSystemModule = TArray<int>();
 
 	_saver->saveState = SaveState::NewGameCreate;
-	_saver->relation = _tempStartInfo.StartFactionRelation;
+	_saver->relation = _tempStartInfo.StartingFactionRelation;
 	ASpaceState* _spaceState = Cast<ASpaceState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (_spaceState->SaveSpaceState(_saver) != true) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][NewGameSetting] Space Info Save Fail."));
@@ -113,7 +119,7 @@ bool AUserState::NewGameSetting(const Faction selectedFaction, const FText& user
 		UE_LOG(LogClass, Warning, TEXT("[Warning][PlayerState][TotalSave] SaveLoader Can't Save in SaveSlot. Try again."));
 		return false;
 	}
-	FSectorData _tempSectorData = _tempInstance->GetSectorData(_tempStartInfo.StartSector);
+	FSectorData _tempSectorData = _tempInstance->GetSectorData(_tempStartInfo.StartingSector);
 	UGameplayStatics::OpenLevel(GetWorld(), _tempSectorData.nSectorName, TRAVEL_Absolute);
 	return true;
 }
@@ -200,6 +206,7 @@ bool AUserState::TotalLoad() {
 	//Sector load -> execute with/by UserState's PlayBegin
 	return true;
 }
+
 void AUserState::PlayerDeath() {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!IsValid(_tempInstance))
@@ -222,6 +229,7 @@ void AUserState::PlayerDeath() {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGate::StaticClass(), _gatesInSector);
 
 	//파기 불가능한 모듈 및 아이템은 카고에 저장하는 상태에서 사망 처리
+	/*
 	for (int index = 0; index < _Repositioning->userItemData.Num(); index++) {
 		_tempItemData = _tempInstance->GetItemData(_Repositioning->userItemData[index].itemID);
 		if (!_tempItemData.isCanDrop && !_tempItemData.isCanSell && !_tempItemData.isCanReprocess)
@@ -249,6 +257,7 @@ void AUserState::PlayerDeath() {
 			USafeENGINE::AddCargo(_Repositioning->userItemData, FItem(moduleID, 1));
 	}
 	_Repositioning->userItemData.Shrink();
+	*/
 
 	//함선 초기화 및 현상금 제거, 일정량의 크레딧 손실
 	_Repositioning->shipID = 0;
@@ -303,10 +312,9 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 	_obj->GetModule(ItemType::SystemModule, _saver->slotSystemModule);
 	_obj->GetTargetModuleAmmo(_saver->targetModuleAmmo);
 
-	_saver->userItemData = listItem;
-	for (auto& skill : playerSkill)
-		_saver->userSkillData.Emplace(skill.Value);
 	_saver->userLearningSkillId = learningSkillId;
+	_saver->userItemData = playerItem;
+	_saver->userSkillData = playerSkill;
 
 	if (_saver->saveState == SaveState::UserRequest) {
 		_saver->position = FVector2D(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation());
@@ -333,14 +341,17 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	sShipID = loader->shipID;
 	sCredit = loader->credit;
 
-	for (FSkill& skill : loader->userSkillData) {
-		if (!playerSkill.Contains(skill.skillID))
-			playerSkill.Emplace(skill.skillID, skill);
-		else if (skill.skillLevel > playerSkill[skill.skillID].skillLevel && playerSkill[skill.skillID].skillLevel > 0)
-			playerSkill[skill.skillID].skillLevel = FMath::Clamp(skill.skillLevel, _define_SkillLevelMIN + 1, _define_SkillLevelMAX);
-	}
 	learningSkillId = loader->userLearningSkillId;
-	listItem = loader->userItemData;
+	playerSkill = loader->userSkillData;
+	for (auto& skill : playerSkill) {
+		skill.Value.skillLevel = FMath::Clamp(skill.Value.skillLevel, _define_SkillLevelMIN, _define_SkillLevelMAX);
+		skill.Value.skillLearning = FMath::Clamp(skill.Value.skillLearning, _define_SkillLearningTimeMIN, _define_SkillLearningTimeMAX);
+	}
+	playerItem = loader->userItemData;
+	for (auto& ltem : playerItem) {
+		if (ltem.Key < 0)
+			playerItem.Remove(ltem.Key);
+	}
 
 	if(!_obj->InitObject(loader->shipID)) {
 		UE_LOG(LogClass, Warning, TEXT("[Invaild Access][PlayerState][PlayerLoad] Player's Pawn Already Inited."));
@@ -352,6 +363,7 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	}
 	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorLocation(FVector(loader->position, 0.0f));
 	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->SetActorRotation(FRotator(0.0f, loader->rotation.Yaw, 0.0f));
+
 	return true;
 }
 #pragma endregion
@@ -439,7 +451,6 @@ bool AUserState::ChangeCredit(float varianceCredit) {//, FText category, FText c
 }
 
 float AUserState::GetCredit() const {
-
 	return sCredit;
 }
 
@@ -453,12 +464,10 @@ bool AUserState::ChangeBounty(float varianceBounty) {//, FText category, FText c
 }
 
 float AUserState::GetBounty() const {
-
 	return sBounty;
 }
 
 void AUserState::ChangeRenown(const Peer peer, float varianceRenown) {
-
 	if (peer > Peer::Enemy)
 		varianceRenown *= _define_SPToRenownNotHostile;
 	else
@@ -474,71 +483,141 @@ float AUserState::GetRenown() const {
 }
 
 bool AUserState::AddPlayerCargo(FItem addItem) {
-	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
+	ASpaceObject* _obj = Cast<ASpaceObject>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	if(!IsValid(_obj) || _obj->IsA(APlayerShip::StaticClass()))
 		return false;
 	if (addItem.itemID < 0 || addItem.itemAmount < 1)
-		return true;
-
-	ASpaceObject* _obj = Cast<ASpaceObject>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+		return false;
 
 	currentCargo = CheckCargoValue();
-	UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][AddPlayerCargo] Weight : %f, Max Weight : %f"), currentCargo + CheckAddItemValue(addItem), _obj->GetValue(GetStatType::maxCargo));
+	bool _result = false;
 	if (currentCargo + CheckAddItemValue(addItem) <= _obj->GetValue(GetStatType::maxCargo)) {
-		
-		if (USafeENGINE::AddCargo(listItem, addItem)) {
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][AddPlayerCargo] Item Adding Finish"));
-		}
-		else UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][AddPlayerCargo] Can't Adding Item!"));
-		
-		for(int index = 0; index < listItem.Num(); index++)
-			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][AddPlayerCargo] Item %d, Amount : %d"), listItem[index].itemID, listItem[index].itemAmount);
-		
+		if (playerItem.Contains(addItem.itemID))
+			playerItem[addItem.itemID] += addItem.itemAmount;
+		else playerItem.Emplace(addItem.itemID, addItem.itemAmount);
+
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
 		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-		return true;
+		UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][AddPlayerCargo] Get Item : %d Amount %d"), addItem.itemID, addItem.itemAmount);
+		_result = true;
 	}
-	else if (currentCargo + CheckAddItemValue(addItem) > _obj->GetValue(GetStatType::maxCargo)) {
-		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][AddPlayerCargo] Cargo Overwight! Adding Item Canceled"));
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-		return false;
-	}
-	else{
-		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][AddPlayerCargo] Cargo Calculate Error! Adding Item Canceled"));
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-		return false;
-	}
+	else  
+		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][AddPlayerCargo] Cargo Overwight. Adding Item Canceled"));
+
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+	return _result;
 }
 
 bool AUserState::DropPlayerCargo(FItem dropItem) {
-	if (USafeENGINE::DropCargo(listItem, dropItem)) {
-		currentCargo = CheckCargoValue();
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][DropPlayerCargo] Weight : %f"), currentCargo);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-		return true;
-	}
-	
-	else {
-		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][DropPlayerCargo] Cargo Drop Error! Drop Canceled"));
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+	ASpaceObject* _obj = Cast<ASpaceObject>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	if (!IsValid(_obj) || _obj->IsA(APlayerShip::StaticClass()))
 		return false;
-	}
+	if (dropItem.itemID < 0 || dropItem.itemAmount < 1)
+		return false;
+
+	bool _result = false;
+	if (playerItem.Contains(dropItem.itemID)) {
+		if (playerItem[dropItem.itemID] > dropItem.itemAmount) {
+			playerItem[dropItem.itemID] -= dropItem.itemAmount;
+			_result = true;
+		} else if (playerItem[dropItem.itemID] == dropItem.itemAmount) {
+			playerItem.Remove(dropItem.itemID);
+			_result = true;
+		}
+		if (_result) {
+			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][AddPlayerCargo] Remove Item : %d Amount %d"), dropItem.itemID, dropItem.itemAmount);
+		} else
+			UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][AddPlayerCargo] Remove Item Fail"));
+
+	} else
+		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][AddPlayerCargo] Remove Item Fail"));
+
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+	return _result;
 }
 
-bool AUserState::BuyItem(FItem buyItems) {
+bool AUserState::WithdrawItem(FItem transferItem) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (!IsValid(_tempInstance))
 		return false;
+	if (transferItem.itemID < 0 || transferItem.itemAmount < 0)
+		return false;
 
 	FStructureInfo* _structureInfo;
-	int _findSlotInSeller;
-	int _findSlotInBuyer;
+	bool _result = false;
+
+	if (dockedStructure.GetObjectRef()->GetClass() == AStation::StaticClass())
+		_structureInfo = Cast<AStation>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
+	else if (dockedStructure.GetObjectRef()->GetClass() == AGate::StaticClass())
+		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
+	else return false;
+
+	if (!_structureInfo->playerItemSlot.Contains(transferItem.itemID))
+		return false;
+
+	if (_structureInfo->playerItemSlot[transferItem.itemID] >= transferItem.itemAmount) {
+		if (AddPlayerCargo(transferItem)) {
+			if (_structureInfo->playerItemSlot[transferItem.itemID] == transferItem.itemAmount)
+				_structureInfo->playerItemSlot.Remove(transferItem.itemID);
+			else _structureInfo->playerItemSlot[transferItem.itemID] -= transferItem.itemAmount;
+
+			//Message
+			_result = true;
+		}
+	} else {
+		//Message
+		_result = false;
+	}
+	return _result;
+}
+
+bool AUserState::KeepItem(FItem transferItem) {
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (!IsValid(_tempInstance))
+		return false;
+	if (transferItem.itemID < 0 || transferItem.itemAmount < 0)
+		return false;
+
+	FStructureInfo* _structureInfo;
+	bool _result = false;
+
+	if (dockedStructure.GetObjectRef()->GetClass() == AStation::StaticClass())
+		_structureInfo = Cast<AStation>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
+	else if (dockedStructure.GetObjectRef()->GetClass() == AGate::StaticClass())
+		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
+	else return false;
+
+	if (!_structureInfo->playerItemSlot.Contains(transferItem.itemID))
+		return false;
+
+	if (DropPlayerCargo(transferItem)) {
+			if (_structureInfo->playerItemSlot.Contains(transferItem.itemID))
+				_structureInfo->playerItemSlot[transferItem.itemID] += transferItem.itemAmount;
+			else _structureInfo->playerItemSlot.Emplace(transferItem.itemID, transferItem.itemAmount);
+
+			//Message
+			_result = true;
+	} else {
+		//Message
+		_result = false;
+	}
+	return _result;
+}
+
+bool AUserState::BuyItem(FItem buyItem) {
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (!IsValid(_tempInstance))
+		return false;
+	if (buyItem.itemID < 0 || buyItem.itemAmount < 0)
+		return false;
+
+	FStructureInfo* _structureInfo;
 	int _lowerAmount;
 	int _upperAmount;
 	float _totalPaymentCredit;
+	bool _result = false;
 
 	if (dockedStructure.GetObjectRef()->GetClass() == AStation::StaticClass())
 		_structureInfo = Cast<AStation>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
@@ -546,50 +625,47 @@ bool AUserState::BuyItem(FItem buyItems) {
 		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
 	else return false;
 
-	_findSlotInSeller = USafeENGINE::FindItemSlot(_structureInfo->itemList, buyItems);
-	_findSlotInBuyer = USafeENGINE::FindItemSlot(_structureInfo->playerItemList, buyItems);
-	if (_findSlotInSeller < 0)
+	if (!_structureInfo->itemSlot.Contains(buyItem.itemID))
+		return false;
+	else if (_structureInfo->itemSlot[buyItem.itemID] < buyItem.itemAmount)
 		return false;
 
-	buyItems.itemAmount = FMath::Max(0, buyItems.itemAmount);
+	_upperAmount = _structureInfo->itemSlot[buyItem.itemID];
+	_lowerAmount = _structureInfo->itemSlot[buyItem.itemID] - buyItem.itemAmount;
+	_totalPaymentCredit = _tempInstance->CalculateCreditForTrade(buyItem.itemID, _lowerAmount, _upperAmount, true);
 
-	_upperAmount = _structureInfo->itemList[_findSlotInSeller].itemAmount;
-	_lowerAmount = _structureInfo->itemList[_findSlotInSeller].itemAmount - buyItems.itemAmount;
+	if (ChangeCredit(-_totalPaymentCredit)) {
+		if (_structureInfo->itemSlot[buyItem.itemID] > buyItem.itemAmount)
+			_structureInfo->itemSlot[buyItem.itemID] -= buyItem.itemAmount;
+		else _structureInfo->itemSlot.Remove(buyItem.itemID);
 
-	_totalPaymentCredit = _tempInstance->CalculateCreditForTrade(buyItems.itemID, _lowerAmount, _upperAmount, true);
-	if (ChangeCredit(_totalPaymentCredit)) {
-		if (USafeENGINE::AddCargo(_structureInfo->playerItemList, buyItems)) {
-			if (USafeENGINE::DropCargo(_structureInfo->itemList, buyItems)) {
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-				return true;
-			}
-			else {
-				USafeENGINE::DropCargo(_structureInfo->playerItemList, buyItems);
-				ChangeCredit(_totalPaymentCredit);
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-				return false;
-			}
-		}
-		else {
-			ChangeCredit(_totalPaymentCredit);
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-			return false;
-		}
+		if (_structureInfo->playerItemSlot.Contains(buyItem.itemID))
+			_structureInfo->playerItemSlot[buyItem.itemID] += buyItem.itemAmount;
+		else
+			_structureInfo->playerItemSlot.Emplace(buyItem.itemID, buyItem.itemAmount);
+
+		//Message
+		_result = true;
+
+	} else {
+		//Message
+		_result = false;
 	}
-	return false;
+	return _result;
 }
 
-bool AUserState::SellItem(FItem sellItems) {
+bool AUserState::SellItem(FItem sellItem) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (!IsValid(_tempInstance))
 		return false;
+	if (sellItem.itemID < 0 || sellItem.itemAmount < 0)
+		return false;
 
 	FStructureInfo* _structureInfo;
-	int _findSlotInSeller;
-	int _findSlotInBuyer;
 	int _lowerAmount;
 	int _upperAmount;
-	float totalPaymentCredit;
+	float _totalPaymentCredit;
+	bool _result = false;
 
 	if (dockedStructure.GetObjectRef()->GetClass() == AStation::StaticClass())
 		_structureInfo = Cast<AStation>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
@@ -597,82 +673,36 @@ bool AUserState::SellItem(FItem sellItems) {
 		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
 	else return false;
 
-	_findSlotInSeller = USafeENGINE::FindItemSlot(_structureInfo->playerItemList, sellItems);
-	_findSlotInBuyer = USafeENGINE::FindItemSlot(_structureInfo->itemList, sellItems);
-	if (_findSlotInSeller < 0)
+	if (!_structureInfo->playerItemSlot.Contains(sellItem.itemID))
+		return false;
+	else if (_structureInfo->playerItemSlot[sellItem.itemID] < sellItem.itemAmount)
 		return false;
 
-	sellItems.itemAmount = FMath::Max(0, sellItems.itemAmount);
-	if (_findSlotInBuyer < 0) {
-		_lowerAmount = 0;
-		_upperAmount = sellItems.itemAmount;
+	_upperAmount = _structureInfo->itemSlot[sellItem.itemID];
+	_lowerAmount = _structureInfo->itemSlot[sellItem.itemID] - sellItem.itemAmount;
+	_totalPaymentCredit = _tempInstance->CalculateCreditForTrade(sellItem.itemID, _lowerAmount, _upperAmount, true);
+
+	if (ChangeCredit(_totalPaymentCredit)) {
+		if (_structureInfo->playerItemSlot[sellItem.itemID] > sellItem.itemAmount)
+			_structureInfo->playerItemSlot[sellItem.itemID] -= sellItem.itemAmount;
+		else _structureInfo->playerItemSlot.Remove(sellItem.itemID);
+
+		if (_structureInfo->itemSlot.Contains(sellItem.itemID))
+			_structureInfo->itemSlot[sellItem.itemID] += sellItem.itemAmount;
+		else
+			_structureInfo->itemSlot.Emplace(sellItem.itemID, sellItem.itemAmount);
+
+		//Message
+		_result = true;
+
 	} else {
-		_upperAmount = _structureInfo->itemList[_findSlotInBuyer].itemAmount + sellItems.itemAmount;
-		_lowerAmount = _structureInfo->itemList[_findSlotInBuyer].itemAmount;
+		//Message
+		_result = false;
 	}
-	totalPaymentCredit = _tempInstance->CalculateCreditForTrade(sellItems.itemID, _lowerAmount, _upperAmount, true);
-	if (ChangeCredit(totalPaymentCredit)) {
-		if (USafeENGINE::AddCargo(_structureInfo->itemList, sellItems)) {
-			if (USafeENGINE::DropCargo(_structureInfo->playerItemList, sellItems)) {
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-				return true;
-			}
-			USafeENGINE::DropCargo(_structureInfo->itemList, sellItems);
-			ChangeCredit(-totalPaymentCredit);
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-			return false;
-		}
-	} else {
-		ChangeCredit(-totalPaymentCredit);
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-		return false;
-	}
-	return false;
+	return _result;
 }
 
-bool AUserState::TransferItem(const FItem transferItems, const bool isToStationDirection) {
-	int _findSlot = -1;
-
-	FStructureInfo* _structureInfo;
-	if (dockedStructure.GetObjectRef()->GetClass() == AStation::StaticClass())
-		_structureInfo = Cast<AStation>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
-	else if (dockedStructure.GetObjectRef()->GetClass() == AGate::StaticClass())
-		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
-	else return false;
-
-	if (isToStationDirection)
-		_findSlot = USafeENGINE::FindItemSlot(listItem, transferItems);
-	else
-		_findSlot = USafeENGINE::FindItemSlot(_structureInfo->playerItemList, transferItems);
-
-	if (_findSlot < 0)
-		return false;
-
-	if (isToStationDirection) {
-		if (USafeENGINE::AddCargo(_structureInfo->playerItemList, transferItems)) {
-			if (DropPlayerCargo(transferItems)) {
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-				return true;
-			}
-			else
-				USafeENGINE::DropCargo(_structureInfo->playerItemList, transferItems);
-		}
-	}
-	else {
-		if (AddPlayerCargo(transferItems)) {
-			if (USafeENGINE::DropCargo(_structureInfo->playerItemList, transferItems)) {
-				Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-				return true;
-			}
-			else
-				DropPlayerCargo(transferItems);
-		}
-	}
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
-	return false;
-}
-
-bool AUserState::EquipModule(const int itemSlotIndex) {
+bool AUserState::EquipModule(const int equipItemID) {
 	
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (!IsValid(_tempInstance))
@@ -682,7 +712,7 @@ bool AUserState::EquipModule(const int itemSlotIndex) {
 
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	FShipData _tempShipData = _tempInstance->GetShipData(_obj->GetObjectID());
-	FItemData _tempItemData = _tempInstance->GetItemData(listItem[itemSlotIndex].itemID);
+	FItemData _tempItemData = _tempInstance->GetItemData(equipItemID);
 
 	switch (_tempItemData.Type) {
 	case ItemType::TargetModule:
@@ -760,7 +790,7 @@ bool AUserState::EquipModule(const int itemSlotIndex) {
 	}
 
 	if (_obj->EquipModule(_tempItemData.ItemID) == true) {
-		if (USafeENGINE::DropCargo(listItem, FItem(_tempItemData.ItemID, 1))) {
+		if (DropPlayerCargo(FItem(_tempItemData.ItemID, 1))) {
 			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
 			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][EquipModule] Equip Finish."));
 			return true;
@@ -831,23 +861,33 @@ TScriptInterface<IStructureable> AUserState::DockedStructure() const {
 }
 
 void AUserState::GetUserDataItem(TArray<FItem>& setArray) const {
-	setArray = listItem;
-}
-
-void AUserState::GetUserDataSkill(TArray<FSkill>& setArray) const {
 	setArray.Empty();
-	for (int index = 0; index < playerSkill.Num(); index++)
-		setArray.Emplace(playerSkill[index]);
+	setArray.Reserve(playerItem.Num());
+	for (auto& item : playerItem)
+		setArray.Emplace(FItem(item.Key, item.Value));
 }
 
-void AUserState::GetLearningSkill(FSkill& learningSkill) const {
+int AUserState::FindItemAmount(const int findItemID) const {
+	if (!playerItem.Contains(findItemID))
+		return -1;
+	return playerItem[findItemID];
+}
+
+void AUserState::GetUserDataSkill(TArray<FSkillIDANDLevel>& setArray) const {
+	setArray.Empty();
+	setArray.Reserve(playerSkill.Num());
+	for (auto& skill : playerSkill)
+		setArray.Emplace(FSkillIDANDLevel(skill.Key, skill.Value.skillLevel));
+}
+
+int AUserState::GetLearningSkill(FSkill& learningSkill) const {
 	if (playerSkill.Contains(learningSkillId) && learningSkillId > -1)
 		learningSkill = playerSkill[learningSkillId];
 	else {
-		learningSkill.skillID = -1;
 		learningSkill.skillLearning = -1.0f;
 		learningSkill.skillLevel = -1;
 	}
+	return learningSkillId;
 }
 
 void AUserState::SetLearningSkill(const int learningId) {
@@ -878,7 +918,7 @@ bool AUserState::NewLearningSkill(const int NewLearningSkillId) {
 	//DataTable로부터 획득한 데이터를 체크
 	if (playerSkill.Contains(_tempSkillData.SkillID))
 		return false;
-	if (_tempSkillData.RequireSkillBookID > -1 && USafeENGINE::FindItemSlot(listItem, FItem(_tempSkillData.RequireSkillBookID, 1)) < 0)
+	if (_tempSkillData.RequireSkillBookID > -1 && !playerItem.Contains(_tempSkillData.RequireSkillBookID))
 		return false;
 	if (!CheckSkill(_tempSkillData.RequireSkill))
 		return false;
@@ -892,12 +932,12 @@ void AUserState::GetAchievments(TArray<int>& _achievmentsLevels) const {
 
 }
 
-bool AUserState::CheckSkill(const TArray<FSkill>& checkSkill) const {
+bool AUserState::CheckSkill(TArray<FSkillIDANDLevel>& checkSkill) const {
 
-	for (int index = 0; index < checkSkill.Num(); index++) {
-		if (!playerSkill.Contains(checkSkill[index].skillID))
+	for (FSkillIDANDLevel& checkingSkill : checkSkill) {
+		if (!playerSkill.Contains(checkingSkill.skillID))
 			return false;
-		if (playerSkill[checkSkill[index].skillID].skillLevel < checkSkill[index].skillLevel)
+		if (playerSkill[checkingSkill.skillID].skillLevel < checkingSkill.skillLevel)
 			return false;
 	}
 	return true;
@@ -911,9 +951,9 @@ float AUserState::CheckCargoValue() const {
 	FItemData _tempItemData;
 	float _value = 0;
 
-	for (int index = 0; index < listItem.Num(); index++) {
-		_tempItemData = _tempInstance->GetItemData(listItem[index].itemID);
-		_value += _tempItemData.CargoVolume * listItem[index].itemAmount;
+	for(auto& item : playerItem) {
+		_tempItemData = _tempInstance->GetItemData(item.Key);
+		_value += _tempItemData.CargoVolume * item.Value;
 	}
 	return _value;
 }
@@ -982,7 +1022,7 @@ void AUserState::CheatCommand(CheatType cheatType, UPARAM(ref) FString& paramete
 		if (!_hud)
 			break;
 		for (auto& skills : playerSkill)
-			_hud->AddUILogMessage(FText::Format(NSLOCTEXT("UIText", "LogMessage_DebugCommand_GetSkillList", "스킬 ID : {ID}, 레벨 : {Level}"), skills.Value.skillID, skills.Value.skillLevel) , FColor::Blue);
+			_hud->AddUILogMessage(FText::Format(NSLOCTEXT("UIText", "LogMessage_DebugCommand_GetSkillList", "스킬 ID : {ID}, 레벨 : {Level}"), skills.Key, skills.Value.skillLevel) , FColor::Blue);
 		_isCheckSuccess = true;
 		break;
 	case CheatType::WarpTo:

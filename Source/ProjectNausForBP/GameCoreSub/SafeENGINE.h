@@ -48,6 +48,8 @@ const float _define_SkillLearningTimeBase2 = 180.0f;
 const float _define_SkillLearningTimeBase3 = 300.0f;
 const float _define_SkillLearningTimeBase4 = 450.0f;
 const float _define_SkillLearningTimeBase5 = 600.0f;
+const float _define_SkillLearningTimeMIN = 0.0f;
+const float _define_SkillLearningTimeMAX = 7200.0f;
 
 const float _define_CreditMIN = -999999999999.0f;
 const float _define_CreditMAX = 999999999999.0f;
@@ -145,8 +147,8 @@ const float _define_RandomRotateSpeedMAX = 3.0f;
 
 #pragma region Constant Value In Cargo
 const float _define_AvailableDistanceGetCargo = 500.0f;
-const float _define_DropChanceMIN = 0.0f;
-const float _define_DropChanceMAX = 100.0f;
+const float _define_ChanceRandomMIN = 0.0f;
+const float _define_ChanceRandomMAX = 100.0f;
 #pragma endregion
 
 #pragma region Constant Value In Beam
@@ -203,6 +205,21 @@ public:
 	FNPCDropData() {}
 };
 USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FNPCInitCargoData {
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drop Data")
+		int initItemID;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drop Data")
+		int initAmountMin;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drop Data")
+		int initAmountMax;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drop Data")
+		float initChance;
+
+	FNPCInitCargoData() {}
+};
+USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FItemSellData
 {
 	GENERATED_USTRUCT_BODY()
@@ -235,20 +252,6 @@ public:
 		FVector2D location;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Object Respawn Data")
 		FRotator rotation;
-};
-USTRUCT(BlueprintType)
-struct PROJECTNAUSFORBP_API FBonusStat
-{
-	GENERATED_USTRUCT_BODY()
-public:
-	FBonusStat(BonusStatType type = BonusStatType::CustomBonus, float stat = 0.0f)
-	:	bonusStatType(type)
-	,	bonusStat(stat)		{}
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
-		BonusStatType bonusStatType;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonus State")
-		float bonusStat;
 };
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FDockSlot {
@@ -429,16 +432,28 @@ struct PROJECTNAUSFORBP_API FSkill
 	GENERATED_USTRUCT_BODY()
 public:
 	FSkill(int id = 0, int level = 0, float learning = 0.0f)
-		: skillID(id)
-		, skillLevel(level)
+		: skillLevel(level)
 		, skillLearning(learning) {}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		int skillLevel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
+		float skillLearning;
+};
+
+USTRUCT(BlueprintType)
+struct PROJECTNAUSFORBP_API FSkillIDANDLevel {
+	GENERATED_USTRUCT_BODY()
+public:
+	FSkillIDANDLevel(int id = 0, int level = 0)
+		: skillID(id)
+		, skillLevel(level) {
+	}
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int skillID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		int skillLevel;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
-		float skillLearning;
 };
 USTRUCT(BlueprintType)
 struct PROJECTNAUSFORBP_API FQuestPlot {
@@ -465,8 +480,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		FItem conditionValue_TypeItem;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
-		FSkill conditionValue_TypeSkill;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		FString conditionValue_TypeString;
 };
 USTRUCT(BlueprintType)
@@ -485,8 +498,6 @@ public:
 		int currentConditionValue_TypeInt;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		FItem currentConditionValue_TypeItem;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
-		FSkill currentConditionValue_TypeSkill;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instance Skill Data")
 		FString currentConditionValue_TypeString;
 };
@@ -544,18 +555,18 @@ public:
 		float structureHullRate;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Structure Data")
-		TArray<FItem> itemList;
+		TMap<int, int> itemSlot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<FItemSellData> itemSellListId;
+		TArray<FItemSellData> itemSellArrayPackage;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float maxItemListRefreshTime;
+		float maxSellingItemRefreshTime;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float remainItemListRefreshTime;
+		float remainSellingItemRefreshTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> shipSellList;
+		TArray<int> shipSellArray;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<FItem> playerItemList;
+		TMap<int, int> playerItemSlot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FProductProcess> itemsInProduction;
 };
@@ -577,7 +588,7 @@ public:
 		UTexture2D* Icon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FSkill> RequireSkills;
+		TArray<FSkillIDANDLevel> RequireSkills;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		float RequireFactionRelation;
 
@@ -657,7 +668,7 @@ public:
 		float RotateDeceleraion;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FBonusStat> bonusStats;
+		TMap<BonusStatType, float> bonusStats;
 
 	FShipData() {}
 };
@@ -690,11 +701,13 @@ public:
 		TArray<int> EquipedAmmoForTarget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
-		TArray<FBonusStat> BonusStats;
+		TMap<BonusStatType, float> BonusStats;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<FNPCTradeData> TradeItems;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
 		TArray<FNPCDropData> DropItems;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship Data")
+		TArray<FNPCInitCargoData> initItems;
 
 	FNPCData() {}
 };
@@ -746,12 +759,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		TArray<FDockSlot> DockingSlot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<FItemSellData> ItemSellListId;
+		TArray<FItemSellData> ItemSellArrayPackage;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		float ItemListRefreshTime;
+		float SellingItemRefreshTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
-		TArray<int> shipSellList;
+		TArray<int> shipSellArray;
 
 	FStationData() {}
 };
@@ -815,7 +828,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		FItem RequireBluePrint;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
-		TArray<FSkill> RequireSkill;
+		TArray<FSkillIDANDLevel> RequireSkill;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
 		TArray<FItem> RequireItems;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Product Data")
@@ -849,12 +862,9 @@ public:
 		int LearningMultiple;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		TArray<FSkill> RequireSkill;
-
+		TArray<FSkillIDANDLevel> RequireSkill;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		BonusStatType BonusType;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill Data")
-		float BonusAmountPerLevel;
+		TMap<BonusStatType, float> bonusStatPerLevel;
 	FSkillData() {}
 };
 USTRUCT(BlueprintType)
@@ -927,7 +937,7 @@ public:
 		float UsagePowerGrid;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Module In Item Data")
-		TArray<FSkill> RequireSkill;
+		TArray<FSkillIDANDLevel> RequireSkill;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Active or Passive In Item Data")
 		BonusStatType StatType;
@@ -1042,9 +1052,9 @@ public:
 		float SectorRecourceLevel;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
-		TArray<FStructureInfo> StationList;
+		TArray<FStructureInfo> StationInSector;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
-		TArray<FStructureInfo> GateList;
+		TArray<FStructureInfo> GateInSector;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		TArray<FObjectPlacement> ShipInitedData;
@@ -1065,23 +1075,23 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
 		int ProfileID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		int StartShipID;
+		int StartingShipID;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		float StartCredit;
+		float StartingCredit;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		float StartRenown;
+		float StartingRenown;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		FString StartSector;
+		FString StartingSector;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		FVector2D StartPosition;
+		FVector2D StartingPosition;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		TArray<FSkill> StartSkillList;
+		TArray<FSkillIDANDLevel> StartingSkill;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		TArray<FItem> StartItemList;
+		TArray<FItem> StartingItem;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Start Player Data")
-		TArray<float> StartFactionRelation;
+		TArray<float> StartingFactionRelation;
 	FNewStartPlayerData() {}
 };
 #pragma endregion
@@ -1185,13 +1195,6 @@ public:
 #pragma endregion
 
 #pragma region GamePlay - Static
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static int FindItemSlot(const TArray<FItem>& itemList, const FItem items);
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static bool AddCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem addItem);
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
-		static bool DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dropItem);
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")
 		static FVector GetRandomLocationToLocation(FVector location, float distance);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call To Manager")

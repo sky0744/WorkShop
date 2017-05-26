@@ -2,7 +2,7 @@
 	{
 		"Name": "0",
 		"StationName": "",
-		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"024815F745F3B23C0DED20BE18E341C4\", \"It is a station belonging to the central administration responsible for major administration within the empire.\")",
+		"Desc": "NSLOCTEXT(\"[795E9A4446071B6E86139E92C2F42D7A]\", \"BD85EA1D4D3082057C06849635218502\", \"It is a station belonging to the central administration responsible for major administration within the empire.\")",
 		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/1/000_Sprite.000_Sprite'",
 		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/1/000.000'",
 		"FactionOfProduction": "Neutral",
@@ -236,14 +236,14 @@
 				}
 			}
 		],
-		"ItemSellListId": [],
-		"ItemListRefreshTime": 0,
-		"shipSellList": []
+		"ItemSellArrayPackage": [],
+		"SellingItemRefreshTime": 0,
+		"shipSellArray": []
 	},
 	{
 		"Name": "1",
 		"StationName": "",
-		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"B23D3CF8479271184CF6379BDA77E7EC\", \"The majority of the goods needed by the empire are traded here. It is as high security as that.\")",
+		"Desc": "NSLOCTEXT(\"[795E9A4446071B6E86139E92C2F42D7A]\", \"BABF179148B9CA80D20F0BA7FF64F310\", \"The majority of the goods needed by the empire are traded here. It is as high security as that.\")",
 		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/2/001_Sprite.001_Sprite'",
 		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/2/001.001'",
 		"FactionOfProduction": "Neutral",
@@ -537,14 +537,14 @@
 				}
 			}
 		],
-		"ItemSellListId": [],
-		"ItemListRefreshTime": 0,
-		"shipSellList": []
+		"ItemSellArrayPackage": [],
+		"SellingItemRefreshTime": 0,
+		"shipSellArray": []
 	},
 	{
 		"Name": "2",
 		"StationName": "",
-		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"20D02342460C57DB8AF43BBF3E0D4D21\", \"The power of the Empire was born right here. Numerous skilled workers reside to create ships needed by the Empire. One of the important facilities, the powerful Imperial Navy is protecting this place.\")",
+		"Desc": "NSLOCTEXT(\"[795E9A4446071B6E86139E92C2F42D7A]\", \"55656CD9410F381A304AFDACBA5F6428\", \"The power of the Empire was born right here. Numerous skilled workers reside to create ships needed by the Empire. One of the important facilities, the powerful Imperial Navy is protecting this place.\")",
 		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/15/station-shipyard_Sprite.station-shipyard_Sprite'",
 		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/15/station-shipyard.station-shipyard'",
 		"FactionOfProduction": "Neutral",
@@ -616,14 +616,14 @@
 				}
 			}
 		],
-		"ItemSellListId": [],
-		"ItemListRefreshTime": 0,
-		"shipSellList": []
+		"ItemSellArrayPackage": [],
+		"SellingItemRefreshTime": 0,
+		"shipSellArray": []
 	},
 	{
 		"Name": "10000",
 		"StationName": "",
-		"Desc": "NSLOCTEXT(\"[034BEE0E432D7F966E7EF3BC41822D6F]\", \"76BA4E4442D02009ECC55EA6B54A15B8\", \"Warp Gate is a high-tech structure. In response to a warp driver, you can transfer objects to another warp gate connected to a node in the warp network. In the early days, it had to pay high costs due to low efficiency, but now it is actually free of charge.\")",
+		"Desc": "NSLOCTEXT(\"[795E9A4446071B6E86139E92C2F42D7A]\", \"41F286B44DD32177ABD5C38D1BE2A807\", \"Warp Gate is a high-tech structure. In response to a warp driver, you can transfer objects to another warp gate connected to a node in the warp network. In the early days, it had to pay high costs due to low efficiency, but now it is actually free of charge.\")",
 		"FlipSprite": "PaperSprite'/Game/Resource/Sprite/Structure/7/station-commerce_Sprite.station-commerce_Sprite'",
 		"Icon": "Texture2D'/Game/Resource/Sprite/Structure/7/station-commerce.station-commerce'",
 		"FactionOfProduction": "Neutral",
@@ -664,8 +664,8 @@
 				}
 			}
 		],
-		"ItemSellListId": [],
-		"ItemListRefreshTime": 0,
-		"shipSellList": []
+		"ItemSellArrayPackage": [],
+		"SellingItemRefreshTime": 0,
+		"shipSellArray": []
 	}
 ]

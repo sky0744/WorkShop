@@ -56,7 +56,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 
 	//게임 내의 모든 스테이션에 대해 스테이터스 및 파괴 쿨타임, 생산 상태를 갱신
 	for (FSectorData& sectorData : sectorInfo) {
-		for (FStructureInfo& stationData : sectorData.StationList) {
+		for (FStructureInfo& stationData : sectorData.StationInSector) {
 			if (stationData.isDestroyed)
 				stationData.remainRespawnTime = FMath::Clamp(stationData.remainRespawnTime - DeltaSecondes, -1.0f, stationData.maxRespawnTime);
 			else {
@@ -64,7 +64,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				stationData.structureShieldRate = FMath::Clamp(stationData.structureShieldRate + _respawnFactor, 0.0f, 1.0f);
 				stationData.structureArmorRate = FMath::Clamp(stationData.structureArmorRate + _respawnFactor, 0.0f, 1.0f);
 				stationData.structureHullRate = FMath::Clamp(stationData.structureHullRate + _respawnFactor, 0.0f, 1.0f);
-				stationData.remainItemListRefreshTime = FMath::Clamp(stationData.remainItemListRefreshTime - DeltaSecondes, -1.0f, stationData.maxItemListRefreshTime);
+				stationData.remainSellingItemRefreshTime = FMath::Clamp(stationData.remainSellingItemRefreshTime - DeltaSecondes, -1.0f, stationData.maxSellingItemRefreshTime);
 
 				if (stationData.structureType == StructureType::ProductionFacility || stationData.structureType == StructureType::Hub) {
 					for (int index = 0; index < stationData.itemsInProduction.Num(); index++) {
@@ -73,13 +73,13 @@ void ASpaceState::Tick(float DeltaSecondes) {
 								= FMath::Clamp(stationData.itemsInProduction[index].productTime - DeltaSecondes, -1.0f, stationData.itemsInProduction[index].maxProductTime);
 							continue;
 						}
-						USafeENGINE::AddCargo(stationData.playerItemList, stationData.itemsInProduction[index].productItem);
+						stationData.playerItemSlot.Emplace(stationData.itemsInProduction[index].productItem.itemID, stationData.itemsInProduction[index].productItem.itemAmount);
 						stationData.itemsInProduction.RemoveAtSwap(index);
 					}
 				}
 			}
 		}
-		for (FStructureInfo& gateData : sectorData.GateList) {
+		for (FStructureInfo& gateData : sectorData.GateInSector) {
 			if (gateData.isDestroyed)
 				gateData.remainRespawnTime = FMath::Clamp(gateData.remainRespawnTime - DeltaSecondes, -1.0f, gateData.maxRespawnTime);
 			else {
@@ -87,13 +87,13 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				gateData.structureShieldRate = FMath::Clamp(gateData.structureShieldRate + _structureRegenerateFactor, 0.0f, 1.0f);
 				gateData.structureArmorRate = FMath::Clamp(gateData.structureArmorRate + _structureRegenerateFactor, 0.0f, 1.0f);
 				gateData.structureHullRate = FMath::Clamp(gateData.structureHullRate + _structureRegenerateFactor, 0.0f, 1.0f);
-				gateData.remainItemListRefreshTime = FMath::Clamp(gateData.remainItemListRefreshTime - DeltaSecondes, -1.0f, gateData.maxItemListRefreshTime);
+				gateData.remainSellingItemRefreshTime = FMath::Clamp(gateData.remainSellingItemRefreshTime - DeltaSecondes, -1.0f, gateData.maxSellingItemRefreshTime);
 			}
 		}
 	}
 
 	//현재 섹터 내의 스테이션에 대해 리젠, 아이템 목록을 갱신
-	for (FStructureInfo& stationData : currentSectorInfo->StationList) {
+	for (FStructureInfo& stationData : currentSectorInfo->StationInSector) {
 		//리젠 갱신
 		if (stationData.isDestroyed && stationData.isRespawnable && stationData.remainRespawnTime < 0.0f) {
 			AStation* _regenStation = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
@@ -106,19 +106,17 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				_regenStation->Destroy();
 		}
 		//아이템 목록 갱신
-		if (!stationData.isDestroyed && stationData.remainItemListRefreshTime < 0.0f) {
-			stationData.itemList.Empty();
-			stationData.itemList.Reserve(stationData.itemSellListId.Num());
-			for (FItemSellData& sellData : stationData.itemSellListId) {
-				if (sellData.sellingChance >= FMath::RandRange(_define_ItemRefreshChanceMIN, _define_ItemRefreshChanceMAX)) {
-					_item = FItem(sellData.sellingItemID, FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount));
-					stationData.itemList.Emplace(_item);
-				}
+		if (!stationData.isDestroyed && stationData.remainSellingItemRefreshTime < 0.0f) {
+			stationData.itemSlot.Empty();
+			stationData.itemSlot.Reserve(stationData.itemSellArrayPackage.Num());
+			for (FItemSellData& sellData : stationData.itemSellArrayPackage) {
+				if (sellData.sellingChance >= FMath::RandRange(_define_ItemRefreshChanceMIN, _define_ItemRefreshChanceMAX)) 
+					stationData.itemSlot.Emplace(sellData.sellingItemID, FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount));
 			}
-			stationData.remainItemListRefreshTime = stationData.maxItemListRefreshTime;
+			stationData.remainSellingItemRefreshTime = stationData.maxSellingItemRefreshTime;
 		}
 	}
-	for (FStructureInfo& gateData : currentSectorInfo->GateList) {
+	for (FStructureInfo& gateData : currentSectorInfo->GateInSector) {
 		//리젠 갱신
 		if (gateData.isDestroyed && gateData.isRespawnable && gateData.remainRespawnTime < 0.0f) {
 			AGate* _regenGate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(),
@@ -131,16 +129,14 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				_regenGate->Destroy();
 		}
 		//아이템 목록 갱신
-		if (!gateData.isDestroyed && gateData.remainItemListRefreshTime < 0.0f) {
-			gateData.itemList.Empty();
-			gateData.itemList.Reserve(gateData.itemSellListId.Num());
-			for (FItemSellData& sellData : gateData.itemSellListId) {
+		if (!gateData.isDestroyed && gateData.remainSellingItemRefreshTime < 0.0f) {
+			gateData.itemSlot.Empty();
+			gateData.itemSlot.Reserve(gateData.itemSellArrayPackage.Num());
+			for (FItemSellData& sellData : gateData.itemSellArrayPackage) 
 				if (sellData.sellingChance >= FMath::RandRange(_define_ItemRefreshChanceMIN, _define_ItemRefreshChanceMAX)) {
-					_item = FItem(sellData.sellingItemID, FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount));
-					gateData.itemList.Emplace(_item);
-				}
+					gateData.itemSlot.Emplace(sellData.sellingItemID, FMath::RandRange(sellData.sellingItemMinAmount, sellData.sellingItemMaxAmount));
 			}
-			gateData.remainItemListRefreshTime = gateData.maxItemListRefreshTime;
+			gateData.remainSellingItemRefreshTime = gateData.maxSellingItemRefreshTime;
 		}
 	}
 	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOverTime();
@@ -159,11 +155,11 @@ void ASpaceState::Tick(float DeltaSecondes) {
 				continue;
 
 			//게이트로부터 출현하는 함선 생성 및 연출
-			if (respawnData.isPlacementToGate && currentSectorInfo->GateList.Num() > 0) {
-				_randomGateIndex = FMath::RandRange(0, currentSectorInfo->GateList.Num() - 1);
+			if (respawnData.isPlacementToGate && currentSectorInfo->GateInSector.Num() > 0) {
+				_randomGateIndex = FMath::RandRange(0, currentSectorInfo->GateInSector.Num() - 1);
 
 				AShip* _regenShip = Cast<AShip>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AShip::StaticClass(), 
-					FTransform(FRotator(0.0f, FMath::FRandRange(0.0f, 360.0f), 0.0f), FVector(currentSectorInfo->GateList[_randomGateIndex].structureLocation, 0.0f)), 
+					FTransform(FRotator(0.0f, FMath::FRandRange(0.0f, 360.0f), 0.0f), FVector(currentSectorInfo->GateInSector[_randomGateIndex].structureLocation, 0.0f)), 
 					ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn));
 
 				if (IsValid(_regenShip)) {
@@ -187,10 +183,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 					_regenShip->Destroy();
 				break;
 			}
-
-
 		}
-
 	}
 }
 
@@ -318,13 +311,13 @@ bool ASpaceState::SaveSpaceState(USaveLoader* saver) {
 		//PlayerPawn은 Manager급 액터들과 함께 일반 액터에 비해 빨리 스폰. 일반 액터인 AGate는 일반적으로 AlwaysSpawn으로 스폰되므로 겹치게 됨.
 		//따라서, 점프 이전에 미리 좌표를 계산해서 지정해야 겹치지 않고 스폰될 수 있음.
 		if (_nextSectorInfo != nullptr) {
-			for (int index = 0; index < _nextSectorInfo->GateList.Num(); index++) {
-				if (_nextSectorInfo->GateList[index].LinkedSector.Compare(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase) == 0) {
-					_tempStationData = _tempInstance->GetStationData(_nextSectorInfo->GateList[index].structureID);
+			for (int index = 0; index < _nextSectorInfo->GateInSector.Num(); index++) {
+				if (_nextSectorInfo->GateInSector[index].LinkedSector.Compare(UGameplayStatics::GetCurrentLevelName(GetWorld()), ESearchCase::IgnoreCase) == 0) {
+					_tempStationData = _tempInstance->GetStationData(_nextSectorInfo->GateInSector[index].structureID);
 					_tempShipData = _tempInstance->GetShipData(saver->shipID);
 
 					saver->rotation.Yaw = FMath::FRandRange(0.0f, 360.0f);
-					saver->position = _nextSectorInfo->GateList[index].structureLocation;
+					saver->position = _nextSectorInfo->GateInSector[index].structureLocation;
 					break;
 				}
 			}
@@ -388,7 +381,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 				_ship->Destroy();
 		}
 		//Load Structure Data
-		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
+		for (FStructureInfo& structureData : currentSectorInfo->StationInSector) {
 			if (!structureData.isDestroyed) {
 				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
@@ -400,7 +393,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					_station->Destroy();
 			}
 		}
-		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
+		for (FStructureInfo& structureData : currentSectorInfo->GateInSector) {
 			if (!structureData.isDestroyed) {
 				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
@@ -466,7 +459,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Start Load File Create By Warp to Next Sector!"));
 
 		//Load Structure
-		for (FStructureInfo& structureData : currentSectorInfo->StationList) {
+		for (FStructureInfo& structureData : currentSectorInfo->StationInSector) {
 			if (!structureData.isDestroyed) {
 				_station = Cast<AStation>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AStation::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
@@ -478,7 +471,7 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 					_station->Destroy();
 			}
 		}
-		for (FStructureInfo& structureData : currentSectorInfo->GateList) {
+		for (FStructureInfo& structureData : currentSectorInfo->GateInSector) {
 			if (!structureData.isDestroyed) {
 				_gate = Cast<AGate>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), AGate::StaticClass(), FTransform(FRotator(),
 					FVector(structureData.structureLocation, 0.0f)), ESpawnActorCollisionHandlingMethod::AlwaysSpawn));

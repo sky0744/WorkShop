@@ -142,69 +142,6 @@ const FNewStartPlayerData& USafeENGINE::GetStartProfileData(const int& id) const
 #pragma endregion
 
 #pragma region GamePlay
-int USafeENGINE::FindItemSlot(const TArray<FItem>& itemList, const FItem items) {
-	if (items.itemID < 0)
-		return false;
-
-	for (int index = 0; index < itemList.Num(); index++) {
-		if (itemList[index].itemID == items.itemID) {
-			return index;
-		}
-	}
-	return -1;
-}
-
-bool USafeENGINE::AddCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem addItem) {
-	if (addItem.itemID < 0)
-		return false;
-
-	int _findItemSlot = -1;
-	UE_LOG(LogClass, Log, TEXT("[AddCargo][ref Check] (&)%p"), &itemList);
-	if (addItem.itemAmount < 1)
-		return false;
-
-	_findItemSlot = FindItemSlot(itemList, addItem);
-	if (_findItemSlot > -1) {
-		itemList[_findItemSlot].itemAmount += addItem.itemAmount;
-		UE_LOG(LogClass, Log, TEXT("[AddCargo][Find] %d"), itemList.Num());
-	}
-	else {
-		itemList.Emplace(FItem(addItem.itemID, addItem.itemAmount));
-		UE_LOG(LogClass, Log, TEXT("[AddCargo][Generate] %d"), itemList.Num());
-	}
-
-	return true;
-}
-
-bool USafeENGINE::DropCargo(UPARAM(ref) TArray<FItem>& itemList, const FItem dropItem) {
-	if (dropItem.itemID < 0)
-		return false;
-
-	int _slotIndex = -1;
-	if (dropItem.itemAmount < 1)
-		return false;
-
-	UE_LOG(LogClass, Log, TEXT("[DropCargo][ref Check] %p"), &itemList);
-	_slotIndex = FindItemSlot(itemList, dropItem);
-	if (_slotIndex > -1) {
-		if (itemList[_slotIndex].itemAmount > dropItem.itemAmount) {
-			itemList[_slotIndex].itemAmount -= dropItem.itemAmount;
-			UE_LOG(LogClass, Log, TEXT("[DropCargo][Find] %d"), itemList.Num());
-		}
-		else if (itemList[_slotIndex].itemAmount == dropItem.itemAmount) {
-			itemList.RemoveAtSwap(_slotIndex);
-			UE_LOG(LogClass, Log, TEXT("[DropCargo][Delete] %d"), itemList.Num());
-		}
-		else {
-			UE_LOG(LogClass, Log, TEXT("[DropCargo][Can't] %d"), itemList.Num());
-			return false;
-		}
-	}
-	else return false;
-
-	return true;
-}
-
 FVector USafeENGINE::GetRandomLocationToLocation(FVector location, float distance) {
 
 	FVector _directiveVector;

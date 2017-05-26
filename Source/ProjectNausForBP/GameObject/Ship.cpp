@@ -165,7 +165,7 @@ float AShip::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		FNPCData _tempNPCData = _tempInstance->GetNPCData(npcShipID);
 
 		for (FNPCDropData& dropData : _tempNPCData.DropItems) {
-			if (FMath::Clamp(dropData.dropChance, _define_DropChanceMIN, _define_DropChanceMAX) < FMath::FRandRange(_define_DropChanceMIN, _define_DropChanceMAX))
+			if (FMath::Clamp(dropData.dropChance, _define_ChanceRandomMIN, _define_ChanceRandomMAX) < FMath::FRandRange( _define_ChanceRandomMIN, _define_ChanceRandomMAX))
 				continue;
 
 			_cargoContainer = Cast<ACargoContainer>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ACargoContainer::StaticClass(),
@@ -285,6 +285,14 @@ bool AShip::InitObject(const int npcID) {
 	rechargePower = FMath::Clamp(_tempShipData.RechargePower, _define_StatRestoreMIN, _define_StatRestoreMAX);
 	currentPower = maxPower;
 
+	maxCargo = FMath::Clamp(_tempShipData.Cargo, _define_StatCargoSizeMIN, _define_StatCargoSizeMAX);
+	shipCargo.Reserve(_tempNpcShipData.initItems.Num());
+	for (FNPCInitCargoData& initCargoItem : _tempNpcShipData.initItems) {
+		if (FMath::FRandRange(_define_ChanceRandomMIN, _define_ChanceRandomMAX) > FMath::Clamp(initCargoItem.initChance, _define_ChanceRandomMIN, _define_ChanceRandomMAX))
+			shipCargo.Emplace(initCargoItem.initItemID, FMath::Max(FMath::RandRange(initCargoItem.initAmountMin, initCargoItem.initAmountMax), 0));
+	}
+	shipCargo.Shrink();
+
 	warpMaxSpeed = FMath::Clamp(_tempShipData.MaxWarpSpeed, _define_WarpSpeedMIN, _define_WarpSpeedMAX);
 	warpAcceleration = FMath::Clamp(_tempShipData.WarpAcceleration, _define_WarpAccelerationMIN, _define_WarpAccelerationMAX);
 	maxSpeed = FMath::Clamp(_tempShipData.MaxSpeed, _define_StatAccelMIN, _define_StatAccelMAX);
@@ -296,149 +304,146 @@ bool AShip::InitObject(const int npcID) {
 	rotateAcceleration = FMath::Clamp(_tempShipData.RotateAcceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 	rotateDeceleration = FMath::Clamp(_tempShipData.RotateDeceleraion, _define_StatRotateMIN, _define_StatRotateMAX);
 
-	TArray<FBonusStat> _bonusStatsForWork = _tempShipData.bonusStats;
-	_bonusStatsForWork.Append(_tempNpcShipData.BonusStats);
-	//보너스 스텟의 배열에서 동일 보너스 타입의 엘리먼트들을 1개로 통합하고 나머지는 제거
-	for (int index = 0; index < _bonusStatsForWork.Num(); index++) {
-		for (int subIndex = 0; subIndex < _bonusStatsForWork.Num(); subIndex++)
-			if (_bonusStatsForWork[index].bonusStatType == _bonusStatsForWork[subIndex].bonusStatType && index != subIndex) {
-				_bonusStatsForWork[FMath::Min(index, subIndex)].bonusStat = _bonusStatsForWork[FMath::Max(index, subIndex)].bonusStat;
-				_bonusStatsForWork.RemoveAtSwap(FMath::Max(index, subIndex));
-			}
+	TMap<BonusStatType, float> _bonusStatsForWork = _tempShipData.bonusStats;
+	_bonusStatsForWork = _tempShipData.bonusStats;
+	for (auto& bonusDataInNPC : _tempNpcShipData.BonusStats) {
+		if (_bonusStatsForWork.Contains(bonusDataInNPC.Key))
+			_bonusStatsForWork[bonusDataInNPC.Key] += bonusDataInNPC.Value;
+		else _bonusStatsForWork.Emplace(bonusDataInNPC.Key, bonusDataInNPC.Value);
 	}
 	_bonusStatsForWork.Shrink();
-	for (FBonusStat& tBonusStat : _bonusStatsForWork) {
-		switch (tBonusStat.bonusStatType) {
+	for (auto& tBonusStat : _bonusStatsForWork) {
+		switch (tBonusStat.Key) {
 		case BonusStatType::BonusMaxShield:
-			maxShield = FMath::Clamp(maxShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			maxShield = FMath::Clamp(maxShield * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRechargeShield:
-			rechargeShield = FMath::Clamp(rechargeShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			rechargeShield = FMath::Clamp(rechargeShield * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusDefShield:
-			defShield = FMath::Clamp(defShield * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
+			defShield = FMath::Clamp(defShield * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
 			break;
 		case BonusStatType::BonusMaxArmor:
-			maxArmor = FMath::Clamp(maxArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			maxArmor = FMath::Clamp(maxArmor * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRepaireArmor:
-			repairArmor = FMath::Clamp(repairArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			repairArmor = FMath::Clamp(repairArmor * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusDefArmor:
-			defArmor = FMath::Clamp(defArmor * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
+			defArmor = FMath::Clamp(defArmor * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
 			break;
 		case BonusStatType::BonusMaxHull:
-			maxHull = FMath::Clamp(maxHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			maxHull = FMath::Clamp(maxHull * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRepaireHull:
-			repairHull = FMath::Clamp(repairHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			repairHull = FMath::Clamp(repairHull * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusDefHull:
-			defHull = FMath::Clamp(defHull * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
+			defHull = FMath::Clamp(defHull * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDefMIN, _define_StatDefMAX);
 			break;
 		case BonusStatType::BonusMaxPower:
-			maxPower = FMath::Clamp(maxPower * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
+			maxPower = FMath::Clamp(maxPower * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatDamperMIN, _define_StatDamperMAX);
 			break;
 		case BonusStatType::BonusRechargePower:
-			rechargePower = FMath::Clamp(rechargePower * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
+			rechargePower = FMath::Clamp(rechargePower * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRestoreMIN, _define_StatRestoreMAX);
 			break;
 		case BonusStatType::BonusMobilitySpeed:
-			maxSpeed = FMath::Clamp(maxSpeed * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatSpeedMIN, _define_StatSpeedMAX);
+			maxSpeed = FMath::Clamp(maxSpeed * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatSpeedMIN, _define_StatSpeedMAX);
 			break;
 		case BonusStatType::BonusMobilityAcceleration:
-			maxAcceleration = FMath::Clamp(maxAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
-			minAcceleration = FMath::Clamp(minAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
+			maxAcceleration = FMath::Clamp(maxAcceleration * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
+			minAcceleration = FMath::Clamp(minAcceleration * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatAccelMIN, _define_StatAccelMAX);
 			break;
 		case BonusStatType::BonusMobilityRotation:
-			maxRotateRate = FMath::Clamp(maxRotateRate * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			maxRotateRate = FMath::Clamp(maxRotateRate * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			break;
 		case BonusStatType::BonusMobilityRotateAcceleration:
-			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
-			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			rotateAcceleration = FMath::Clamp(rotateAcceleration * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
+			rotateDeceleration = FMath::Clamp(rotateDeceleration * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRotateMIN, _define_StatRotateMAX);
 			break;
 		case BonusStatType::BonusMaxRadarRange:
-			lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + FMath::Clamp(tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
+			lengthRadarRange = FMath::Clamp(lengthRadarRange * (1.0f + FMath::Clamp(tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX)), _define_StatRadarRangeMIN, _define_StatRadarRangeMAX);
 			break;
 		case BonusStatType::BonusDroneBaseStats:
-			bonusDroneBaseStats = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			bonusDroneBaseStats = FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
 		case BonusStatType::BonusDroneControl:
-			bonusDroneControl = FMath::Clamp(tBonusStat.bonusStat, _define_StatDroneControlMIN, _define_StatDroneControlMAX);
+			bonusDroneControl = FMath::Clamp(tBonusStat.Value, _define_StatDroneControlMIN, _define_StatDroneControlMAX);
 			break;
 		case BonusStatType::BonusDroneBay:
-			bonusDroneBay = FMath::Clamp(tBonusStat.bonusStat, _define_StatDroneBayMIN, _define_StatDroneBayMAX);
+			bonusDroneBay = FMath::Clamp(tBonusStat.Value, _define_StatDroneBayMIN, _define_StatDroneBayMAX);
 			break;
 		case BonusStatType::BonusDroneDamage:
-			bonusDroneDamage = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			bonusDroneDamage = FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
 		case BonusStatType::BonusDroneRange:
-			bonusDroneRange = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			bonusDroneRange = FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
 		case BonusStatType::BonusDroneSpeed:
-			bonusDroneSpeed = FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN, _define_StatBonusMAX);
+			bonusDroneSpeed = FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN, _define_StatBonusMAX);
 			break;
 		case BonusStatType::BonusTargetModuleUsagePower:
 			for (FTargetModule& module : slotTargetModule)
-				module.maxUsagePower *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReducePowerMAX, 1.0f - _define_StatBonusReducePowerMIN);
+				module.maxUsagePower *= FMath::Clamp(1.0f - tBonusStat.Value, 1.0f - _define_StatBonusReducePowerMAX, 1.0f - _define_StatBonusReducePowerMIN);
 			break;
 		default:
 			for (FTargetModule& module : slotTargetModule)
 				if (module.moduleID > 0) {
 					switch (module.moduleType) {
 					case ModuleType::Beam:
-						if (tBonusStat.bonusStatType == BonusStatType::BonusBeamDamage)
-							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamCoolTime)
-							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamAccuracy)
-							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusBeamRange)
-							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						if (tBonusStat.Key == BonusStatType::BonusBeamDamage)
+							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusBeamCoolTime)
+							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.Value, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusBeamAccuracy)
+							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusBeamRange)
+							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						module.ammoLifeSpanBonus = FMath::Clamp(module.ammoLifeSpanBonus, 0.0f, module.maxCooltime);
 						break;
 					case ModuleType::Cannon:
-						if (tBonusStat.bonusStatType == BonusStatType::BonusCannonDamage)
-							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonCoolTime)
-							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonAccuracy)
-							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonLifeTime)
-							module.ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusCannonLaunchVelocity)
-							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						if (tBonusStat.Key == BonusStatType::BonusCannonDamage)
+							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusCannonCoolTime)
+							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.Value, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusCannonAccuracy)
+							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusCannonLifeTime)
+							module.ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusCannonLaunchVelocity)
+							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					case ModuleType::Railgun:
-						if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunDamage)
-							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunCoolTime)
-							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunAccuracy)
-							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunLifeTime)
-							module.ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusRailGunLaunchVelocity)
-							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						if (tBonusStat.Key == BonusStatType::BonusRailGunDamage)
+							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusRailGunCoolTime)
+							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.Value, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusRailGunAccuracy)
+							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusRailGunLifeTime)
+							module.ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusRailGunLaunchVelocity)
+							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					case ModuleType::MissileLauncher:
-						if (tBonusStat.bonusStatType == BonusStatType::BonusMissileDamage)
-							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileCoolTime)
-							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileAccuracy)
-							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileLifeTime)
-							module.ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusMissileLaunchVelocity)
-							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						if (tBonusStat.Key == BonusStatType::BonusMissileDamage)
+							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusMissileCoolTime)
+							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.Value, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusMissileAccuracy)
+							module.accaucy *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusMissileLifeTime)
+							module.ammoLifeSpanBonus *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusMissileLaunchVelocity)
+							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					case ModuleType::MinerLaser:
-						if (tBonusStat.bonusStatType == BonusStatType::BonusMiningAmount)
-							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusMiningCoolTime)
-							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.bonusStat, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
-						else if (tBonusStat.bonusStatType == BonusStatType::BonusMiningRange)
-							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.bonusStat, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						if (tBonusStat.Key == BonusStatType::BonusMiningAmount)
+							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusMiningCoolTime)
+							module.maxCooltime *= FMath::Clamp(1.0f - tBonusStat.Value, 1.0f - _define_StatBonusReduceCooltimeMAX, 1.0f - _define_StatBonusReduceCooltimeMAX);
+						else if (tBonusStat.Key == BonusStatType::BonusMiningRange)
+							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
 					default:
 						break;

@@ -51,7 +51,6 @@ public:
 protected:
 	bool TotalStatsUpdate();
 	void CheckPassiveTypeModule(const BonusStatType type, float value);
-	void CheckBonusStat(const TArray<FBonusStat>& bonusStatArray);
 public:
 	UFUNCTION(BlueprintCallable, Category = "Call to Player Ship")
 		virtual bool LoadFromSave(const USaveLoader* loader);
