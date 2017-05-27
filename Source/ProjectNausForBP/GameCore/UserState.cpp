@@ -284,7 +284,7 @@ void AUserState::PlayerDeathProcess() {
 
 }
 
-bool AUserState::PlayerSave(USaveLoader* _saver) {
+bool AUserState::PlayerSave(USaveLoader* saver) {
 
 	if (!IsValid(UGameplayStatics::GetPlayerPawn(GetWorld(), 0))) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerSave] Can't Find Player's Pawn."));
@@ -294,31 +294,32 @@ bool AUserState::PlayerSave(USaveLoader* _saver) {
 		UE_LOG(LogClass, Log, TEXT("[Error][PlayerState][PlayerSave] Can't Find IsA Relative about Player's Pawn."));
 		return false;
 	}
-	_saver->name = sUserName;
-	_saver->shipID = sShipID;
-	_saver->credit = sCredit;
-	_saver->restartSector = restartSector;
-	_saver->restartLocation = restartLocation;
+	saver->name = sUserName;
+	saver->shipID = sShipID;
+	saver->credit = sCredit;
+	saver->restartSector = restartSector;
+	saver->restartLocation = restartLocation;
+	saver->bio = sUserBio;
 
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	_saver->shield = _obj->GetValue(GetStatType::currentShield);
-	_saver->armor = _obj->GetValue(GetStatType::currentArmor);
-	_saver->hull = _obj->GetValue(GetStatType::currentHull);
-	_saver->power = _obj->GetValue(GetStatType::currentPower);
+	saver->shield = _obj->GetValue(GetStatType::currentShield);
+	saver->armor = _obj->GetValue(GetStatType::currentArmor);
+	saver->hull = _obj->GetValue(GetStatType::currentHull);
+	saver->power = _obj->GetValue(GetStatType::currentPower);
 
-	_obj->GetModule(ItemType::TargetModule, _saver->slotTargetModule);
-	_obj->GetModule(ItemType::ActiveModule, _saver->slotActiveModule);
-	_obj->GetModule(ItemType::PassiveModule, _saver->slotPassiveModule);
-	_obj->GetModule(ItemType::SystemModule, _saver->slotSystemModule);
-	_obj->GetTargetModuleAmmo(_saver->targetModuleAmmo);
+	_obj->GetModule(ItemType::TargetModule, saver->slotTargetModule);
+	_obj->GetModule(ItemType::ActiveModule, saver->slotActiveModule);
+	_obj->GetModule(ItemType::PassiveModule, saver->slotPassiveModule);
+	_obj->GetModule(ItemType::SystemModule, saver->slotSystemModule);
+	_obj->GetTargetModuleAmmo(saver->targetModuleAmmo);
 
-	_saver->userLearningSkillId = learningSkillId;
-	_saver->userItemData = playerItem;
-	_saver->userSkillData = playerSkill;
+	saver->userLearningSkillId = learningSkillId;
+	saver->userItemData = playerItem;
+	saver->userSkillData = playerSkill;
 
-	if (_saver->saveState == SaveState::UserRequest) {
-		_saver->position = FVector2D(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation());
-		_saver->rotation = FRotator(0.0f, UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorRotation().Yaw, 0.0f);
+	if (saver->saveState == SaveState::UserRequest) {
+		saver->position = FVector2D(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation());
+		saver->rotation = FRotator(0.0f, UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorRotation().Yaw, 0.0f);
 	}
 	return true;
 }
@@ -340,6 +341,7 @@ bool AUserState::PlayerLoad(USaveLoader* loader) {
 	sUserName = loader->name;
 	sShipID = loader->shipID;
 	sCredit = loader->credit;
+	sUserBio = loader->bio;
 
 	learningSkillId = loader->userLearningSkillId;
 	playerSkill = loader->userSkillData;
@@ -441,6 +443,19 @@ bool AUserState::ShipBuy(const int newShipID) {
 	return true;
 }
 
+int AUserState::GetOwnedShipID() const {
+	return sShipID;
+}
+
+void AUserState::GetUserBio(FText& bioGetter) const {
+	bioGetter = sUserBio;
+}
+
+void AUserState::SetUserBio(UPARAM(ref) FText& bioSetter) {
+	if (bioSetter.ToString().Len() < 1001)
+		sUserBio = bioSetter;
+}
+
 bool AUserState::ChangeCredit(float varianceCredit) {//, FText category, FText contents) {
 	if (sCredit < 0.0f && varianceCredit < 0.0f)
 		return false;
@@ -484,7 +499,7 @@ float AUserState::GetRenown() const {
 
 bool AUserState::AddPlayerCargo(FItem addItem) {
 	ASpaceObject* _obj = Cast<ASpaceObject>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	if(!IsValid(_obj) || _obj->IsA(APlayerShip::StaticClass()))
+	if(!IsValid(_obj) || !_obj->IsA(APlayerShip::StaticClass()))
 		return false;
 	if (addItem.itemID < 0 || addItem.itemAmount < 1)
 		return false;
@@ -511,7 +526,7 @@ bool AUserState::AddPlayerCargo(FItem addItem) {
 
 bool AUserState::DropPlayerCargo(FItem dropItem) {
 	ASpaceObject* _obj = Cast<ASpaceObject>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	if (!IsValid(_obj) || _obj->IsA(APlayerShip::StaticClass()))
+	if (!IsValid(_obj) || !_obj->IsA(APlayerShip::StaticClass()))
 		return false;
 	if (dropItem.itemID < 0 || dropItem.itemAmount < 1)
 		return false;
@@ -824,6 +839,10 @@ bool AUserState::UnEquipModule(const ItemType moduleType, const int slotIndex) {
 	case ItemType::PassiveModule:
 	case ItemType::SystemModule:
 		_obj->GetModule(moduleType, _tempModuleList);
+		if (_tempModuleList.Num() < 1 || _tempModuleList.Num() <= slotIndex) {
+			UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][UnEquipModule] Invalid access module slot. UnEquip Fail."));
+			return false;
+		}
 		_tempModuleData = _tempInstance->GetItemData(_tempModuleList[slotIndex]);
 		break;
 	default:
@@ -831,7 +850,7 @@ bool AUserState::UnEquipModule(const ItemType moduleType, const int slotIndex) {
 		return false;
 	}
 	FItem _unEquipedItem = FItem(_tempModuleData.ItemID, 1);
-	if (AddPlayerCargo(_unEquipedItem) == true) {
+	if (_tempModuleList[slotIndex] < 0 || AddPlayerCargo(_unEquipedItem) == true) {
 		if (_obj->UnEquipModule(moduleType, slotIndex) == true) {
 			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][UnEquipModule] UnEquip Finish."));
 			return true;
@@ -1043,12 +1062,6 @@ void AUserState::CheatCommand(CheatType cheatType, UPARAM(ref) FString& paramete
 		break;
 	default:
 		break;
-	}
-	if (_hud) {
-		if (_isCheckSuccess)
-			_hud->AddUILogMessage(NSLOCTEXT("UIText", "LogMessage_DebugCommandResult_Success", "커맨드 적용 성공"), FColor::White);
-		else
-			_hud->AddUILogMessage(NSLOCTEXT("UIText", "LogMessage_DebugCommandResult_Fail", "커맨드 적용 실패"), FColor::Red);
 	}
 	return;
 }

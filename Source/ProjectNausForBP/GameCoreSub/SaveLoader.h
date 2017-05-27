@@ -164,11 +164,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		SaveState saveState;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FVector2D position;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		FRotator rotation;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
+		FText bio;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveLoader)
 		float hull;

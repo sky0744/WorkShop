@@ -985,10 +985,10 @@ bool APlayerShip::UnEquipModule(const ItemType moduleItemType, const int slotNum
 	}
 
 	AUserState* userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
-		switch (moduleItemType)
+	switch (moduleItemType)
 	{
 	case ItemType::TargetModule:
-		if (slotTargetModule.Num() < slotNumber || slotTargetModule[slotNumber].moduleID <= 0)
+		if (slotTargetModule.Num() <= slotNumber || slotTargetModule.Num() < 1 || slotTargetModule[slotNumber].moduleID <= 0)
 			return false;
 		if (!userState->AddPlayerCargo(slotTargetModule[slotNumber].moduleID))
 			return false;
@@ -997,14 +997,14 @@ bool APlayerShip::UnEquipModule(const ItemType moduleItemType, const int slotNum
 		case ModuleType::Beam:
 		case ModuleType::TractorBeam:
 		case ModuleType::MinerLaser:
-			slotTargetModule[slotNumber].moduleID = 0;
+			slotTargetModule[slotNumber].moduleID = -1;
 			slotTargetModule[slotNumber].moduleType = ModuleType::NotModule;
 			break;
 		case ModuleType::Cannon:
 		case ModuleType::Railgun:
 		case ModuleType::MissileLauncher:
 			if (userState->AddPlayerCargo(slotTargetModule[slotNumber].ammo)) {
-				slotTargetModule[slotNumber].moduleID = 0;
+				slotTargetModule[slotNumber].moduleID = -1;
 				slotTargetModule[slotNumber].moduleType = ModuleType::NotModule;
 			}
 			else {
@@ -1017,20 +1017,20 @@ bool APlayerShip::UnEquipModule(const ItemType moduleItemType, const int slotNum
 		}
 		break;
 	case ItemType::ActiveModule:
-		if (slotActiveModule.Num() < slotNumber || slotActiveModule[slotNumber].moduleID <= 0)
+		if (slotActiveModule.Num() <= slotNumber || slotActiveModule.Num() < 1 || slotActiveModule[slotNumber].moduleID <= 0)
 			return false;
-		slotActiveModule[slotNumber].moduleID = 0;
+		slotActiveModule[slotNumber].moduleID = -1;
 		slotActiveModule[slotNumber].moduleType = ModuleType::NotModule;
 		break;
 	case ItemType::PassiveModule:
-		if (slotPassiveModule.Num() < slotNumber || slotPassiveModule[slotNumber] <= 0)
+		if (slotPassiveModule.Num() <= slotNumber || slotPassiveModule.Num() < 1 || slotPassiveModule[slotNumber] <= 0)
 			return false;
-		slotPassiveModule[slotNumber] = 0;
+		slotPassiveModule[slotNumber] = -1;
 		break;
 	case ItemType::SystemModule:
-		if (slotSystemModule.Num() < slotNumber || slotSystemModule[slotNumber] <= 0)
+		if (slotSystemModule.Num() <= slotNumber || slotSystemModule.Num() < 1 || slotSystemModule[slotNumber] <= 0)
 			return false;
-		slotSystemModule[slotNumber] = 0;
+		slotSystemModule[slotNumber] = -1;
 		break;
 	default:
 		break;

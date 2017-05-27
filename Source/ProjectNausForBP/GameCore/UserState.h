@@ -49,7 +49,26 @@ public:
 		Faction GetOriginFaction() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/**	함선을 구입합니다. 구입에 따른 확인 및 절차가 진행됩니다.
+		*	@param newShipID - 구입할 함선의 ID
+		*	@return	- 구입 및 적용 처리 결과
+		*/
 		bool ShipBuy(const int newShipID);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/**	유저의 소유 함선 ID를 확인합니다.
+		*	@return 함선 ID
+		*/
+		int GetOwnedShipID() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
+		/**	유저의 바이오를 가져옵니다.
+		*	@param bioGetter - 가져올 문장
+		*/
+		void GetUserBio(FText& bioGetter) const;
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/**	유저의 바이오를 적용합니다.
+		*	@param bioSetter 입력할 문장
+		*/
+		void SetUserBio(UPARAM(ref) FText& bioSetter);
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		/**	유저에게 크레딧을 부여합니다.
@@ -231,14 +250,14 @@ private:
 
 	FString restartSector;
 	FVector2D restartLocation;
-protected:
+	FText sUserBio;
+
 	int learningSkillId;
-	UPROPERTY(BlueprintReadOnly, Category = "User Data")
+	UPROPERTY()
 		TMap<int, FSkill> playerSkill;
-	UPROPERTY(BlueprintReadOnly, Category = "User Data")
+	UPROPERTY()
 		TMap<int, int> playerItem;
 
-private:
 	FString nextSectorName;
 	TScriptInterface<IStructureable> dockedStructure;
 	float currentCargo;
