@@ -117,7 +117,7 @@ public:
 		bool SellItem(FItem sellItem);
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-		/*	아이템 착용을 시도합니다. 모듈이 아니거나 함선에 호환되지 않는 등의 문제가 발생할 경우
+		/*	아이템 착용을 시도합니다.
 		*	@param equipItemID - 작용할 아이템의 아이디.
 		*	@return - 착용 성공 여부. 모듈이 아니거나 착용조건을 만족하지 못한 경우 false
 		*/
@@ -132,10 +132,12 @@ public:
 	TScriptInterface<IStructureable> DockedStructure() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
-		/*	플레이어의 아이템 데이터를 배열로 획득합니다.
+		/*	플레이어의 아이템 데이터를 배열로 획득합니다. 정렬 옵션이 가능합니다.
+		*   옵션을 입력하지 않거나 NoOption을 입력으로 하면 정렬하지 않은 상태로 반환합니다.
 		*	@param setArray - 획득할 아이템 데이터
+		*	@param sortType - 정렬 옵션
 		*/
-		void GetUserDataItem(TArray<FItem>& setArray) const;
+		void GetUserDataItem(TArray<FItem>& setArray, CargoSortType sortType = CargoSortType::NoOption) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		/*	플레이어의 아이템 중 찾고자 하는 아이템의 갯수를 획득합니다.
 		*	@param setArray - 획득할 스킬 데이터

@@ -373,9 +373,6 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 	case GetStatType::maxSpeed:
 		_value = sMaxSpeed;
 		break;
-	case GetStatType::targetSpeed:
-		_value = setedTargetSpeed;
-		break;
 	case GetStatType::currentSpeed:
 		_value = currentSpeed;
 		break;
@@ -690,7 +687,7 @@ bool APlayerShip::TotalStatsUpdate() {
 						else if (bonusStat.Key == BonusStatType::BonusMissileLaunchVelocity)
 							slotTargetModule[index].launchSpeedMultiple *= FMath::Clamp(1.0f + bonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
-					case ModuleType::MinerLaser:
+					case ModuleType::MinerBeam:
 						if (bonusStat.Key == BonusStatType::BonusMiningAmount)
 							slotTargetModule[index].damageMultiple *= FMath::Clamp(1.0f + bonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						else if (bonusStat.Key == BonusStatType::BonusMiningCoolTime)
@@ -708,7 +705,7 @@ bool APlayerShip::TotalStatsUpdate() {
 	for (FTargetModule& targetModule : slotTargetModule) {
 		if (targetModule.moduleType == ModuleType::Beam && lengthWeaponRange < targetModule.launchSpeedMultiple)
 			lengthWeaponRange = targetModule.launchSpeedMultiple;
-		else if (_tempModuleData.ModuleType > ModuleType::Beam && targetModule.moduleType < ModuleType::MinerLaser) {
+		else if (_tempModuleData.ModuleType > ModuleType::Beam && targetModule.moduleType < ModuleType::MinerBeam) {
 			lengthWeaponRange = targetModule.launchSpeedMultiple;
 			_tempModuleData = _tempInstance->GetItemData(targetModule.ammo.itemID);
 			lengthWeaponRange *= _tempModuleData.LaunchSpeed;
@@ -996,7 +993,7 @@ bool APlayerShip::UnEquipModule(const ItemType moduleItemType, const int slotNum
 		switch (slotTargetModule[slotNumber].moduleType) {
 		case ModuleType::Beam:
 		case ModuleType::TractorBeam:
-		case ModuleType::MinerLaser:
+		case ModuleType::MinerBeam:
 			slotTargetModule[slotNumber].moduleID = -1;
 			slotTargetModule[slotNumber].moduleType = ModuleType::NotModule;
 			break;
@@ -1124,7 +1121,7 @@ bool APlayerShip::ToggleTargetModule(const int slotIndex, ASpaceObject* target) 
 			switch (slotTargetModule[slotIndex].moduleType) {
 			case ModuleType::Beam:
 			case ModuleType::TractorBeam:
-			case ModuleType::MinerLaser:
+			case ModuleType::MinerBeam:
 				//모듈이 빔 계열인 경우
 				if (!IsValid(target))
 					return false;
@@ -1549,7 +1546,7 @@ void APlayerShip::ModuleCheck() {
 						_spawnedTransform = FTransform(_targetedRotation, _launchLocation);
 						//빔계열 모듈의 경우
 						if (module.moduleType == ModuleType::Beam ||
-							module.moduleType == ModuleType::MinerLaser ||
+							module.moduleType == ModuleType::MinerBeam ||
 							module.moduleType == ModuleType::TractorBeam) {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()
@@ -1561,7 +1558,7 @@ void APlayerShip::ModuleCheck() {
 								module.damageMultiple, _hardPointLocation, module.ammoLifeSpanBonus);
 						}
 						//탄도 무기류의 경우
-						else if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerLaser) {
+						else if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerBeam) {
 							if (module.ammo.itemAmount < 1) {
 								module.moduleState = ModuleState::ReloadAmmo;
 								module.isBookedForOff = false;
@@ -1595,7 +1592,7 @@ void APlayerShip::ModuleCheck() {
 					break;
 				case ModuleState::ReloadAmmo:
 					//캐논, 레일건, 미사일류 모듈일 경우
-					if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerLaser) {
+					if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerBeam) {
 
 						AUserState* _userState = Cast<AUserState>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerState);
 						int _reloadedAmount = _userState->FindItemAmount(module.ammo.itemID);

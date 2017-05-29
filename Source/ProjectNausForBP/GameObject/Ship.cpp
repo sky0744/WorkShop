@@ -437,7 +437,7 @@ bool AShip::InitObject(const int npcID) {
 						else if (tBonusStat.Key == BonusStatType::BonusMissileLaunchVelocity)
 							module.launchSpeedMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						break;
-					case ModuleType::MinerLaser:
+					case ModuleType::MinerBeam:
 						if (tBonusStat.Key == BonusStatType::BonusMiningAmount)
 							module.damageMultiple *= FMath::Clamp(1.0f + tBonusStat.Value, _define_StatBonusMIN + 1.0f, _define_StatBonusMAX);
 						else if (tBonusStat.Key == BonusStatType::BonusMiningCoolTime)
@@ -454,7 +454,7 @@ bool AShip::InitObject(const int npcID) {
 	for (FTargetModule& module : slotTargetModule) {
 		if (module.moduleType == ModuleType::Beam && lengthWeaponRange < module.launchSpeedMultiple)
 			lengthWeaponRange = module.launchSpeedMultiple;
-		else if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerLaser) {
+		else if (module.moduleType > ModuleType::Beam && module.moduleType < ModuleType::MinerBeam) {
 			lengthWeaponRange = module.launchSpeedMultiple;
 			_tempModuleData = _tempInstance->GetItemData(module.ammo.itemID);
 			lengthWeaponRange *= _tempModuleData.LaunchSpeed;
@@ -537,9 +537,6 @@ float AShip::GetValue(const GetStatType statType) const {
 		break;
 	case GetStatType::maxSpeed:
 		_value = maxSpeed;
-		break;
-	case GetStatType::targetSpeed:
-		_value = targetSpeed;
 		break;
 	case GetStatType::currentSpeed:
 		_value = currentSpeed;
@@ -833,7 +830,7 @@ void AShip::ModuleCheck() {
 						_spawnedTransform = FTransform(_targetedRotation, _targetedLocation);
 						//빔계열 모듈의 경우
 						if (module.moduleType == ModuleType::Beam ||
-							module.moduleType == ModuleType::MinerLaser ||
+							module.moduleType == ModuleType::MinerBeam ||
 							module.moduleType == ModuleType::TractorBeam) {
 
 							ABeam* _beam = Cast<ABeam>(UGameplayStatics::BeginDeferredActorSpawnFromClass(GetWorld(), ABeam::StaticClass()

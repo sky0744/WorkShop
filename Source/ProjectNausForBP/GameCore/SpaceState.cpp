@@ -519,7 +519,8 @@ bool ASpaceState::LoadSpaceState(USaveLoader* loader) {
 
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship In save file : %d"), factionRelationship.Num());
 	if (factionRelationship.Num() != factionEnumPtr->NumEnums() - 4) {
-		factionRelationship.SetNum(factionEnumPtr->NumEnums() - 4);
+		factionRelationship.SetNumZeroed(factionEnumPtr->NumEnums() - 4);
+		tempFactionRelationship.SetNumZeroed(factionEnumPtr->NumEnums() - 4);
 		UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Relationship Init not Matching with save file! Some Relationship Data Will be Damaged! Set To %d."), factionRelationship.Num());
 	}
 	UE_LOG(LogClass, Log, TEXT("[Info][SpaceState][LoadSpaceState] Game Load Finish!"));

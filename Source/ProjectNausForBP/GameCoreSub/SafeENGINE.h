@@ -1036,18 +1036,24 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		SectorType Type;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
-		SectorState State;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		TArray<FName> PlayerableBGM;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		float SectorDevelopmentLevel;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		bool IsDevelopmentActive;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		float SectorSecurityLevel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		bool IsSecurityActive;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		float SectorTechLevel;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		bool IsTechActive;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		float SectorEconomyLevel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
+		bool IsEconomyActive;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sector Data")
 		float SectorRecourceLevel;
 

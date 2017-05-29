@@ -27,16 +27,12 @@ public:
 	virtual void UpdateUIShip_Implementation();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void UpdateUIModule();
-	virtual void UpdateUIModule_Implementation();
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void UpdateUICargo();
 	virtual void UpdateUICargo_Implementation();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void UpdateUIContract();
-	virtual void UpdateUIContract_Implementation();
+		void UpdateUIQuest();
+	virtual void UpdateUIQuest_Implementation();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void AddToObjectList(const ASpaceObject* object);
@@ -87,14 +83,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void OnUIMove(const FVector location, const FColor color, const float lifeTime, const float size);
 	virtual void OnUIMove_Implementation(const FVector location, const FColor color, const float lifeTime, const float size);
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void OnUIInteraction(const AActor* object, const ObjectType objectType);
-	virtual void OnUIInteraction_Implementation(const AActor* object, const ObjectType objectType);
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void OffUIInteraction();
-	virtual void OffUIInteraction_Implementation();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void OnUIStationButton();

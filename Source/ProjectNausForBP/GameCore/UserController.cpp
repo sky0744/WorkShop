@@ -162,8 +162,6 @@ void AUserController::ControlMouseWheel(float value) {
 
 void AUserController::ClickPressMouseLeft(FKey key) {
 	mouseLeftClicked = true;
-	if(IsValid(controlledHUD))
-		controlledHUD->OffUIInteraction();
 }
 void AUserController::ClickReleaseMouseLeft(FKey key) {
 	this->DeprojectMousePositionToWorld(mousePositionInWorld, mouseDirectionInWorld);
@@ -208,10 +206,8 @@ void AUserController::ClickReleaseMouseRight(FKey key) {
 		, traceParams);
 
 	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) 
-		SettingInteraction(Cast<ASpaceObject>(hitResult.Actor.Get()));
+		SetTarget(Cast<ASpaceObject>(hitResult.Actor.Get()));
 	else {
-		if(IsValid(controlledHUD))
-			controlledHUD->OffUIInteraction();
 		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
 		if(commandInterface != nullptr)
 			commandInterface->CommandMoveToPosition(mouseXYPlane);
@@ -357,15 +353,5 @@ void AUserController::SetTarget(ASpaceObject* target) {
 	}
 	if (IsValid(tObj) && IsValid(controlledHUD))
 		controlledHUD->OnUITarget(tObj, _peerColor, 5.0f);
-}
-
-void AUserController::SettingInteraction(const ASpaceObject* target) {
-	
-	FColor peerColor;
-	if (!IsValid(target) || controlledPawn == target || controlledPawn == tObj) 
-		return;
-
-	if (IsValid(tObj) && IsValid(controlledHUD) && tObj == target)
-		controlledHUD->OnUIInteraction(tObj, tObj->GetObjectType());
 }
 #pragma endregion

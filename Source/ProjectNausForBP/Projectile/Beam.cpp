@@ -61,7 +61,7 @@ void ABeam::Tick(float DeltaTime) {
 	FItem _collectedOre;
 	if (isHited) {
 		switch (beamType) {
-		case ModuleType::MinerLaser:
+		case ModuleType::MinerBeam:
 			if (!IsValid(target) || !target->IsA(AResource::StaticClass()))
 				return;
 
@@ -110,7 +110,7 @@ void ABeam::SetBeamProperty(ASpaceObject* launchActor, ASpaceObject* targetActor
 		DrawDebugPoint(GetWorld(), resultLocation, 6, FColor(255, 255, 255), false, aliveTime);
 		DrawDebugLine(GetWorld(), GetActorLocation(), resultLocation, FColor(255, 255, 255), false, aliveTime, 0, 5.0f);
 		break;
-	case ModuleType::MinerLaser:
+	case ModuleType::MinerBeam:
 		if (targetActor->IsA(AResource::StaticClass())) {
 			beamOwner = launchActor;
 			target = targetActor;

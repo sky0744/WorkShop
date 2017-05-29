@@ -17,15 +17,11 @@ void ASpaceHUDBase::UpdateUIShip_Implementation() {
 	return;
 }
 
-void ASpaceHUDBase::UpdateUIModule_Implementation() {
-	return;
-}
-
 void ASpaceHUDBase::UpdateUICargo_Implementation() {
 	return;
 }
 
-void ASpaceHUDBase::UpdateUIContract_Implementation() {
+void ASpaceHUDBase::UpdateUIQuest_Implementation() {
 	return;
 }
 
@@ -82,14 +78,6 @@ void ASpaceHUDBase::OnUITarget_Implementation(const ASpaceObject* object, const 
 }
 
 void ASpaceHUDBase::OnUIMove_Implementation(const FVector location, const FColor color, const float lifeTime, const float size) {
-	return;
-}
-
-void ASpaceHUDBase::OnUIInteraction_Implementation(const AActor* actor, const ObjectType objectType) {
-	return;
-}
-
-void ASpaceHUDBase::OffUIInteraction_Implementation() {
 	return;
 }
 

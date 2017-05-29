@@ -91,13 +91,10 @@ public:
 		bool ToggleTargetModule(const int slotIndex);
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		bool ToggleActiveModule(const int slotIndex);
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player Controller")
 		ASpaceObject* GetTargetInfo();
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void SetTarget(ASpaceObject* target);
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void SettingInteraction(const ASpaceObject* target);
 #pragma endregion
 
 #pragma region Components & Variables
