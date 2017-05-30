@@ -16,12 +16,11 @@
 			]
 		}
 	],
+	"Plugins": [
+	],
 	"TargetPlatforms": [
 		"WindowsNoEditor",
 		"Android",
-		"IOS",
-		"LinuxNoEditor",
-		"AllDesktop",
-		"MacNoEditor"
+		"IOS"
 	]
 }

@@ -60,6 +60,11 @@ protected:
 		virtual bool SetStructureData(UPARAM(ref) FStructureInfo& structureData) override;
 	UFUNCTION(BlueprintCallable, BlueprintPure, meta = (BlueprintProtected), Category = "Called by InterFace : Strcutureable")
 		virtual void GetStructureData(FStructureInfo& structureData) const override;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called by InterFace : Structureable")
+		virtual void GetStructureCargo(TArray<FItem>& setArray, bool isPlayerCargo, CargoSortType sortType = CargoSortType::NoOption) const override;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Called by InterFace : Structureable")
+		virtual int FindStructureCargoAmount(const int findItemID, bool isPlayerCargo) const override;
 #pragma endregion
 
 #pragma region Functions

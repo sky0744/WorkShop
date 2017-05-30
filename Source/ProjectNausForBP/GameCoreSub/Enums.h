@@ -427,6 +427,24 @@ enum class SaveState : uint8 {
 	UserRequest			UMETA(DisplayName = "유저의 요청에 의한 저장"),
 	BeforeWarp			UMETA(DisplayName = "워프 전 자동 저장"),
 };
+
+UENUM(BlueprintType)
+enum class UpdateUIType : uint8 {
+	Profile_Info			UMETA(DisplayName = "프로파일 - 유저"),
+	Profile_Ship			UMETA(DisplayName = "프로파일 - 함선"),
+	Profile_Cargo			UMETA(DisplayName = "프로파일 - 화물"),
+	Profile_RelationShip	UMETA(DisplayName = "프로파일 - 관계도"),
+	Profile_Quest			UMETA(DisplayName = "프로파일 - 임무"),
+	Profile_Asset			UMETA(DisplayName = "프로파일 - 자산"),
+
+	Dock_Main				UMETA(DisplayName = "도킹 - 메인"),
+	Dock_Cargo				UMETA(DisplayName = "도킹 - 화물"),
+	Dock_Trade				UMETA(DisplayName = "도킹 - 무역"),
+	Dock_Industry			UMETA(DisplayName = "도킹 - 산업"),
+	Dock_Quest				UMETA(DisplayName = "도킹 - 임무"),
+	Dock_StationManagement	UMETA(DisplayName = "도킹 - 스테이션 관리"),
+	Dock_SectorManagement	UMETA(DisplayName = "도킹 - 섹터 관리")
+};
 #pragma endregion
 
 #pragma region 임시 디버깅용...

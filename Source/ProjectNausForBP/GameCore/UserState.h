@@ -108,12 +108,32 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
 		bool DropPlayerCargo(FItem dropItem);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/*	현재 도킹한 스테이션/게이트로부터 플레이어의 아이템을 회수합니다.
+		*	UI 업데이트는 실시하지 않습니다. 반환값에 따라 업데이트를 실시하도록 합니다.
+		*	@param transferItem 회수할 아이템
+		*	@return 회수 결과
+		*/
 		bool WithdrawItem(FItem transferItem);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/*	현재 도킹한 스테이션/게이트로에 플레이어의 아이템을 보관합니다.
+		*	UI 업데이트는 실시하지 않습니다. 반환값에 따라 업데이트를 실시하도록 합니다.
+		*	@param transferItem 보관할 아이템
+		*	@return 보관 결과
+		*/
 		bool KeepItem(FItem transferItem);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/*	현재 도킹한 스테이션/게이트로부터 플레이어의 아이템을 구입합니다.
+		*	UI 업데이트는 실시하지 않습니다. 반환값에 따라 업데이트를 실시하도록 합니다.
+		*	@param transferItem 구입할 아이템
+		*	@return 구입 결과
+		*/
 		bool BuyItem(FItem buyItem);
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/*	현재 도킹한 스테이션/게이트에 플레이어의 아이템을 판매합니다.
+		*	UI 업데이트는 실시하지 않습니다. 반환값에 따라 업데이트를 실시하도록 합니다.
+		*	@param transferItem 판매할 아이템
+		*	@return 판매 결과
+		*/
 		bool SellItem(FItem sellItem);
 
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
@@ -140,7 +160,7 @@ public:
 		void GetUserDataItem(TArray<FItem>& setArray, CargoSortType sortType = CargoSortType::NoOption) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Call Function : State")
 		/*	플레이어의 아이템 중 찾고자 하는 아이템의 갯수를 획득합니다.
-		*	@param setArray - 획득할 스킬 데이터
+		*	@param findItemID - 찾고자 하는 아이템의 ID
 		*	@return - 찾는 아이템의 보유 갯수. 만약 찾는 아이템이 존재하지 않는다면 -1을 반환합니다.
 		*/
 		int FindItemAmount(const int findItemID) const;

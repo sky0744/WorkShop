@@ -41,3 +41,12 @@ void IStructureable::GetStructureData(FStructureInfo& structureData) const {
 	unimplemented();
 	return;
 }
+
+void IStructureable::GetStructureCargo(TArray<FItem>& setArray, bool isPlayerCargo, CargoSortType sortType) const {
+	unimplemented();
+	return;
+}
+int IStructureable::FindStructureCargoAmount(const int findItemID, bool isPlayerCargo) const {
+	unimplemented();
+	return -1;
+}

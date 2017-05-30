@@ -26,15 +26,6 @@ protected:
 
 #pragma region Input Binding
 public:
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlCamX(float value);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlCamY(float value);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlMouseWheel(float value);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ControlCamReset();
-
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void ControlTargetSpeed(float value);
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
@@ -42,40 +33,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Controller")
 		void ControlRotateSpeed(float value);
 
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void OpenInfoProfile();
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void OpenInfoShip();
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void OpenInfoItem();
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void OpenInfoMap();
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void OpenInfoQuest();
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void OpenInfoMenu();
-	UFUNCTION(BlueprintCallable, Category = "Player Controller")
-		void KeyUndock();
-
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ClickPressMouseLeft(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ClickReleaseMouseLeft(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ClickPressMouseWheel(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ClickReleaseMouseWheel(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ClickPressMouseRight(FKey key);
-	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
-		void ClickReleaseMouseRight(FKey key);
-
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void RepeatTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
+
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void TouchBack();
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
@@ -108,13 +72,14 @@ private:
 	UPROPERTY()
 		ASpaceObject* tObj;
 
-	FVector mousePositionInWorld;
-	FVector mouseDirectionInWorld;
-	FVector mouseEndPositionInWorld;
-	FVector mouseXYPlane;
-	bool mouseRightClicked;
-	bool mouseLeftClicked;
-
+	FVector touchPositionInWorld;
+	FVector touchDirectionInWorld;
+	FVector touchEndPositionInWorld;
+	FVector touchXYPlane;
+	bool isMultiTouching;
+	FVector2D originPositionTouch1;
+	FVector2D originPositionTouch2;
+	
 	FCollisionObjectQueryParams traceObjectParams;
 	FCollisionQueryParams traceParams;
 	FHitResult hitResult;

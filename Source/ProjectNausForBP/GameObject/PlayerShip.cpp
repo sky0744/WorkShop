@@ -712,7 +712,7 @@ bool APlayerShip::TotalStatsUpdate() {
 		}
 	}
 
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIShip();
+	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUI(UpdateUIType::Profile_Ship);
 	UE_LOG(LogClass, Log, TEXT("Ship Totaly Init complete!"));
 	return true;
 }
@@ -1277,8 +1277,6 @@ bool APlayerShip::CommandMoveToPosition(FVector position) {
 		moveTargetVector = position;
 		targetObject = nullptr;
 		behaviorState = BehaviorState::Move;
-		
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->OnUIMove(position, FColor::White, 5.0f, 20.0f);
 		return true; 
 	}
 	else return false;

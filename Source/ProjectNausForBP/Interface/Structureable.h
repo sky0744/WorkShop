@@ -56,4 +56,20 @@ public:
 		*	@param structureData - 획득할 구조물 데이터(out)
 		*/
 		virtual void GetStructureData(FStructureInfo& structureData) const;
+
+	UFUNCTION(BlueprintCallable, Category = "InterFace : Structureable")
+		/*	구조물의 아이템 데이터를 배열로 획득합니다. 정렬 옵션이 가능합니다.
+		*   옵션을 입력하지 않거나 NoOption을 입력으로 하면 정렬하지 않은 상태로 반환합니다.
+		*	@param setArray - 획득할 아이템 데이터
+		*	@param isPlayerCargo - 찾고자 하는 슬롯이 플레이어의 보관슬롯이면 true, 스테이션 소유의 슬롯이면 false
+		*	@param sortType - 정렬 옵션
+		*/
+		virtual void GetStructureCargo(TArray<FItem>& setArray, bool isPlayerCargo, CargoSortType sortType = CargoSortType::NoOption) const;
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+		/*	쿠조물의 아이템 중 찾고자 하는 아이템의 갯수를 획득합니다.
+		*	@param findItemID - 찾고자 하는 아이템의 ID
+		*	@param isPlayerCargo - 찾고자 하는 슬롯이 플레이어의 보관슬롯이면 true, 스테이션 소유의 슬롯이면 false
+		*	@return - 찾는 아이템의 보유 갯수. 만약 찾는 아이템이 존재하지 않는다면 -1을 반환합니다.
+		*/
+		virtual int FindStructureCargoAmount(const int findItemID, bool isPlayerCargo) const;
 };

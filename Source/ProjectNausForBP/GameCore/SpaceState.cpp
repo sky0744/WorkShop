@@ -41,6 +41,7 @@ void ASpaceState::Tick(float DeltaSecondes) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
 	if (currentSectorInfo == nullptr || !IsValid(_tempInstance))
 		return;
+	ASpaceHUDBase* _tempHUDBase = Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 
 	FStationData _tempStationData;
 	FNPCData _tempNPCData;
@@ -139,8 +140,12 @@ void ASpaceState::Tick(float DeltaSecondes) {
 			gateData.remainSellingItemRefreshTime = gateData.maxSellingItemRefreshTime;
 		}
 	}
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOverTime();
-
+	
+	if (IsValid(_tempHUDBase)) {
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Cargo);
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Trade);
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Industry);
+	}
 	//섹터 내 함선 최대 수 체크
 	if (currentShipCapacity > shipRegenLimit)
 		return;

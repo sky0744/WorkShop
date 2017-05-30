@@ -48,7 +48,7 @@ void AUserController::BeginPlay() {
 	controlledHUD = Cast<ASpaceHUDBase>(GetHUD());
 
 	traceParams = FCollisionQueryParams(FName("PressClick"), true, this);
-	mouseRightClicked = false;
+	isMultiTouching = false;
 }
 
 void AUserController::PlayerTick(float DeltaSeconds) {
@@ -57,51 +57,17 @@ void AUserController::PlayerTick(float DeltaSeconds) {
 
 void AUserController::SetupInputComponent() {
 	Super::SetupInputComponent();
-	
-#pragma region Action Input
-	InputComponent->BindAction("OpenInfoProfile", IE_Released, this, &AUserController::OpenInfoProfile);
-	InputComponent->BindAction("OpenInfoShip", IE_Released, this, &AUserController::OpenInfoShip);
-	InputComponent->BindAction("OpenInfoItem", IE_Released, this, &AUserController::OpenInfoItem);
-	InputComponent->BindAction("OpenInfoMap", IE_Released, this, &AUserController::OpenInfoMap);
-	InputComponent->BindAction("OpenInfoQuest", IE_Released, this, &AUserController::OpenInfoQuest);
-	InputComponent->BindAction("OpenInfoMenu", IE_Released, this, &AUserController::OpenInfoMenu);
-	InputComponent->BindAction("UnDock", IE_Released, this, &AUserController::KeyUndock);
 
-	InputComponent->BindAction("ClickLeft", IE_Pressed, this, &AUserController::ClickPressMouseLeft);
-	InputComponent->BindAction("ClickLeft", IE_Released, this, &AUserController::ClickReleaseMouseLeft);
-	InputComponent->BindAction("ClickWheel", IE_Pressed, this, &AUserController::ClickPressMouseWheel);
-	InputComponent->BindAction("ClickWheel", IE_Released, this, &AUserController::ClickReleaseMouseWheel);
-	InputComponent->BindAction("ClickRight", IE_Pressed, this, &AUserController::ClickPressMouseRight);
-	InputComponent->BindAction("ClickRight", IE_Released, this, &AUserController::ClickReleaseMouseRight);
-
-	InputComponent->BindAction("CamReset", IE_Released, this, &AUserController::ControlCamReset);
-#pragma endregion
-
-#pragma region Asix Input
-	InputComponent->BindAxis("CamX", this, &AUserController::ControlCamX);
-	InputComponent->BindAxis("CamY", this, &AUserController::ControlCamY);
-
-	//InputComponent->BindAxis("MouseInX", this, &AUserController::ControlMouseX);
-	//InputComponent->BindAxis("MouseInY", this, &AUserController::ControlMouseY);
-	InputComponent->BindAxis("MouseWheel", this, &AUserController::ControlMouseWheel);
-#pragma endregion
-
-#pragma region Mobile Action
 	InputComponent->BindTouch(IE_Pressed, this, &AUserController::BeginTouch);
 	InputComponent->BindTouch(IE_Repeat, this, &AUserController::RepeatTouch);
 	InputComponent->BindTouch(IE_Released, this, &AUserController::EndTouch);
+
 	InputComponent->BindAction("MobileBack", IE_Released, this, &AUserController::TouchBack);
 	InputComponent->BindAction("MobileMenu", IE_Released, this, &AUserController::TouchMenu);
-#pragma endregion
 }
 #pragma endregion
 
-#pragma region Input Binding - Action
-void AUserController::ControlCamReset() {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlViewPointOrigin();
-}
-
+#pragma region Input Binding
 void AUserController::ControlTargetSpeed(float value) {
 	if(IsValid(controlledPawn))
 		controlledPawn->SetTargetSpeed(value);
@@ -115,107 +81,6 @@ void AUserController::ControlRotateSpeed(float value) {
 		controlledPawn->SetRotateRate(value);
 }
 
-void AUserController::OpenInfoProfile() {
-	if (IsValid(controlledHUD))
-		controlledHUD->TriggerUI_Profile();
-}
-void AUserController::OpenInfoShip() {
-	if (IsValid(controlledHUD))
-		controlledHUD->TriggerUI_Ship();
-}
-void AUserController::OpenInfoItem() {
-	if (IsValid(controlledHUD))
-		controlledHUD->TriggerUI_Cargo();
-}
-void AUserController::OpenInfoMap() {
-	if (IsValid(controlledHUD))
-		controlledHUD->TriggerUI_Contract();
-}
-void AUserController::OpenInfoQuest() {
-	if (IsValid(controlledHUD))
-		controlledHUD->TriggerUI_WorldView();
-}
-void AUserController::OpenInfoMenu() {
-	if (IsValid(controlledHUD))
-		controlledHUD->TriggerUI_Menu();
-}
-void AUserController::KeyUndock() {
-	if (IsValid(controlledPawn) && controlledPawn->GetClass()->ImplementsInterface(UCommandable::StaticClass()))
-		Cast<ICommandable>(controlledPawn)->CommandUndock();
-}
-#pragma endregion
-
-#pragma region Input Binding - Asix
-void AUserController::ControlCamX(float value) {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlViewPointX(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
-}
-void AUserController::ControlCamY(float value) {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlViewPointY(value * 20.0f/*AUserState.ev_KeyAsixSensitivity*/);
-}
-
-void AUserController::ControlMouseWheel(float value) {
-	if (IsValid(controlledPawn))
-		controlledPawn->ControlCamDistance(value);
-}
-
-void AUserController::ClickPressMouseLeft(FKey key) {
-	mouseLeftClicked = true;
-}
-void AUserController::ClickReleaseMouseLeft(FKey key) {
-	this->DeprojectMousePositionToWorld(mousePositionInWorld, mouseDirectionInWorld);
-	mouseEndPositionInWorld = mousePositionInWorld + mouseDirectionInWorld * 200000.0f;
-
-	mouseLeftClicked = false;
-	hitResult.Init();
-
-	this->GetWorld()->LineTraceSingleByObjectType(hitResult
-		, mousePositionInWorld
-		, mouseEndPositionInWorld
-		, traceObjectParams
-		, traceParams);
-
-	if (hitResult.bBlockingHit &&hitResult.Actor.Get()->IsA(ASpaceObject::StaticClass())) {
-		SetTarget(Cast<ASpaceObject>(hitResult.Actor.Get()));
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, "Click Responsed Component is " + hitResult.Component->GetName());
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, "Click Responsed Object is " + hitResult.Actor.Get()->GetName());
-		UE_LOG(LogClass, Log, TEXT("[Info][UserController][ClickReleaseMouseLeft] Click Object : %s"), *hitResult.Actor.Get()->GetName());
-	}
-}
-
-void AUserController::ClickPressMouseWheel(FKey key){
-}
-void AUserController::ClickReleaseMouseWheel(FKey key){
-}
-
-void AUserController::ClickPressMouseRight(FKey key) {
-	mouseRightClicked = true;
-}
-void AUserController::ClickReleaseMouseRight(FKey key) {
-	
-	mouseRightClicked = false;
-	this->DeprojectMousePositionToWorld(mousePositionInWorld, mouseDirectionInWorld);
-	mouseEndPositionInWorld = mousePositionInWorld + mouseDirectionInWorld * 200000.0f;
-	hitResult.Init();
-
-	GetWorld()->LineTraceSingleByObjectType(hitResult
-		, mousePositionInWorld
-		, mouseEndPositionInWorld
-		, traceObjectParams
-		, traceParams);
-
-	if (hitResult.bBlockingHit && hitResult.Actor->IsA(ASpaceObject::StaticClass())) 
-		SetTarget(Cast<ASpaceObject>(hitResult.Actor.Get()));
-	else {
-		mouseXYPlane = mousePositionInWorld + mouseDirectionInWorld * FMath::Abs(mousePositionInWorld.Z / mouseDirectionInWorld.Z);	
-		if(commandInterface != nullptr)
-			commandInterface->CommandMoveToPosition(mouseXYPlane);
-	}
-}
-#pragma endregion
-
-#pragma region Input Binding - Mobile Action
 void AUserController::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
 	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[Begin] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
 }
@@ -332,26 +197,5 @@ void AUserController::SetTarget(ASpaceObject* target) {
 	}
 	else
 		tObj = target;
-	FColor _peerColor;
-
-	switch (Cast<ASpaceState>(GetWorld()->GetGameState())->PeerIdentify(Faction::Player, tObj->GetFaction(), false)) {
-	case Peer::Neutral:
-		_peerColor = FColor::Yellow;
-		break;
-	case Peer::Friendship:
-		_peerColor = FColor::Green;
-		break;
-	case Peer::Enemy:
-		_peerColor = FColor::Red;
-		break;
-	case Peer::TempHold:
-		_peerColor = FColor::Blue;
-		break;
-	default:
-		_peerColor = FColor::White;
-		break;
-	}
-	if (IsValid(tObj) && IsValid(controlledHUD))
-		controlledHUD->OnUITarget(tObj, _peerColor, 5.0f);
 }
 #pragma endregion

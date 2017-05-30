@@ -9,19 +9,7 @@ ASpaceHUDBase::ASpaceHUDBase() {
 }
 
 #pragma region UI Update
-void ASpaceHUDBase::UpdateUIUser_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::UpdateUIShip_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::UpdateUICargo_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::UpdateUIQuest_Implementation() {
+void ASpaceHUDBase::UpdateUI_Implementation(const UpdateUIType updateType) {
 	return;
 }
 
@@ -34,53 +22,7 @@ void ASpaceHUDBase::RemoveFromObjectList_Implementation(const ASpaceObject* obje
 }
 #pragma endregion
 
-#pragma region Docked UI Update
-void ASpaceHUDBase::UpdateUIStationOverTime_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::UpdateUIStationOnRequest_Implementation() {
-	return;
-}
-#pragma endregion
-
 #pragma region On/Off UI
-void ASpaceHUDBase::TriggerUI_Profile_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::TriggerUI_Ship_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::TriggerUI_Cargo_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::TriggerUI_Contract_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::TriggerUI_WorldView_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::TriggerUI_Station_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::TriggerUI_Menu_Implementation() {
-	return;
-}
-
-void ASpaceHUDBase::OnUITarget_Implementation(const ASpaceObject* object, const FColor color, const float lifeTime) {
-	return;
-}
-
-void ASpaceHUDBase::OnUIMove_Implementation(const FVector location, const FColor color, const float lifeTime, const float size) {
-	return;
-}
-
 void ASpaceHUDBase::OnUIStationButton_Implementation() {
 	return;
 }
@@ -98,14 +40,18 @@ void ASpaceHUDBase::OnMobileBack_Implementation() {
 void ASpaceHUDBase::OnMobileMenu_Implementation() {
 	return;
 }
+
+void ASpaceHUDBase::OnMobileDoubleTouch_Implementation() {
+	return;
+}
 #pragma endregion
 
 #pragma region Messages
-void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(FText message, FColor color) {
+void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(const FText& message, FColor color) {
 	return;
 }
 
-void ASpaceHUDBase::AddUILogMessage_Implementation(FText message, FColor color) {
+void ASpaceHUDBase::AddUILogMessage_Implementation(const FText& message, FColor color) {
 	return;
 }
 #pragma endregion

@@ -55,6 +55,7 @@ void AUserState::Tick(float DeltaTime) {
 				case 5:		playerSkill[learningSkillId].skillLearning = -1.0f;	break;
 				default:	playerSkill[learningSkillId].skillLearning = _skillLearnMultiple * _define_SkillLearningTimeBase5;	break;
 			}
+			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUI(UpdateUIType::Profile_Info);
 		}
 	}
 }
@@ -511,16 +512,18 @@ bool AUserState::AddPlayerCargo(FItem addItem) {
 			playerItem[addItem.itemID] += addItem.itemAmount;
 		else playerItem.Emplace(addItem.itemID, addItem.itemAmount);
 
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][AddPlayerCargo] Get Item : %d Amount %d"), addItem.itemID, addItem.itemAmount);
 		_result = true;
 	}
 	else  
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][AddPlayerCargo] Cargo Overwight. Adding Item Canceled"));
 
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+	ASpaceHUDBase* _tempHUDBase = Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	if (IsValid(_tempHUDBase)) {
+		_tempHUDBase->UpdateUI(UpdateUIType::Profile_Cargo);
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Cargo);
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Trade);
+	}
 	return _result;
 }
 
@@ -548,8 +551,12 @@ bool AUserState::DropPlayerCargo(FItem dropItem) {
 	} else
 		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][AddPlayerCargo] Remove Item Fail"));
 
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUICargo();
-	Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+	ASpaceHUDBase* _tempHUDBase = Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	if (IsValid(_tempHUDBase)) {
+		_tempHUDBase->UpdateUI(UpdateUIType::Profile_Cargo);
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Cargo);
+		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Trade);
+	}
 	return _result;
 }
 
@@ -806,7 +813,12 @@ bool AUserState::EquipModule(const int equipItemID) {
 
 	if (_obj->EquipModule(_tempItemData.ItemID) == true) {
 		if (DropPlayerCargo(FItem(_tempItemData.ItemID, 1))) {
-			Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIStationOnRequest();
+			ASpaceHUDBase* _tempHUDBase = Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+			if (IsValid(_tempHUDBase)) {
+				_tempHUDBase->UpdateUI(UpdateUIType::Profile_Ship);
+				_tempHUDBase->UpdateUI(UpdateUIType::Profile_Cargo);
+				_tempHUDBase->UpdateUI(UpdateUIType::Dock_Cargo);
+			}
 			UE_LOG(LogClass, Log, TEXT("[Info][PlayerState][EquipModule] Equip Finish."));
 			return true;
 		}
@@ -979,7 +991,7 @@ int AUserState::GetLearningSkill(FSkill& learningSkill) const {
 void AUserState::SetLearningSkill(const int learningId) {
 	if (playerSkill.Contains(learningId)) {
 		learningSkillId = learningId;
-		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUIUser();
+		Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())->UpdateUI(UpdateUIType::Profile_Info);
 	}
 }
 

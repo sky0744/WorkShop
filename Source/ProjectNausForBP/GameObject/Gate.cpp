@@ -344,8 +344,99 @@ bool AGate::SetStructureData(UPARAM(ref) FStructureInfo& structureData) {
 }
 
 void AGate::GetStructureData(FStructureInfo& structureData) const {
-	structureData = *structureInfo;
 	return;
+}
+
+void AGate::GetStructureCargo(TArray<FItem>& setArray, bool isPlayerCargo, CargoSortType sortType) const {
+	USafeENGINE* _tempInstance = Cast<USafeENGINE>(GetGameInstance());
+	FItemData _tempItemData;
+
+	if (structureInfo == nullptr || !IsValid(_tempInstance))
+		return;
+	TMap<int, int>* _tempItemMap;
+	if (isPlayerCargo)
+		_tempItemMap = &structureInfo->playerItemSlot;
+	else
+		_tempItemMap = &structureInfo->itemSlot;
+	if (_tempItemMap == nullptr)
+		return;
+
+	setArray.Empty();
+	setArray.Reserve(_tempItemMap->Num());
+
+	TMap<int, ItemType> _tempSortMap_ItemTypeMode;
+	TMap<int, ModuleType> _tempSortMap_ModuleTypeMode;
+	TMap<int, ModuleSize> _tempSortMap_ModuleSizeMode;
+	TMap<int, float> _tempSortMap_CargoValueMode;
+
+	switch (sortType) {
+	case CargoSortType::ItemTypeASE:
+	case CargoSortType::ItemTypeDESC:
+		for (auto& item : *_tempItemMap) {
+			_tempItemData = _tempInstance->GetItemData(item.Key);
+			_tempSortMap_ItemTypeMode.Emplace(item.Key, _tempItemData.Type);
+		}
+		if (sortType == CargoSortType::ItemTypeASE)
+			_tempSortMap_ItemTypeMode.ValueSort([](const ItemType& ElementA, const ItemType& ElementB) { return ElementA > ElementB; });
+		else
+			_tempSortMap_ItemTypeMode.ValueSort([](const ItemType& ElementA, const ItemType& ElementB) { return ElementA < ElementB; });
+		for (auto& item : _tempSortMap_ItemTypeMode)
+			setArray.Emplace(FItem(item.Key, (*_tempItemMap)[item.Key]));
+		break;
+	case CargoSortType::ModuleTypeASE:
+	case CargoSortType::ModuleTypeDESC:
+		for (auto& item : *_tempItemMap) {
+			_tempItemData = _tempInstance->GetItemData(item.Key);
+			_tempSortMap_ModuleTypeMode.Emplace(item.Key, _tempItemData.ModuleType);
+		}
+		if (sortType == CargoSortType::ItemTypeASE)
+			_tempSortMap_ModuleTypeMode.ValueSort([](const ModuleType& ElementA, const ModuleType& ElementB) { return ElementA > ElementB; });
+		else
+			_tempSortMap_ModuleTypeMode.ValueSort([](const ModuleType& ElementA, const ModuleType& ElementB) { return ElementA < ElementB; });
+		for (auto& item : _tempSortMap_ModuleTypeMode)
+			setArray.Emplace(FItem(item.Key, (*_tempItemMap)[item.Key]));
+		break;
+	case CargoSortType::ModuleSizeASE:
+	case CargoSortType::ModuleSizeDESC:
+		for (auto& item : *_tempItemMap) {
+			_tempItemData = _tempInstance->GetItemData(item.Key);
+			_tempSortMap_ModuleSizeMode.Emplace(item.Key, _tempItemData.ModuleSize);
+		}
+		if (sortType == CargoSortType::ItemTypeASE)
+			_tempSortMap_ModuleSizeMode.ValueSort([](const ModuleSize& ElementA, const ModuleSize& ElementB) { return ElementA > ElementB; });
+		else
+			_tempSortMap_ModuleSizeMode.ValueSort([](const ModuleSize& ElementA, const ModuleSize& ElementB) { return ElementA < ElementB; });
+		for (auto& item : _tempSortMap_ModuleSizeMode)
+			setArray.Emplace(FItem(item.Key, (*_tempItemMap)[item.Key]));
+		break;
+	case CargoSortType::CargoValueSizeASE:
+	case CargoSortType::CargoValueSizeDESC:
+		for (auto& item : *_tempItemMap) {
+			_tempItemData = _tempInstance->GetItemData(item.Key);
+			_tempSortMap_CargoValueMode.Emplace(item.Key, _tempItemData.CargoVolume);
+		}
+		if (sortType == CargoSortType::ItemTypeASE)
+			_tempSortMap_CargoValueMode.ValueSort([](const float& ElementA, const float& ElementB) { return ElementA > ElementB; });
+		else
+			_tempSortMap_CargoValueMode.ValueSort([](const float& ElementA, const float& ElementB) { return ElementA < ElementB; });
+		for (auto& item : _tempSortMap_CargoValueMode)
+			setArray.Emplace(FItem(item.Key, (*_tempItemMap)[item.Key]));
+		break;
+	default:
+		for (auto& item : *_tempItemMap)
+			setArray.Emplace(FItem(item.Key, item.Value));
+		return;
+		break;
+	}
+}
+int AGate::FindStructureCargoAmount(const int findItemID, bool isPlayerCargo) const {
+	if (structureInfo == nullptr)
+		return -1;
+	if (isPlayerCargo && structureInfo->playerItemSlot.Contains(findItemID))
+		return structureInfo->playerItemSlot[findItemID];
+	if (!isPlayerCargo && structureInfo->itemSlot.Contains(findItemID))
+		return structureInfo->itemSlot[findItemID];
+	return -1;
 }
 #pragma endregion
 
