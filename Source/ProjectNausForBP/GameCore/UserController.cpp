@@ -46,6 +46,8 @@ void AUserController::BeginPlay() {
 		}
 	}
 	controlledHUD = Cast<ASpaceHUDBase>(GetHUD());
+	if(IsValid(controlledHUD))
+		controlledHUD->AddUILogMessageToString("Project Naus 함선 제어 프로토콜 접속 성공. 환영합니다.", MessageLogType::Info, FColor::White);
 
 	traceParams = FCollisionQueryParams(FName("PressClick"), true, this);
 	isMultiTouching = false;
@@ -82,22 +84,35 @@ void AUserController::ControlRotateSpeed(float value) {
 }
 
 void AUserController::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
-	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[Begin] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
+	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Begin] Touch {0} pos : {1}, {2}, {3}"), FingerIndex, Location.X, Location.Y, Location.Z);
+	if (IsValid(controlledHUD))
+		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
 }
 
 void AUserController::RepeatTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
-	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[Repeat] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
+
+	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Repeat] Touch {0} pos : {1}, {2}, {3}"), FingerIndex, Location.X, Location.Y, Location.Z);
+	if (IsValid(controlledHUD))
+		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
 }
 
 void AUserController::EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
-	GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, "[End] Touch " + FString::FromInt(FingerIndex) + " Point pos : " + Location.ToString());
+	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[End] Touch {0} pos : {1}, {2}, {3}"), FingerIndex, Location.X, Location.Y, Location.Z);
+	if (IsValid(controlledHUD))
+		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
 }
 
 void AUserController::TouchBack() {
+	FText _text = FText(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Back] Back Button Touched."));
+	if (IsValid(controlledHUD))
+		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
 	controlledHUD->OnMobileBack();
 }
 
 void AUserController::TouchMenu() {
+	FText _text = FText(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Menu] Menu Button Touched."));
+	if (IsValid(controlledHUD))
+		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
 	controlledHUD->OnMobileMenu();
 }
 #pragma endregion
@@ -126,9 +141,6 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 		break;
 	case InteractionType::Approach:
 		commandInterface->CommandMoveToTarget(tObj);
-		break;
-	case InteractionType::Attack:
-		commandInterface->CommandAttack(tObj);
 		break;
 	case InteractionType::Jump:
 		if (!tObj->GetClass()->ImplementsInterface(UStructureable::StaticClass()))

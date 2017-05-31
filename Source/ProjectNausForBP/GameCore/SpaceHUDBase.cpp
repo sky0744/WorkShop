@@ -47,11 +47,19 @@ void ASpaceHUDBase::OnMobileDoubleTouch_Implementation() {
 #pragma endregion
 
 #pragma region Messages
-void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(const FText& message, FColor color) {
+void ASpaceHUDBase::SetUIOnTopMessage_Implementation(const FText& message, FColor color) {
 	return;
 }
 
-void ASpaceHUDBase::AddUILogMessage_Implementation(const FText& message, FColor color) {
+void ASpaceHUDBase::SetUIOnTopMessageToString_Implementation(const FString& message, FColor color) {
+	return;
+}
+
+void ASpaceHUDBase::AddUILogMessage_Implementation(const FText& message, MessageLogType messageType, FColor color) {
+	return;
+}
+
+void ASpaceHUDBase::AddUILogMessageToString_Implementation(const FString& message, MessageLogType messageType, FColor color) {
 	return;
 }
 #pragma endregion

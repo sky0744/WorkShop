@@ -38,6 +38,8 @@ void APlayerShip::BeginPlay()
 		Destroy();
 	}
 
+	if (IsValid(Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD())))
+		controlledHUD = Cast<ASpaceHUDBase>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 	sShipID = -1;
 	checkTime = 0.0f;
 	sIsInited = false;
@@ -176,11 +178,10 @@ float APlayerShip::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 			_userState->PlayerDeath();
 		}
 	}
-
-	UE_LOG(LogClass, Log, TEXT("[Info][Ship][Damaged] %s Get %s Type of %.0f Damage From %s! Effect Damage : Shield - %.0f / Armor - %.0f / Hull - %.0f. is Critical Damage? : %s"),
-		*this->GetName(), *DamageEvent.DamageTypeClass->GetName(), _remainDamage, *DamageCauser->GetName(), _effectShieldDamage, _effectArmorDamage, _effectHullDamage,
-		_isCritical ? TEXT("Critical") : TEXT("Non Critical"));
-
+	if (IsValid(controlledHUD)) {
+		controlledHUD->AddUILogMessageToString("함선이 총 " + FString::SanitizeFloat(_effectShieldDamage + _effectArmorDamage + _effectHullDamage) + "의 데미지를 입었습니다!", MessageLogType::Info, FColor::Yellow);
+		controlledHUD->SetUIOnTopMessageToString(FString::SanitizeFloat(_effectShieldDamage + _effectArmorDamage + _effectHullDamage) + "의 데미지를 입었습니다!", FColor::Yellow);
+	}
 	return _effectShieldDamage + _effectArmorDamage + _effectHullDamage;
 }
 
@@ -392,6 +393,12 @@ float APlayerShip::GetValue(const GetStatType statType) const {
 		break;
 	case GetStatType::currentRotateRate:
 		_value = rotateRateFactor;
+		break;
+	case GetStatType::rotateAcceleraion:
+		_value = sRotateAcceleration;
+		break;
+	case GetStatType::rotateDeceleraion:
+		_value = sRotateDeceleration;
 		break;
 
 	case GetStatType::droneBaseStatsMultiple:
@@ -1264,6 +1271,8 @@ void APlayerShip::SetRotateRate(const float value) {
 void APlayerShip::CommandStop() {
 	if (CheckCanBehavior() == true) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandStop] Receive Command Stop!"));
+		if (IsValid(controlledHUD)) 
+			controlledHUD->AddUILogMessageToString("기존의 명령을 취소하였습니다.", MessageLogType::Info, FColor::White);
 		behaviorState = BehaviorState::Idle;
 		setedTargetSpeed = 0.0f;
 		targetRotateRateFactor = 0.0f;
@@ -1273,7 +1282,8 @@ void APlayerShip::CommandStop() {
 bool APlayerShip::CommandMoveToPosition(FVector position) {
 	if (CheckCanBehavior() == true) { 
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMove] Receive Command Move! : %.2f, %.2f, %.2f"), position.X, position.Y, position.Z);
-
+		if (IsValid(controlledHUD))
+			controlledHUD->AddUILogMessageToString("목표 지점으로 이동합니다. " + ((FVector2D)position).ToString(), MessageLogType::Info, FColor::White);
 		moveTargetVector = position;
 		targetObject = nullptr;
 		behaviorState = BehaviorState::Move;
@@ -1283,9 +1293,10 @@ bool APlayerShip::CommandMoveToPosition(FVector position) {
 }
 
 bool APlayerShip::CommandMoveToTarget(ASpaceObject* target) {
-
 	if (CheckCanBehavior() == true) {
 		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMove] Receive Command Move! : %s"), *target->GetName());
+		if (IsValid(controlledHUD))
+			controlledHUD->AddUILogMessageToString("목표 대상에게 접근합니다. " + target->GetName(), MessageLogType::Info, FColor::White);
 		targetObject = target;
 		behaviorState = BehaviorState::Move; 
 		return true; 
@@ -1300,33 +1311,12 @@ bool APlayerShip::CommandAttack(ASpaceObject* target) {
 
 bool APlayerShip::CommandMining(AResource* target) {
 	
-	if (CheckCanBehavior() == true) {
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandMining] Receive Command Mining! : %s"), *target->GetName());
-		targetObject = target;
-		behaviorState = BehaviorState::Mining;
-		return true;
-	}
-	else return false;
+	return false;
 }
 
 bool APlayerShip::CommandRepair(ASpaceObject* target) {
-	
-	if (CheckCanBehavior() == true) { 
-		UE_LOG(LogClass, Log, TEXT("[Info][PlayerShip][CommandRepair] Receive Command Repair! : %s"), *target->GetName());
-		TArray<bool> isRepairableModuleInSlot;
-		//for(int index = 0; slotTargetModule.Num(); index++)
-		//	slotTargetModule[index]
-		switch (target->GetObjectType()) {
 
-		case ObjectType::Station:
-		case ObjectType::Ship:
-		case ObjectType::Drone:
-		case ObjectType::Gate:
-			targetObject = target;
-		}
-		return true;
-	}
-	else return false;
+	return false;
 }
 
 bool APlayerShip::CommandJump(TScriptInterface<IStructureable> target) {

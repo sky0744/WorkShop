@@ -55,11 +55,17 @@ public:
 
 #pragma region Messages
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void SetUIIOnTopMessage(const FText& message, FColor color);
-	virtual void SetUIIOnTopMessage_Implementation(const FText& message, FColor color);
+		void SetUIOnTopMessage(const FText& message, FColor color);
+	virtual void SetUIOnTopMessage_Implementation(const FText& message, FColor color);
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void SetUIOnTopMessageToString(const FString& message, FColor color);
+	virtual void SetUIOnTopMessageToString_Implementation(const FString& message, FColor color);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void AddUILogMessage(const FText& message, FColor color);
-	virtual void AddUILogMessage_Implementation(const FText& message, FColor color);
+		void AddUILogMessage(const FText& message, MessageLogType messageType, FColor color);
+	virtual void AddUILogMessage_Implementation(const FText& message, MessageLogType messageType, FColor color);
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void AddUILogMessageToString(const FString& message, MessageLogType messageType, FColor color);
+	virtual void AddUILogMessageToString_Implementation(const FString& message, MessageLogType messageType,FColor color);
 #pragma endregion
 };

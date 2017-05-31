@@ -1120,7 +1120,7 @@ void AUserState::CheatCommand(CheatType cheatType, UPARAM(ref) FString& paramete
 		if (!_hud)
 			break;
 		for (auto& skills : playerSkill)
-			_hud->AddUILogMessage(FText::Format(NSLOCTEXT("UIText", "LogMessage_DebugCommand_GetSkillList", "스킬 ID : {ID}, 레벨 : {Level}"), skills.Key, skills.Value.skillLevel) , FColor::Blue);
+			_hud->AddUILogMessageToString("스킬 ID : " + FString::SanitizeFloat(skills.Key) + " 레벨 :  " + FString::SanitizeFloat(skills.Value.skillLevel), MessageLogType::Debug, FColor::Blue);
 		_isCheckSuccess = true;
 		break;
 	case CheatType::WarpTo:

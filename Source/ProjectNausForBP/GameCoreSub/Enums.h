@@ -445,6 +445,13 @@ enum class UpdateUIType : uint8 {
 	Dock_StationManagement	UMETA(DisplayName = "도킹 - 스테이션 관리"),
 	Dock_SectorManagement	UMETA(DisplayName = "도킹 - 섹터 관리")
 };
+UENUM(BlueprintType)
+enum class MessageLogType : uint8 {
+	Info			UMETA(DisplayName = "로그 메세지 유형 - 정보"),
+	Warning			UMETA(DisplayName = "로그 메세지 유형 - 경고"),
+	Error			UMETA(DisplayName = "로그 메세지 유형 - 에러"),
+	Debug			UMETA(DisplayName = "로그 메세지 유형 - 디버깅")
+};
 #pragma endregion
 
 #pragma region 임시 디버깅용...
