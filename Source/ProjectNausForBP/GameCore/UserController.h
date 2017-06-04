@@ -34,6 +34,11 @@ public:
 		void ControlRotateSpeed(float value);
 
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void MouseClick(FKey key);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
+		void WheelUp(float value);
+
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
 	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected), Category = "Player Controller")
 		void RepeatTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
@@ -72,13 +77,14 @@ private:
 	UPROPERTY()
 		ASpaceObject* tObj;
 
-	FVector touchPositionInWorld;
-	FVector touchDirectionInWorld;
-	FVector touchEndPositionInWorld;
-	FVector touchXYPlane;
-	bool isMultiTouching;
-	FVector2D originPositionTouch1;
-	FVector2D originPositionTouch2;
+	FVector touchLocation;
+	FVector touchDirection;
+	FVector originPositionTouch1;
+	FVector currentPositionTouch1;
+	FVector originPositionTouch2;
+	float currentDistance;
+	bool isTouchingOneIndex;
+	bool isTouchingTwoIndex;
 	
 	FCollisionObjectQueryParams traceObjectParams;
 	FCollisionQueryParams traceParams;

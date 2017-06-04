@@ -401,6 +401,7 @@ enum class InteractionType : uint8 {
 	Info				UMETA(DisplayName = "정보 확인"),
 	Communication		UMETA(DisplayName = "통신 시도"),
 	DockRequest			UMETA(DisplayName = "도킹 요청"),
+	UnDock				UMETA(DisplayName = "도킹 해제"),
 	Approach			UMETA(DisplayName = "접근"),
 	Attack				UMETA(DisplayName = "공격"),
 	Jump				UMETA(DisplayName = "점프"),
@@ -443,14 +444,17 @@ enum class UpdateUIType : uint8 {
 	Dock_Industry			UMETA(DisplayName = "도킹 - 산업"),
 	Dock_Quest				UMETA(DisplayName = "도킹 - 임무"),
 	Dock_StationManagement	UMETA(DisplayName = "도킹 - 스테이션 관리"),
-	Dock_SectorManagement	UMETA(DisplayName = "도킹 - 섹터 관리")
+	Dock_SectorManagement	UMETA(DisplayName = "도킹 - 섹터 관리"),
+
+	OrderList				UMETA(DisplayName = "명령 리스트")
 };
+
 UENUM(BlueprintType)
 enum class MessageLogType : uint8 {
-	Info			UMETA(DisplayName = "로그 메세지 유형 - 정보"),
-	Warning			UMETA(DisplayName = "로그 메세지 유형 - 경고"),
-	Error			UMETA(DisplayName = "로그 메세지 유형 - 에러"),
-	Debug			UMETA(DisplayName = "로그 메세지 유형 - 디버깅")
+	Info		UMETA(DisplayName = "일반"),
+	Warning		UMETA(DisplayName = "경고"),
+	Error		UMETA(DisplayName = "에러"),
+	Debug		UMETA(DisplayName = "디버그")
 };
 #pragma endregion
 

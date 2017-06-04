@@ -39,6 +39,10 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void OffUIStationButton();
 	virtual void OffUIStationButton_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
+		void OnUISDestination(const FVector& location);
+	virtual void OnUISDestination_Implementation(const FVector& location);
 #pragma endregion
 
 #pragma region Response by Controller
@@ -49,23 +53,17 @@ public:
 		void OnMobileMenu();
 	virtual void OnMobileMenu_Implementation();
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void OnMobileDoubleTouch();
-	virtual void OnMobileDoubleTouch_Implementation();
+		bool OnMobileDoubleTouch();
+	virtual bool OnMobileDoubleTouch_Implementation();
 #pragma endregion
 
 #pragma region Messages
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void SetUIOnTopMessage(const FText& message, FColor color);
-	virtual void SetUIOnTopMessage_Implementation(const FText& message, FColor color);
-	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void SetUIOnTopMessageToString(const FString& message, FColor color);
-	virtual void SetUIOnTopMessageToString_Implementation(const FString& message, FColor color);
+		void SetUIIOnTopMessage(const FText& message, FColor color);
+	virtual void SetUIIOnTopMessage_Implementation(const FText& message, FColor color);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
 		void AddUILogMessage(const FText& message, MessageLogType messageType, FColor color);
 	virtual void AddUILogMessage_Implementation(const FText& message, MessageLogType messageType, FColor color);
-	UFUNCTION(BlueprintNativeEvent, Category = "Interaction CPP to BP")
-		void AddUILogMessageToString(const FString& message, MessageLogType messageType, FColor color);
-	virtual void AddUILogMessageToString_Implementation(const FString& message, MessageLogType messageType,FColor color);
 #pragma endregion
 };

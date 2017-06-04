@@ -143,11 +143,6 @@ private:
 		UCameraComponent* playerViewpointCamera;
 #pragma endregion
 
-#pragma region Components
-	UPROPERTY()
-		ASpaceHUDBase* controlledHUD;
-#pragma endregion
-
 #pragma region Variables
 private:
 	int sShipID;

@@ -874,7 +874,7 @@ bool AUserState::UnEquipModule(const ItemType moduleType, const int slotIndex) {
 		}
 	}
 	else {
-		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][UnEquipModule] Overweight, UnEquip Fail."));
+		UE_LOG(LogClass, Log, TEXT("[Warning][PlayerState][UnEquipModule] Overweight or Empty Slot. UnEquip Fail."));
 		return false;
 	}
 }
@@ -1120,7 +1120,7 @@ void AUserState::CheatCommand(CheatType cheatType, UPARAM(ref) FString& paramete
 		if (!_hud)
 			break;
 		for (auto& skills : playerSkill)
-			_hud->AddUILogMessageToString("스킬 ID : " + FString::SanitizeFloat(skills.Key) + " 레벨 :  " + FString::SanitizeFloat(skills.Value.skillLevel), MessageLogType::Debug, FColor::Blue);
+			_hud->AddUILogMessage(FText::Format(NSLOCTEXT("UIText", "LogMessage_DebugCommand_GetSkillList", "스킬 ID : {ID}, 레벨 : {Level}"), skills.Key, skills.Value.skillLevel), MessageLogType::Info, FColor::Blue);
 		_isCheckSuccess = true;
 		break;
 	case CheatType::WarpTo:

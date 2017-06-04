@@ -30,6 +30,10 @@ void ASpaceHUDBase::OnUIStationButton_Implementation() {
 void ASpaceHUDBase::OffUIStationButton_Implementation() {
 	return;
 }
+
+void ASpaceHUDBase::OnUISDestination_Implementation(const FVector& location) {
+	return;
+}
 #pragma endregion
 
 #pragma region Response by Controller
@@ -41,25 +45,17 @@ void ASpaceHUDBase::OnMobileMenu_Implementation() {
 	return;
 }
 
-void ASpaceHUDBase::OnMobileDoubleTouch_Implementation() {
-	return;
+bool ASpaceHUDBase::OnMobileDoubleTouch_Implementation() {
+	return false;
 }
 #pragma endregion
 
 #pragma region Messages
-void ASpaceHUDBase::SetUIOnTopMessage_Implementation(const FText& message, FColor color) {
-	return;
-}
-
-void ASpaceHUDBase::SetUIOnTopMessageToString_Implementation(const FString& message, FColor color) {
+void ASpaceHUDBase::SetUIIOnTopMessage_Implementation(const FText& message, FColor color) {
 	return;
 }
 
 void ASpaceHUDBase::AddUILogMessage_Implementation(const FText& message, MessageLogType messageType, FColor color) {
-	return;
-}
-
-void ASpaceHUDBase::AddUILogMessageToString_Implementation(const FString& message, MessageLogType messageType, FColor color) {
 	return;
 }
 #pragma endregion

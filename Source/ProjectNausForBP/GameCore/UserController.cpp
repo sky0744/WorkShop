@@ -46,11 +46,7 @@ void AUserController::BeginPlay() {
 		}
 	}
 	controlledHUD = Cast<ASpaceHUDBase>(GetHUD());
-	if(IsValid(controlledHUD))
-		controlledHUD->AddUILogMessageToString("Project Naus 함선 제어 프로토콜 접속 성공. 환영합니다.", MessageLogType::Info, FColor::White);
-
-	traceParams = FCollisionQueryParams(FName("PressClick"), true, this);
-	isMultiTouching = false;
+	traceParams = FCollisionQueryParams(FName("PressTouch"), true, this);
 }
 
 void AUserController::PlayerTick(float DeltaSeconds) {
@@ -64,8 +60,11 @@ void AUserController::SetupInputComponent() {
 	InputComponent->BindTouch(IE_Repeat, this, &AUserController::RepeatTouch);
 	InputComponent->BindTouch(IE_Released, this, &AUserController::EndTouch);
 
+	InputComponent->BindAxis("MouseWheel", this, &AUserController::WheelUp);
+
 	InputComponent->BindAction("MobileBack", IE_Released, this, &AUserController::TouchBack);
 	InputComponent->BindAction("MobileMenu", IE_Released, this, &AUserController::TouchMenu);
+	InputComponent->BindAction("MouseClick", IE_Released, this, &AUserController::MouseClick);
 }
 #pragma endregion
 
@@ -83,37 +82,127 @@ void AUserController::ControlRotateSpeed(float value) {
 		controlledPawn->SetRotateRate(value);
 }
 
+void AUserController::MouseClick(FKey key) {
+	FVector _tempVector, _tempDirection;
+	FText _text;
+	this->DeprojectMousePositionToWorld(_tempVector, _tempDirection);
+	_tempVector.Z = 1.0f;
+
+	hitResult.Init();
+	GetWorld()->LineTraceSingleByObjectType(hitResult
+		, _tempVector
+		, _tempVector + _tempDirection * 10000.0f
+		, traceObjectParams
+		, traceParams);
+
+	if (hitResult.bBlockingHit && hitResult.GetActor()->IsA(ASpaceObject::StaticClass()) && !hitResult.GetActor()->IsA(APlayerShip::StaticClass())) {
+		tObj = Cast<ASpaceObject>(hitResult.GetActor());
+		
+		if (IsValid(controlledHUD)) {
+			controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+			controlledHUD->UpdateUI(UpdateUIType::OrderList);
+		}
+	} else {
+		_tempVector.Z = 0.0f;
+		commandInterface->CommandMoveToPosition(_tempVector);
+		_text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[클릭-마우스 버전] 위치 : {0}, {1}"), _tempVector.X, _tempVector.Y);
+
+		if (IsValid(controlledHUD)) {
+			controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+			controlledHUD->OnUISDestination(_tempVector);
+		}
+	}
+}
+void AUserController::WheelUp(float value) {
+	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[줌-마우스 버전] 줌 배율 : {0}"), value * 0.1f);
+
+	if (value != 0.0f && IsValid(controlledHUD)) {
+		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+		if (controlledHUD->OnMobileDoubleTouch() && IsValid(controlledPawn))
+			controlledPawn->ControlCamDistance(value * 0.1f);
+	}
+}
+
 void AUserController::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
-	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Begin] Touch {0} pos : {1}, {2}, {3}"), FingerIndex, Location.X, Location.Y, Location.Z);
+	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[터치 시작] 터치 {0} 위치 : {1}, {2}, {3}"), FingerIndex + 1, Location.X, Location.Y, Location.Z);
 	if (IsValid(controlledHUD))
 		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+
+	if(FingerIndex == ETouchIndex::Touch1)
+		originPositionTouch1 = Location;
+	else if (FingerIndex == ETouchIndex::Touch2)
+		originPositionTouch2 = Location;
 }
 
 void AUserController::RepeatTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
+	FText _text;
+	float _zoomMultiple = 1.0f;
+	if (FingerIndex == ETouchIndex::Touch2) {
+		GetInputTouchState(ETouchIndex::Touch1, originPositionTouch1.X, originPositionTouch1.Y, isTouchingOneIndex);
 
-	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Repeat] Touch {0} pos : {1}, {2}, {3}"), FingerIndex, Location.X, Location.Y, Location.Z);
-	if (IsValid(controlledHUD))
-		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+		if (isTouchingOneIndex) {
+			_zoomMultiple = FVector::Dist(currentPositionTouch1, Location) / FVector::Dist(originPositionTouch1, originPositionTouch2);
+			_text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[줌] 줌 배율 : {0}"), _zoomMultiple);
+		}
+		if (IsValid(controlledHUD)) {
+			controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+			if (controlledHUD->OnMobileDoubleTouch() && IsValid(controlledPawn))
+				controlledPawn->ControlCamDistance(_zoomMultiple);
+		}
+	}
 }
 
 void AUserController::EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location) {
-	FText _text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[End] Touch {0} pos : {1}, {2}, {3}"), FingerIndex, Location.X, Location.Y, Location.Z);
-	if (IsValid(controlledHUD))
-		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+	FText _text;
+
+	if (FingerIndex == ETouchIndex::Touch1) {
+		GetInputTouchState(ETouchIndex::Touch1, originPositionTouch1.X, originPositionTouch1.Y, isTouchingOneIndex);
+
+		if (!isTouchingTwoIndex && IsValid(commandInterface.GetObject())) {
+			this->DeprojectScreenPositionToWorld(Location.X, Location.Y, touchLocation, touchDirection);
+
+			hitResult.Init();
+			GetWorld()->LineTraceSingleByObjectType(hitResult
+				, touchLocation
+				, touchLocation + touchDirection * 10000.0f
+				, traceObjectParams
+				, traceParams);
+
+			if (hitResult.bBlockingHit && hitResult.GetActor()->IsA(ASpaceObject::StaticClass()) && !hitResult.GetActor()->IsA(APlayerShip::StaticClass())) {
+				tObj = Cast<ASpaceObject>(hitResult.GetActor());
+				_text = NSLOCTEXT("FTextFieldLiteral", "FTextField", "[터치 끝] 오브젝트 터치");
+				if (IsValid(controlledHUD)) {
+					controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+					controlledHUD->UpdateUI(UpdateUIType::OrderList);
+				}
+			} else {
+				touchLocation.Z = 0.0f;
+				commandInterface->CommandMoveToPosition(touchLocation);
+				_text = FText::Format(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[터치 끝] 이동 위치 : {0}, {1}"), touchLocation.X, touchLocation.Y);
+
+				if (IsValid(controlledHUD)) {
+					controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
+					controlledHUD->OnUISDestination(touchLocation);
+				}
+			}
+		}
+	}
 }
 
 void AUserController::TouchBack() {
-	FText _text = FText(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Back] Back Button Touched."));
-	if (IsValid(controlledHUD))
+	FText _text = NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Back] BackButton!");
+	if (IsValid(controlledHUD)) {
 		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
-	controlledHUD->OnMobileBack();
+		controlledHUD->OnMobileBack();
+	}
 }
 
 void AUserController::TouchMenu() {
-	FText _text = FText(NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Menu] Menu Button Touched."));
-	if (IsValid(controlledHUD))
+	FText _text = NSLOCTEXT("FTextFieldLiteral", "FTextField", "[Menu] MenuButton!");
+	if (IsValid(controlledHUD)) {
 		controlledHUD->AddUILogMessage(_text, MessageLogType::Debug, FColor::White);
-	controlledHUD->OnMobileMenu();
+		controlledHUD->OnMobileMenu();
+	}
 }
 #pragma endregion
 
@@ -134,13 +223,18 @@ void AUserController::PlayerInterAction(const InteractionType interaction) {
 	case InteractionType::DockRequest:
 		if (!tObj->GetClass()->ImplementsInterface(UStructureable::StaticClass()))
 			return;
-
 		_sObj.SetObject(tObj);
 		_sObj.SetInterface(Cast<IStructureable>(tObj));
 		commandInterface->CommandDock(_sObj);
 		break;
+	case InteractionType::UnDock:
+		commandInterface->CommandUndock();
+		break;
 	case InteractionType::Approach:
 		commandInterface->CommandMoveToTarget(tObj);
+		break;
+	case InteractionType::Attack:
+		commandInterface->CommandAttack(tObj);
 		break;
 	case InteractionType::Jump:
 		if (!tObj->GetClass()->ImplementsInterface(UStructureable::StaticClass()))
