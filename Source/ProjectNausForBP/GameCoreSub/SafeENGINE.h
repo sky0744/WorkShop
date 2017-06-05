@@ -7,7 +7,6 @@
 #include "../GameObject/SpaceObject.h"
 #include "SafeENGINE.generated.h"
 
-
 #pragma region Constant Value In USafeENGINE
 const float _define_LimitSectorSizeMIN = -99000.0f;
 const float _define_LimitSectorSizeMAX = 99000.0f;
@@ -523,6 +522,16 @@ struct PROJECTNAUSFORBP_API FStructureInfo
 	GENERATED_USTRUCT_BODY()
 public:
 	FStructureInfo() {}
+		/*: structureID(0)
+		, structureFaction(Faction::Neutral)
+		, structureType(StructureType::Hub)
+		, techLevel(1)
+		, structureLocation(FVector2D())
+		, LinkedSector(FString())
+		, isDestroyed(false)
+		, isRespawnable(true)
+		, {}
+		*/
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Structure Data")
 		int structureID;

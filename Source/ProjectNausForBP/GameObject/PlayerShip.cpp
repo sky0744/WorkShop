@@ -1414,15 +1414,15 @@ bool APlayerShip::MoveDistanceCheck() {
 	remainDistance = FVector::Dist(moveTargetVector, GetActorLocation());
 	moveTargetVector.Z = 0.0f;
 	//checks distance and Angle For start Acceleration.
-	if (remainDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(sMinAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) + 5.0f)) {
+	if (remainDistance > (FMath::Pow(currentSpeed, 2) / FMath::Clamp(sMinAcceleration * accelerationFactor * 2.0f, 1.0f, 9999.0f) * 1.01f)) {
 		if (FMath::Abs(moveTargetRotate.Yaw) < sStartAccelAngle)
 			setedTargetSpeed = targetSpeed * sMaxSpeed * (1.0f + moduleStatEngine);
 		else setedTargetSpeed = 0.0f;
 	}
-	else  {
+	else 
 		setedTargetSpeed = 0.0f;
+	if(remainDistance < 1.0f)
 		return true;
-	}
 	//arrive to Destination not yet.
 	return false;
 }

@@ -1,17 +1,22 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
+#include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 
-#include "ProjectNausForBP.h"
+#include "../GameCore/SpaceHUDBase.h"
+#include "../GameCoreSub/Enums.h"
 #include "../GameCoreSub/SafeENGINE.h"
 #include "../GameCoreSub/SaveLoader.h"
-
+#include "../GameObject/CargoContainer.h"
+#include "../GameObject/Resource.h"
+#include "../GameObject/Station.h"
+#include "../GameObject/Gate.h"
+#include "../GameObject/Drone.h"
+#include "../GameObject/Ship.h"
+#include "../GameObject/SpaceObject.h"
 #include "../Interface/Commandable.h"
 #include "../Interface/Structureable.h"
-
-#include "../GameCoreSub/Enums.h"
 #include "SpaceState.generated.h"
 
 UCLASS()
@@ -55,11 +60,11 @@ public:
 		*/
 		float GetRelationshipArray(TArray<float>& factionRelationship, bool isRealRelation = false) const;
 	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
-	/**	전략 포인트를 팩션의 관계로 변환하여 관계도에 적용.
-	*	@Param targetFaction - 관계 대상 팩션
-	*	@Param SPForConvertRelation - 관계도에 적용할 전략 포인트
-	*	@Param isRealRelation - true : 실질 관계에만 적용, false : 섹터 내 임시 관계에만 적용
-	*/
+		/**	전략 포인트를 팩션의 관계로 변환하여 관계도에 적용.
+		*	@Param targetFaction - 관계 대상 팩션
+		*	@Param SPForConvertRelation - 관계도에 적용할 전략 포인트
+		*	@Param isRealRelation - true : 실질 관계에만 적용, false : 섹터 내 임시 관계에만 적용
+		*/
 		void ApplyRelation(const Faction targetFaction, float SPForConvertRelation, const bool isRealRelation = false);
 #pragma endregion
 
@@ -83,15 +88,37 @@ public:
 #pragma region Respawn Ship
 public:
 	void AccumulateToShipCapacity(bool isDestroying);
+	template <typename objectType>
+	void AddObjectToArray(objectType* object);
+	template <typename objectType>
+	void RemoveObjectToArray(objectType* object);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+	void GetStructureArray(TArray<TScriptInterface<IStructureable>>& object);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+	void GetShipArray(TArray<AShip*>& object);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+	void GetResourceArray(TArray<AResource*>& object);
+	UFUNCTION(BlueprintCallable, Category = "Call Function : State")
+	void GetContainerArray(TArray<ACargoContainer*>& object);
 private:
 	int shipRegenLimit;
 	int currentShipCapacity;
 	int totalChanceFactor;
 
+	UPROPERTY()
+		TArray<TScriptInterface<IStructureable>> structureInSectorArray;
+	UPROPERTY()
+		TArray<AShip*> shipInSectorArray;
+	UPROPERTY()
+		TArray<AResource*> resourceInSectorArray;
+	UPROPERTY()
+		TArray<ACargoContainer*> containerInSectorArray;
+#pragma endregion
+
 #pragma region BGM
 public:
 	UFUNCTION()
-	void OnBGMSettingAndPlay();
+		void OnBGMSettingAndPlay();
 
 	UAudioComponent* ev_BGMComponent;
 	USoundCue* ev_BGMCue;

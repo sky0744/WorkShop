@@ -3,7 +3,6 @@
 #include "ProjectNausForBP.h"
 #include "SpaceState.h"
 
-
 ASpaceState::ASpaceState() {
 	ev_BGMComponent = CreateDefaultSubobject <UAudioComponent>(TEXT("BGMComponent"));
 	ev_BGMComponent->bAutoActivate = false;
@@ -551,6 +550,32 @@ bool ASpaceState::isValidSector(const FString& checkSectorName) const {
 void ASpaceState::AccumulateToShipCapacity(const bool isDestroying) {
 	isDestroying ? currentShipCapacity-- : currentShipCapacity++;
 	return;
+}
+
+template <typename objectType>
+void ASpaceState::AddObjectToArray(objectType* object) {
+	
+}
+
+template <typename objectType>
+void ASpaceState::RemoveObjectToArray(objectType* object) {
+
+}
+
+void ASpaceState::GetStructureArray(TArray<TScriptInterface<IStructureable>>& object) {
+	object = structureInSectorArray;
+}
+
+void ASpaceState::GetShipArray(TArray<AShip*>& object) {
+	object = shipInSectorArray;
+}
+
+void ASpaceState::GetResourceArray(TArray<AResource*>& object) {
+	object = resourceInSectorArray;
+}
+
+void ASpaceState::GetContainerArray(TArray<ACargoContainer*>& object) {
+	object = containerInSectorArray;
 }
 
 Peer ASpaceState::PeerIdentify(const Faction requestor, const Faction target, const bool isRealRelation) const {

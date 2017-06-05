@@ -522,7 +522,6 @@ bool AUserState::AddPlayerCargo(FItem addItem) {
 	if (IsValid(_tempHUDBase)) {
 		_tempHUDBase->UpdateUI(UpdateUIType::Profile_Cargo);
 		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Cargo);
-		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Trade);
 	}
 	return _result;
 }
@@ -555,7 +554,6 @@ bool AUserState::DropPlayerCargo(FItem dropItem) {
 	if (IsValid(_tempHUDBase)) {
 		_tempHUDBase->UpdateUI(UpdateUIType::Profile_Cargo);
 		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Cargo);
-		_tempHUDBase->UpdateUI(UpdateUIType::Dock_Trade);
 	}
 	return _result;
 }
@@ -599,7 +597,7 @@ bool AUserState::KeepItem(FItem transferItem) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (!IsValid(_tempInstance))
 		return false;
-	if (transferItem.itemID < 0 || transferItem.itemAmount < 0)
+	if (transferItem.itemID < 0 || transferItem.itemAmount < 1)
 		return false;
 
 	FStructureInfo* _structureInfo;
@@ -610,9 +608,6 @@ bool AUserState::KeepItem(FItem transferItem) {
 	else if (dockedStructure.GetObjectRef()->GetClass() == AGate::StaticClass())
 		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
 	else return false;
-
-	if (!_structureInfo->playerItemSlot.Contains(transferItem.itemID))
-		return false;
 
 	if (DropPlayerCargo(transferItem)) {
 			if (_structureInfo->playerItemSlot.Contains(transferItem.itemID))
@@ -632,6 +627,8 @@ bool AUserState::BuyItem(FItem buyItem) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (!IsValid(_tempInstance))
 		return false;
+	if (!IsValid(dockedStructure.GetObjectRef()))
+		return false;
 	if (buyItem.itemID < 0 || buyItem.itemAmount < 0)
 		return false;
 
@@ -647,7 +644,7 @@ bool AUserState::BuyItem(FItem buyItem) {
 		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
 	else return false;
 
-	if (!_structureInfo->itemSlot.Contains(buyItem.itemID))
+	if (_structureInfo == nullptr || !_structureInfo->itemSlot.Contains(buyItem.itemID))
 		return false;
 	else if (_structureInfo->itemSlot[buyItem.itemID] < buyItem.itemAmount)
 		return false;
@@ -680,6 +677,8 @@ bool AUserState::SellItem(FItem sellItem) {
 	USafeENGINE* _tempInstance = Cast<USafeENGINE>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (!IsValid(_tempInstance))
 		return false;
+	if (!IsValid(dockedStructure.GetObjectRef()))
+		return false;
 	if (sellItem.itemID < 0 || sellItem.itemAmount < 0)
 		return false;
 
@@ -695,13 +694,15 @@ bool AUserState::SellItem(FItem sellItem) {
 		_structureInfo = Cast<AGate>(dockedStructure.GetObjectRef())->GetStructureDataPointer();
 	else return false;
 
-	if (!_structureInfo->playerItemSlot.Contains(sellItem.itemID))
+	if (_structureInfo == nullptr || !_structureInfo->playerItemSlot.Contains(sellItem.itemID))
 		return false;
 	else if (_structureInfo->playerItemSlot[sellItem.itemID] < sellItem.itemAmount)
 		return false;
 
-	_upperAmount = _structureInfo->itemSlot[sellItem.itemID];
-	_lowerAmount = _structureInfo->itemSlot[sellItem.itemID] - sellItem.itemAmount;
+	if(_structureInfo->itemSlot.Contains(sellItem.itemID))
+		_lowerAmount = _structureInfo->itemSlot[sellItem.itemID];
+	else _lowerAmount = 0;
+	_upperAmount = _lowerAmount + sellItem.itemAmount;
 	_totalPaymentCredit = _tempInstance->CalculateCreditForTrade(sellItem.itemID, _lowerAmount, _upperAmount, true);
 
 	if (ChangeCredit(_totalPaymentCredit)) {
@@ -730,6 +731,8 @@ bool AUserState::EquipModule(const int equipItemID) {
 	if (!IsValid(_tempInstance))
 		return false;
 	if (!UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->IsA(APlayerShip::StaticClass()))
+		return false;
+	if (!IsValid(dockedStructure.GetObject()))
 		return false;
 
 	APlayerShip* _obj = Cast<APlayerShip>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
